@@ -40,6 +40,15 @@ let currentDiceSkinId = "default";
 const whiteDiceImage = "images/white.png";
 const rollSound = new Audio("sounds/dice-roll.mp3");
 rollSound.volume = 0.6;
+
+// Decode dice images early so the first roll does not pause while loading them.
+[...defaultDiceImages, whiteDiceImage].forEach(source => {
+    const image = new Image();
+    image.src = source;
+    if (typeof image.decode === "function") {
+        image.decode().catch(() => {});
+    }
+});
 const newOrderSound = new Audio("sounds/new-order.mp3");
 newOrderSound.volume = 0.8;
 const AUTO_OFFLINE_MS = 60 * 60 * 1000;
@@ -737,36 +746,72 @@ function createImage(source, className) {
     image.alt = "Dice";
     return image;
 }
-function showDice(container, values, className = "dice") {
+function updateDiceElements(container, sources, className) {
     container.classList.remove("diceRollingStage");
-    container.innerHTML = "";
-    values.forEach(value => {
-        if (diceImages[value]) container.appendChild(createImage(diceImages[value], className));
+
+    const existing = Array.from(container.children).filter(
+        element => element instanceof HTMLImageElement
+    );
+
+    sources.forEach((source, index) => {
+        let image = existing[index];
+
+        if (!image) {
+            image = createImage(source, className);
+            container.appendChild(image);
+        } else {
+            if (image.src !== new URL(source, window.location.href).href) {
+                image.src = source;
+            }
+            image.className = className;
+            image.alt = "Dice";
+        }
     });
+
+    for (let index = existing.length - 1; index >= sources.length; index--) {
+        existing[index].remove();
+    }
 }
+
+function showDice(container, values, className = "dice") {
+    const sources = values
+        .map(Number)
+        .filter(value => Number.isInteger(value) && diceImages[value])
+        .map(value => diceImages[value]);
+
+    updateDiceElements(container, sources, className);
+}
+
 function showWhiteDice(amount) {
-    results.classList.remove("diceRollingStage");
-    results.innerHTML = "";
-    for (let i = 0; i < amount; i++) results.appendChild(createImage(whiteDiceImage, "dice"));
+    updateDiceElements(
+        results,
+        Array.from({ length: amount }, () => whiteDiceImage),
+        "dice"
+    );
 }
+
 function startAnimation(amount) {
     stopAnimation();
-
-    // Match the rolling animation used on index.html:
-    // begin from white dice, then show new random colored dice every 100 ms.
     showWhiteDice(amount);
 
-    animationTimer = window.setInterval(() => {
-        showDice(
-            results,
-            generateDice(amount),
-            "dice shake"
-        );
-    }, 100);
+    let lastUpdate = 0;
+    const frameDelay = 100;
+
+    const animate = timestamp => {
+        if (timestamp - lastUpdate >= frameDelay) {
+            showDice(results, generateDice(amount), "dice shake");
+            lastUpdate = timestamp;
+        }
+
+        animationTimer = window.requestAnimationFrame(animate);
+    };
+
+    animationTimer = window.requestAnimationFrame(animate);
 }
+
 function stopAnimation() {
     if (animationTimer !== null) {
-        clearInterval(animationTimer);
+        window.cancelAnimationFrame(animationTimer);
         animationTimer = null;
     }
 }

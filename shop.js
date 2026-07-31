@@ -326,6 +326,7 @@ function setPreview(imageElement, source) {
         return;
     }
 
+    imageElement.decoding = "async";
     imageElement.src = source;
     imageElement.style.display = "block";
 }
@@ -894,6 +895,8 @@ function createProductCard(product) {
         image.src = product.imageUrl;
         image.alt = product.name || "Product image";
         image.loading = "lazy";
+        image.decoding = "async";
+        image.fetchPriority = "low";
         imageContainer.appendChild(image);
     }
 
@@ -993,9 +996,13 @@ async function loadProducts() {
             return;
         }
 
+        const productFragment = document.createDocumentFragment();
+
         products.forEach(product => {
-            productList.appendChild(createProductCard(product));
+            productFragment.appendChild(createProductCard(product));
         });
+
+        productList.appendChild(productFragment);
     } catch (error) {
         console.error(error);
         productList.innerHTML = "<p>Unable to load products.</p>";
@@ -1067,6 +1074,8 @@ function renderCart() {
         return;
     }
 
+    const cartFragment = document.createDocumentFragment();
+
     for (const [productId, item] of cart) {
         const row = document.createElement("article");
         row.className = "cartItem";
@@ -1074,6 +1083,8 @@ function renderCart() {
         const image = document.createElement("img");
         image.src = item.product.imageUrl || "";
         image.alt = item.product.name || "Product";
+        image.loading = "lazy";
+        image.decoding = "async";
 
         const info = document.createElement("div");
         info.className = "cartItemInfo";
@@ -1110,15 +1121,18 @@ function renderCart() {
         remove.addEventListener("click", () => removeFromCart(productId));
 
         row.append(image, info, controls, subtotal, remove);
-        cartItemsElement.appendChild(row);
+        cartFragment.appendChild(row);
     }
 
+    cartItemsElement.appendChild(cartFragment);
     cartTotalElement.textContent = formatPrice(cartTotal());
     checkoutCartButton.disabled = false;
 }
 
 function renderPaymentCartSummary() {
     paymentCartItems.innerHTML = "";
+    const paymentCartFragment = document.createDocumentFragment();
+
     for (const { product, quantity } of cart.values()) {
         const row = document.createElement("div");
         row.className = "paymentCartItem";
@@ -1127,8 +1141,10 @@ function renderPaymentCartSummary() {
         const amount = document.createElement("strong");
         amount.textContent = formatPrice(Number(product.price) * quantity);
         row.append(label, amount);
-        paymentCartItems.appendChild(row);
+        paymentCartFragment.appendChild(row);
     }
+
+    paymentCartItems.appendChild(paymentCartFragment);
     paymentAmount.textContent = formatPrice(cartTotal());
 }
 
@@ -1158,6 +1174,8 @@ function renderSelectedPaymentMethod(methodKey) {
 function renderPaymentMethodChoices(data) {
     paymentMethodChoices.innerHTML = "";
     const enabled = getEnabledPaymentMethods(data);
+    const methodFragment = document.createDocumentFragment();
+
     for (const [key] of enabled) {
         const button = document.createElement("button");
         button.type = "button";
@@ -1165,8 +1183,10 @@ function renderPaymentMethodChoices(data) {
         button.dataset.method = key;
         button.textContent = key === "gcash" ? "GCash" : key === "maya" ? "Maya" : "PayPal";
         button.addEventListener("click", () => renderSelectedPaymentMethod(key));
-        paymentMethodChoices.appendChild(button);
+        methodFragment.appendChild(button);
     }
+
+    paymentMethodChoices.appendChild(methodFragment);
     selectedPaymentMethod = "";
     if (selectedPaymentDetails) selectedPaymentDetails.hidden = true;
     if (paymentFillUpForm) paymentFillUpForm.hidden = true;

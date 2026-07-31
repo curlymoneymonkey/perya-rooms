@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Permanent Room | PERYA DICE</title>
     <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preload" as="image" href="images/peryahan.webp" fetchpriority="high">
+    <link rel="preload" as="image" href="images/PERYA.png">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="favorites.css">
 
@@ -542,10 +544,10 @@ body.peryaPopupOpen {
 </head>
 
 <body>
-    <header class="siteHeader"><img class="logo" src="images/PERYA.png" alt="PERYA DICE">
+    <header class="siteHeader"><img class="logo" src="images/PERYA.png" alt="PERYA DICE" decoding="async" fetchpriority="high">
         <div id="accountMenuRoot" class="accountMenu" hidden>
             <button class="accountMenuButton" type="button" data-account-button aria-label="Open account menu" aria-expanded="false">
-                <img class="accountAvatar" data-account-avatar src="favicon.png" alt="Profile picture">
+                <img class="accountAvatar" data-account-avatar src="favicon.png" alt="Profile picture" decoding="async">
             </button>
             <div class="accountDropdown" data-account-dropdown hidden>
                 <p class="accountMenuName" data-account-username>@user</p>
@@ -956,7 +958,7 @@ body.peryaPopupOpen {
         </label>
 
         <div class="imagePreviewBox">
-            <img id="productImagePreview" alt="Product preview">
+            <img id="productImagePreview" alt="Product preview" decoding="async">
         </div>
 
         <label class="fieldLabel">
@@ -1081,7 +1083,7 @@ body.peryaPopupOpen {
                     <label class="fieldLabel">Account Name<input id="gcashName" type="text" maxlength="100"></label>
                     <label class="fieldLabel">GCash Number<input id="gcashNumber" type="tel" maxlength="20" placeholder="09XXXXXXXXX"></label>
                     <label class="fieldLabel">GCash QR Code<input id="gcashQrInput" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG, or WebP. Maximum 2 MB.</small></label>
-                    <div class="qrPreviewBox"><img id="gcashQrPreview" alt="GCash QR preview"></div>
+                    <div class="qrPreviewBox"><img id="gcashQrPreview" alt="GCash QR preview" decoding="async"></div>
                 </div>
             </div>
 
@@ -1093,7 +1095,7 @@ body.peryaPopupOpen {
                     <label class="fieldLabel">Account Name<input id="mayaName" type="text" maxlength="100"></label>
                     <label class="fieldLabel">Maya Number<input id="mayaNumber" type="tel" maxlength="20" placeholder="09XXXXXXXXX"></label>
                     <label class="fieldLabel">Maya QR Code<input id="mayaQrInput" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG, or WebP. Maximum 2 MB.</small></label>
-                    <div class="qrPreviewBox"><img id="mayaQrPreview" alt="Maya QR preview"></div>
+                    <div class="qrPreviewBox"><img id="mayaQrPreview" alt="Maya QR preview" decoding="async"></div>
                 </div>
             </div>
 
@@ -1104,7 +1106,7 @@ body.peryaPopupOpen {
                 <div class="paymentAccordionBody">
                     <label class="fieldLabel">PayPal Email<input id="paypalEmail" type="email" maxlength="150" placeholder="seller@example.com"></label>
                     <label class="fieldLabel">PayPal QR Code<input id="paypalQrInput" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG, or WebP. Maximum 2 MB.</small></label>
-                    <div class="qrPreviewBox"><img id="paypalQrPreview" alt="PayPal QR preview"></div>
+                    <div class="qrPreviewBox"><img id="paypalQrPreview" alt="PayPal QR preview" decoding="async"></div>
                 </div>
             </div>
 
@@ -1160,7 +1162,7 @@ body.peryaPopupOpen {
 
             <div class="paymentOrDivider"><span>OR</span></div>
             <p class="scanQrLabel">Scan this QR Code</p>
-            <div class="buyerQrBox"><img id="buyerQrImage" alt="Seller payment QR code"></div>
+            <div class="buyerQrBox"><img id="buyerQrImage" alt="Seller payment QR code" decoding="async"></div>
             </div>
         </section>
 
@@ -1191,7 +1193,7 @@ body.peryaPopupOpen {
                 <span class="proofUploadHint">Choose a screenshot or photo of your receipt.</span>
             </label>
 
-            <div class="proofPreviewBox"><img id="paymentProofPreview" alt="Payment proof preview"></div>
+            <div class="proofPreviewBox"><img id="paymentProofPreview" alt="Payment proof preview" decoding="async"></div>
             <p class="noProofWarning">No payment proof = no item delivery.</p>
 
             <label class="fieldLabel">Username (IGN) *

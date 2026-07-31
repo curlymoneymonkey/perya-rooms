@@ -414,3 +414,33 @@ body{min-height:100vh;background:radial-gradient(circle at top,#351313 0,#1a0b0b
 .productsSection{margin-top:26px}.sectionHeading{display:flex;align-items:end;justify-content:space-between;margin-bottom:12px}.sectionHeading h2{margin:4px 0 0;font-size:26px}#productList{padding:18px;border-color:#603535;background:rgba(20,8,8,.82)}.productCard{display:flex;flex-direction:column;border-color:#633b3b;background:linear-gradient(180deg,#321b1b,#261313);transition:transform .18s ease,box-shadow .18s ease}.productCard:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(0,0,0,.3)}.productDescription{flex:1}.productPrice{color:#ffd1a1}.wideModal{width:min(100%,720px)}.fieldGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.stepText{text-align:center;color:#d9caca}.methodToggleList{display:grid;gap:10px}.methodToggle{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px;border:1px solid #6a4545;border-radius:11px;background:rgba(255,255,255,.035);cursor:pointer}.methodToggle span{display:grid;gap:4px}.methodToggle small{color:#cdbbbb}.methodToggle input{width:22px;height:22px}.guestToggle{margin-top:16px}.formError{color:#ffadad;text-align:center;font-weight:700}.paymentAccordion{margin-bottom:12px;border:1px solid #6a4545;border-radius:11px;overflow:hidden}.paymentAccordion>button{width:100%;display:flex;justify-content:space-between;border-radius:0;background:#4b2424;font-weight:800}.paymentAccordionBody{padding:16px}.cartItems{display:grid;gap:12px}.cartItem{display:grid;grid-template-columns:64px minmax(0,1fr) auto auto auto;align-items:center;gap:12px;padding:12px;border:1px solid #684949;border-radius:11px;background:rgba(255,255,255,.035)}.cartItem img{width:64px;height:64px;border-radius:9px;object-fit:cover}.cartItemInfo{display:grid;gap:5px}.cartItemInfo span{color:#d8caca}.cartQuantityControls{display:flex;align-items:center;gap:9px}.cartQuantityControls button{width:34px;height:34px;padding:0}.cartRemoveButton{padding:8px 10px;background:#8d2020}.paymentMethodChoices{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:18px}.paymentMethodChoice{min-width:120px;background:#542727}.paymentMethodChoice.selected{outline:3px solid rgba(255,209,161,.55);background:#a74720}.selectedPaymentDetails{padding:16px;border:1px solid #684949;border-radius:12px;background:rgba(255,255,255,.035)}.accountName{text-align:center;font-weight:800}.copyPaymentRow{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}.copyPaymentRow strong{padding:12px 15px;border-radius:8px;background:#fff;color:#222}.paymentCartItem{display:flex;justify-content:space-between;gap:15px;padding:8px 0;border-bottom:1px solid #5d3a3a}
 @media(max-width:800px){.sellerToolbar{grid-template-columns:1fr 1fr}.shopHero{align-items:flex-start;flex-direction:column}.buyerCartControls,.cartButton{width:100%}.cartItem{grid-template-columns:54px 1fr auto}.cartItem img{width:54px;height:54px}.cartQuantityControls,.cartItemSubtotal,.cartRemoveButton{grid-column:2/-1;justify-self:start}}
 @media(max-width:520px){.sellerToolbar,.fieldGrid{grid-template-columns:1fr}.shopContainer{padding:20px 12px 40px}.shopHero{padding:20px}.modalCard{padding:17px}.methodToggle{align-items:flex-start}.productImageContainer{height:210px}}
+
+
+/* =========================================================
+   SAFE SHOP PERFORMANCE OPTIMIZATIONS
+   Keeps the existing layout and appearance unchanged.
+========================================================= */
+.productCard {
+    content-visibility: auto;
+    contain-intrinsic-size: 360px;
+}
+
+.productImage,
+.cartItem img,
+.buyProductImage,
+.imagePreviewBox img,
+.qrPreviewBox img,
+.proofPreviewBox img,
+.buyerQrBox img {
+    content-visibility: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .productCard,
+    .modalCard,
+    .shopPopupDialog {
+        scroll-behavior: auto;
+        animation: none !important;
+        transition-duration: 0.01ms !important;
+    }
+}

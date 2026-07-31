@@ -58,6 +58,15 @@ const whiteDiceImage = "images/white.png";
 const rollSound = new Audio("sounds/dice-roll.mp3");
 rollSound.volume = 0.6;
 
+// Decode dice images early so the first roll does not pause while loading them.
+[...defaultDiceImages, whiteDiceImage].forEach(source => {
+    const image = new Image();
+    image.src = source;
+    if (typeof image.decode === "function") {
+        image.decode().catch(() => {});
+    }
+});
+
 
 const loadingScreen = document.getElementById("loadingScreen");
 const loadingMessage = document.getElementById("loadingMessage");
@@ -554,72 +563,71 @@ function createDiceImage(source, className, altText) {
 }
 
 
-function showWhiteDice(amount) {
+function updateDiceElements(container, sources, className, altText) {
+    const existing = Array.from(container.children).filter(
+        element => element instanceof HTMLImageElement
+    );
 
-    results.innerHTML = "";
+    sources.forEach((source, index) => {
+        let image = existing[index];
 
-    for (let index = 0; index < amount; index++) {
+        if (!image) {
+            image = createDiceImage(source, className, altText);
+            container.appendChild(image);
+        } else {
+            if (image.src !== new URL(source, window.location.href).href) {
+                image.src = source;
+            }
+            image.className = className;
+            image.alt = altText;
+        }
+    });
 
-        results.appendChild(
-            createDiceImage(
-                whiteDiceImage,
-                "dice",
-                "Unrolled dice"
-            )
-        );
+    for (let index = existing.length - 1; index >= sources.length; index--) {
+        existing[index].remove();
     }
 }
 
+function showWhiteDice(amount) {
+    updateDiceElements(
+        results,
+        Array.from({ length: amount }, () => whiteDiceImage),
+        "dice",
+        "Unrolled dice"
+    );
+}
 
 function showDice(container, values, className = "dice") {
+    const sources = values
+        .map(Number)
+        .filter(index => Number.isInteger(index) && diceImages[index])
+        .map(index => diceImages[index]);
 
-    container.innerHTML = "";
-
-    values.forEach(value => {
-
-        const index = Number(value);
-
-        if (
-            !Number.isInteger(index) ||
-            !diceImages[index]
-        ) {
-            return;
-        }
-
-        container.appendChild(
-            createDiceImage(
-                diceImages[index],
-                className,
-                "Dice result"
-            )
-        );
-    });
+    updateDiceElements(container, sources, className, "Dice result");
 }
-
 
 function startRollingAnimation(amount) {
-
     stopRollingAnimation();
-
     showWhiteDice(amount);
 
-    animationTimer = window.setInterval(() => {
+    let lastUpdate = 0;
+    const frameDelay = 100;
 
-        showDice(
-            results,
-            generateDice(amount),
-            "dice shake"
-        );
+    const animate = timestamp => {
+        if (timestamp - lastUpdate >= frameDelay) {
+            showDice(results, generateDice(amount), "dice shake");
+            lastUpdate = timestamp;
+        }
 
-    }, 100);
+        animationTimer = window.requestAnimationFrame(animate);
+    };
+
+    animationTimer = window.requestAnimationFrame(animate);
 }
 
-
 function stopRollingAnimation() {
-
     if (animationTimer !== null) {
-
-        clearInterval(animationTimer);
+        window.cancelAnimationFrame(animationTimer);
         animationTimer = null;
     }
 }
