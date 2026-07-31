@@ -1,0 +1,19 @@
+HEAD ADMIN INITIAL SETUP
+
+1. Upload all replacement files to your website.
+2. Publish firestore.rules in Firebase Console > Firestore Database > Rules.
+3. In Firebase Console > Firestore Database > Data, open:
+   admins / YOUR_UID
+4. Make sure the document contains:
+   uid: "YOUR_UID"
+   enabled: true
+   role: "head-admin"
+
+Existing admin documents without a role continue to work as normal Administrators.
+You must manually mark the first Head Administrator because no Head Administrator exists yet to grant the role in the Control Panel.
+
+PROTECTION
+- Normal Administrators cannot promote anyone to Head Administrator.
+- Normal Administrators cannot demote, disable, or edit a Head Administrator account.
+- Head Administrators can promote or demote other Head Administrators.
+- A Head Administrator cannot change or remove their own Head Administrator role in the Control Panel.

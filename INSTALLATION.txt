@@ -1,0 +1,35 @@
+DICE SKIN CREATOR + SELECTOR
+
+Upload these website files:
+- pdo_hub.html
+- pdo_permissions.js
+- pdo_dice_skins.html
+- pdo_dice_skins.css
+- pdo_dice_skins.js
+- index.html
+- script.js
+- room.html
+- room.js
+
+Keep your existing staff.css, firebase.js, pdo_control files, images folder and other pages.
+
+Firebase Console:
+1. Replace Firestore rules with firestore.rules and publish.
+2. Replace Storage rules with storage.rules and publish.
+3. Open pdo_dice_skins.html while signed in as an enabled administrator.
+4. The locked Classic Dice record is created automatically.
+
+Upload rules:
+- PNG only
+- Square images
+- Maximum 5 MB each
+- No exact pixel size is required
+
+Collections/storage:
+- Firestore: diceSkins/{skinId}
+- Storage: dice-skins/{skinId}/{color-timestamp}.png
+
+MULTI-GROUP ACCESS UPDATE
+- Dice skins now use accessLevels: ["everyone", "users", "vip"].
+- The admin can select one, two, or all three audience groups.
+- Existing skins that still use accessLevel remain readable by index.html and room.html until edited and saved.

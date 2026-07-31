@@ -1,0 +1,86 @@
+
+/* === Edit Profile Theme === */
+body.editProfileTheme{
+background:
+linear-gradient(rgba(10,5,18,.88),rgba(10,5,18,.92)),
+url("images/peryahan.webp") center/cover fixed no-repeat;
+}
+.editProfileTheme .profileShell{
+max-width:850px;
+margin:30px auto;
+padding:20px;
+}
+.editProfileTheme .editProfileCard{
+background:linear-gradient(145deg,rgba(43,15,54,.95),rgba(18,8,28,.95));
+border:1px solid rgba(255,210,90,.25);
+border-radius:24px;
+padding:36px;
+box-shadow:0 20px 50px rgba(0,0,0,.45);
+text-align:center;
+}
+.editProfileTheme .editProfileCard h1{
+color:#ffd45c;
+margin-bottom:24px;
+}
+.editProfileTheme .profilePhoto{
+width:170px;
+height:170px;
+border-radius:50%;
+object-fit:cover;
+border:5px solid #ffd45c;
+box-shadow:0 0 25px rgba(255,212,92,.3);
+margin-bottom:25px;
+}
+.editProfileTheme .formGroup{
+text-align:left;
+margin:20px 0;
+}
+.editProfileTheme label{
+display:block;
+font-weight:700;
+color:#fff4d0;
+margin-bottom:8px;
+}
+.editProfileTheme input,
+.editProfileTheme textarea{
+width:100%;
+padding:14px;
+border-radius:14px;
+border:1px solid rgba(255,212,92,.25);
+background:#fff8ef;
+}
+.editProfileTheme textarea{
+min-height:150px;
+resize:vertical;
+}
+.editProfileTheme .buttonRow{
+display:flex;
+justify-content:center;
+gap:15px;
+flex-wrap:wrap;
+margin-top:25px;
+}
+.editProfileTheme .buttonRow button,
+.editProfileTheme .buttonRow a,
+.editProfileTheme .profileBackButton{
+padding:13px 24px;
+border-radius:14px;
+text-decoration:none;
+font-weight:700;
+}
+.editProfileTheme #saveProfileButton{
+background:linear-gradient(135deg,#d53449,#8c1730);
+color:#fff;
+}
+.editProfileTheme .secondaryButton{
+background:linear-gradient(135deg,#5d3d70,#372141);
+color:#fff;
+}
+.editProfileTheme .profileBackButton{
+display:inline-block;
+margin-bottom:20px;
+}
+@media(max-width:600px){
+.editProfileTheme .editProfileCard{padding:22px;}
+.editProfileTheme .profilePhoto{width:130px;height:130px;}
+}

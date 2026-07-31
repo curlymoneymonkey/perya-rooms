@@ -1,0 +1,231 @@
+import { auth, db, waitForAuthState } from "./firebase.js";
+import {
+  addDoc, collection, doc, getDoc, getDocs, limit, query,
+  serverTimestamp, setDoc, updateDoc, where
+} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+const userForm = document.getElementById("pdoUserSearchForm");
+const userInput = document.getElementById("pdoUserSearch");
+const userButton = document.getElementById("pdoUserSearchButton");
+const userMessage = document.getElementById("pdoUserMessage");
+const userResult = document.getElementById("pdoUserResult");
+const roomForm = document.getElementById("pdoRoomSearchForm");
+const roomInput = document.getElementById("pdoRoomSearch");
+const roomButton = document.getElementById("pdoRoomSearchButton");
+const roomMessage = document.getElementById("pdoRoomMessage");
+const roomResult = document.getElementById("pdoRoomResult");
+
+let adminUser = null;
+let selectedUser = null;
+let selectedRoom = null;
+
+const clean = value => String(value || "").trim();
+const esc = value => String(value ?? "").replace(/[&<>'"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char]));
+
+function setMessage(node, text, error = false) {
+  node.textContent = text;
+  node.classList.toggle("error", error);
+}
+
+async function verifyAdmin() {
+  adminUser = await waitForAuthState();
+  if (!adminUser || adminUser.isAnonymous) throw new Error("Please sign in first.");
+  const adminSnap = await getDoc(doc(db, "admins", adminUser.uid));
+  if (!adminSnap.exists() || adminSnap.data().enabled !== true) throw new Error("Administrator access is required.");
+}
+
+async function logAction(type, targetType, targetId, details) {
+  await addDoc(collection(db, "activityLogs"), {
+    type, targetType, targetId, details,
+    staffUid: adminUser.uid,
+    staffEmail: adminUser.email || "",
+    createdAt: serverTimestamp()
+  });
+}
+
+async function notifyUser(uid, title, message, type) {
+  if (!uid) return;
+  await addDoc(collection(db, "users", uid, "notifications"), {
+    uid, title, message, type, read: false,
+    createdBy: adminUser.uid,
+    createdAt: serverTimestamp()
+  });
+}
+
+async function findUser(term) {
+  const direct = await getDoc(doc(db, "users", term));
+  if (direct.exists()) return { id: direct.id, ...direct.data() };
+
+  const lower = term.toLowerCase();
+  const searches = [
+    query(collection(db, "users"), where("usernameLower", "==", lower), limit(1)),
+    query(collection(db, "users"), where("email", "==", term), limit(1))
+  ];
+  for (const search of searches) {
+    const snap = await getDocs(search);
+    if (!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() };
+  }
+  return null;
+}
+
+async function userRole(uid) {
+  const [adminSnap, modSnap] = await Promise.all([
+    getDoc(doc(db, "admins", uid)), getDoc(doc(db, "moderators", uid))
+  ]);
+  if (adminSnap.exists() && adminSnap.data().enabled === true) return "Administrator";
+  if (modSnap.exists() && modSnap.data().enabled === true) return "Moderator";
+  return "User";
+}
+
+async function renderUser(user) {
+  const role = await userRole(user.id);
+  selectedUser = { ...user, role };
+  userResult.hidden = false;
+  userResult.innerHTML = `
+    <article class="control-result">
+      <div class="result-head"><div><h3>@${esc(user.username || "Unknown")}</h3><p>${esc(user.email || "No email stored")}</p></div><span class="pdo-badge">${esc(role)}</span></div>
+      <dl class="result-details"><div><dt>UID</dt><dd>${esc(user.id)}</dd></div><div><dt>Room ID</dt><dd>${esc(user.roomId || "None")}</dd></div></dl>
+      <div class="control-grid">
+        <label><span>Role</span><select class="pdo-input" id="userRoleSelect" ${role === "Administrator" ? "disabled" : ""}><option value="User" ${role === "User" ? "selected" : ""}>User</option><option value="Moderator" ${role === "Moderator" ? "selected" : ""}>Moderator</option></select></label>
+        <label class="check-row"><input type="checkbox" id="userRollingRestricted" ${user.rollingRestricted === true ? "checked" : ""}> Prevent rolling</label>
+        <label class="check-row"><input type="checkbox" id="userReviewsRestricted" ${user.reviewsRestricted === true ? "checked" : ""}> Prevent reviews</label>
+        <label class="check-row"><input type="checkbox" id="userAccountSuspended" ${user.accountSuspended === true ? "checked" : ""}> Suspend account</label>
+        <label class="full"><span>Reason</span><textarea class="pdo-input" id="userRestrictionReason" maxlength="300" placeholder="Reason for this action">${esc(user.restrictionReason || "")}</textarea></label>
+      </div>
+      <div class="result-actions"><a class="pdo-button secondary" href="profile.html?id=${encodeURIComponent(user.id)}">View profile</a><button class="pdo-button" id="saveUserControls" type="button">Save changes</button></div>
+      <p class="pdo-message" id="saveUserMessage" aria-live="polite"></p>
+    </article>`;
+  document.getElementById("saveUserControls").addEventListener("click", saveUserControls);
+}
+
+async function saveUserControls() {
+  const button = document.getElementById("saveUserControls");
+  const message = document.getElementById("saveUserMessage");
+  const roleSelect = document.getElementById("userRoleSelect");
+  const nextRole = roleSelect.value;
+  const reason = clean(document.getElementById("userRestrictionReason").value).slice(0, 300);
+  const changes = {
+    rollingRestricted: document.getElementById("userRollingRestricted").checked,
+    reviewsRestricted: document.getElementById("userReviewsRestricted").checked,
+    accountSuspended: document.getElementById("userAccountSuspended").checked,
+    restrictionReason: reason,
+    restrictionsUpdatedAt: serverTimestamp(),
+    restrictionsUpdatedBy: adminUser.uid
+  };
+  button.disabled = true;
+  setMessage(message, "Saving changes…");
+  try {
+    if (selectedUser.role !== "Administrator") {
+      const modRef = doc(db, "moderators", selectedUser.id);
+      if (nextRole === "Moderator") {
+        const existingModerator = await getDoc(modRef);
+        if (existingModerator.exists()) {
+          await updateDoc(modRef, { enabled: true });
+        } else {
+          await setDoc(modRef, { enabled: true, uid: selectedUser.id, promotedBy: adminUser.uid, promotedAt: serverTimestamp() });
+        }
+      } else if (selectedUser.role === "Moderator") {
+        await updateDoc(modRef, { enabled: false, disabledBy: adminUser.uid, disabledAt: serverTimestamp() });
+      }
+    }
+    await updateDoc(doc(db, "users", selectedUser.id), changes);
+    await logAction("user_control_updated", "user", selectedUser.id, { ...changes, role: nextRole, restrictionsUpdatedAt: null });
+    await notifyUser(selectedUser.id, "Account settings updated", reason || "An administrator updated your account controls.", "account_control");
+    selectedUser = { ...selectedUser, ...changes, role: nextRole };
+    setMessage(message, "User controls saved successfully.");
+  } catch (error) {
+    console.error(error);
+    setMessage(message, `Could not save: ${error.message}`, true);
+  } finally { button.disabled = false; }
+}
+
+async function findRoom(term) {
+  const direct = await getDoc(doc(db, "permanentRooms", term));
+  if (direct.exists()) return { id: direct.id, ...direct.data() };
+  const diceMap = await getDoc(doc(db, "permanentRoomIds", term.toUpperCase()));
+  if (diceMap.exists()) {
+    const roomId = diceMap.data().roomId || diceMap.data().ownerUid;
+    if (roomId) {
+      const roomSnap = await getDoc(doc(db, "permanentRooms", roomId));
+      if (roomSnap.exists()) return { id: roomSnap.id, ...roomSnap.data() };
+    }
+  }
+  const exactDice = await getDocs(query(collection(db, "permanentRooms"), where("diceId", "==", term.toUpperCase()), limit(1)));
+  if (!exactDice.empty) return { id: exactDice.docs[0].id, ...exactDice.docs[0].data() };
+  const all = await getDocs(collection(db, "permanentRooms"));
+  const lower = term.toLowerCase();
+  const match = all.docs.find(item => String(item.data().hostUsername || "").toLowerCase() === lower);
+  return match ? { id: match.id, ...match.data() } : null;
+}
+
+function renderRoom(room) {
+  selectedRoom = room;
+  roomResult.hidden = false;
+  roomResult.innerHTML = `
+    <article class="control-result">
+      <div class="result-head"><div><h3>${esc(room.roomName || "Dice Room")}</h3><p>@${esc(room.hostUsername || "Unknown host")}</p></div><span class="pdo-badge ${room.rollingSuspended ? "danger-badge" : ""}">${room.rollingSuspended ? "Rolling suspended" : "Active"}</span></div>
+      <dl class="result-details"><div><dt>Room ID</dt><dd>${esc(room.id)}</dd></div><div><dt>Dice ID</dt><dd>${esc(room.diceId || "Unknown")}</dd></div><div><dt>Platform</dt><dd>${esc(room.platform || "Not set")}</dd></div><div><dt>IGN</dt><dd>${esc(room.ign || "Not set")}</dd></div></dl>
+      <div class="control-grid">
+        <label class="check-row full"><input type="checkbox" id="roomRollingSuspended" ${room.rollingSuspended === true ? "checked" : ""}> Suspend room rolling</label>
+        <label class="full"><span>Reason</span><textarea class="pdo-input" id="roomSuspensionReason" maxlength="300" placeholder="Reason for suspending or restoring rolling">${esc(room.rollingSuspensionReason || "")}</textarea></label>
+      </div>
+      <div class="result-actions"><a class="pdo-button secondary" href="room.html?id=${encodeURIComponent(room.diceId || "")}">Open room</a><button class="pdo-button" id="saveRoomControls" type="button">Save changes</button></div>
+      <p class="pdo-message" id="saveRoomMessage" aria-live="polite"></p>
+    </article>`;
+  document.getElementById("saveRoomControls").addEventListener("click", saveRoomControls);
+}
+
+async function saveRoomControls() {
+  const button = document.getElementById("saveRoomControls");
+  const message = document.getElementById("saveRoomMessage");
+  const suspended = document.getElementById("roomRollingSuspended").checked;
+  const reason = clean(document.getElementById("roomSuspensionReason").value).slice(0, 300);
+  button.disabled = true;
+  setMessage(message, "Saving changes…");
+  try {
+    await updateDoc(doc(db, "permanentRooms", selectedRoom.id), {
+      rollingSuspended: suspended,
+      rollingSuspensionReason: reason,
+      rollingSuspendedAt: suspended ? serverTimestamp() : null,
+      rollingSuspendedBy: suspended ? adminUser.uid : "",
+      rolling: false,
+      pendingResult: [],
+      updatedAt: serverTimestamp()
+    });
+    await logAction(suspended ? "room_rolling_suspended" : "room_rolling_restored", "room", selectedRoom.id, { diceId: selectedRoom.diceId || "", reason });
+    await notifyUser(selectedRoom.ownerUid, suspended ? "Room rolling suspended" : "Room rolling restored", reason || (suspended ? "Rolling has been suspended in your room." : "Rolling has been restored in your room."), suspended ? "room_suspended" : "room_restored");
+    selectedRoom = { ...selectedRoom, rollingSuspended: suspended, rollingSuspensionReason: reason };
+    setMessage(message, suspended ? "Room rolling suspended." : "Room rolling restored.");
+    renderRoom(selectedRoom);
+  } catch (error) {
+    console.error(error);
+    setMessage(message, `Could not save: ${error.message}`, true);
+  } finally { button.disabled = false; }
+}
+
+userForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  const term = clean(userInput.value);
+  if (!term) return setMessage(userMessage, "Enter a username, UID, or email.", true);
+  userButton.disabled = true; userResult.hidden = true; setMessage(userMessage, "Searching…");
+  try { const user = await findUser(term); if (!user) throw new Error("No matching user found."); await renderUser(user); setMessage(userMessage, "User found."); }
+  catch (error) { setMessage(userMessage, error.message, true); }
+  finally { userButton.disabled = false; }
+});
+
+roomForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  const term = clean(roomInput.value);
+  if (!term) return setMessage(roomMessage, "Enter a Room ID, Dice ID, or username.", true);
+  roomButton.disabled = true; roomResult.hidden = true; setMessage(roomMessage, "Searching…");
+  try { const room = await findRoom(term); if (!room) throw new Error("No matching room found."); renderRoom(room); setMessage(roomMessage, "Room found."); }
+  catch (error) { setMessage(roomMessage, error.message, true); }
+  finally { roomButton.disabled = false; }
+});
+
+verifyAdmin().catch(error => {
+  console.error(error);
+  setMessage(userMessage, error.message, true);
+  setMessage(roomMessage, error.message, true);
+  userButton.disabled = true; roomButton.disabled = true;
+});

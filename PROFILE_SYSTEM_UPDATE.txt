@@ -1,0 +1,15 @@
+PROFILE SYSTEM UPDATE
+
+Added:
+- Top-right account avatar menu on Dashboard, Room and Profile pages.
+- My Profile, Edit Profile, Find Profiles, Admin Panel (admins only), and Sign Out menu items.
+- edit_profile.html and edit_profile.js for bio and profile picture URL editing.
+- 30-day profile-picture cooldown enforced by Firestore rules.
+- profile_search.html and profile_search.js for username-prefix search.
+- Clickable host usernames in Live Directory and Room pages.
+- Clickable reviewer usernames in room reviews and profile reviews.
+- My Profile button on Dashboard.
+
+IMPORTANT:
+Publish the included firestore.rules in Firebase Console after deploying these files.
+Profile search may ask for a Firestore index; the usernameLower single-field index is normally automatic.

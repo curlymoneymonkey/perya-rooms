@@ -1,0 +1,6 @@
+PERYA DICE STAFF PANEL REWRITE
+
+Added shared staff.css and page-specific CSS files.
+Rewritten: pdo_hub.html, pdo_workspace.html, pdo_control.html, pdo_console.html.
+Restyled review_queue.html using review_queue.css while preserving all JavaScript IDs.
+Enhanced pdo_permissions.js with role labels, admin-only navigation hiding, and mobile menu behavior.

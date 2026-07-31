@@ -1,0 +1,222 @@
+
+/* =========================================================
+   PERYA DICE — EDIT PROFILE PAGE
+========================================================= */
+
+body.editProfileTheme {
+    min-height: 100vh;
+    padding: 18px;
+    color: #fff8e8;
+    background:
+        radial-gradient(circle at 15% 15%, rgba(111, 42, 145, 0.28), transparent 34%),
+        radial-gradient(circle at 85% 5%, rgba(213, 47, 69, 0.24), transparent 32%),
+        linear-gradient(rgba(8, 3, 13, 0.84), rgba(8, 3, 13, 0.94)),
+        url("images/peryahan.webp") center / cover fixed no-repeat;
+    font-family: Inter, Arial, Helvetica, sans-serif;
+}
+
+.editProfileTheme .siteHeader {
+    width: min(900px, 100%);
+    margin: 0 auto;
+}
+
+.editProfileTheme .profileShell {
+    width: min(820px, 100%);
+    margin: 0 auto;
+    padding: 20px 0 45px;
+    text-align: center;
+}
+
+.editProfileTheme .profileBackButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+    padding: 11px 18px;
+    border: 1px solid rgba(255, 214, 92, 0.24);
+    border-radius: 13px;
+    color: #fff8e8;
+    background: linear-gradient(135deg, #5c3b70, #34203f);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+    text-decoration: none;
+    font-weight: 800;
+}
+
+.editProfileTheme .editProfileCard {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    padding: clamp(24px, 5vw, 42px);
+    border: 1px solid rgba(255, 214, 92, 0.28);
+    border-radius: 26px;
+    background:
+        radial-gradient(circle at 50% 0%, rgba(255, 205, 75, 0.11), transparent 38%),
+        linear-gradient(145deg, rgba(47, 15, 57, 0.96), rgba(15, 7, 24, 0.97));
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(14px);
+    text-align: center;
+}
+
+.editProfileTheme .editProfileCard::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, #ffd45c, #d52f45, transparent);
+}
+
+.editProfileTheme .editProfileCard h1 {
+    margin-bottom: 22px;
+    color: #ffd45c;
+    font-size: clamp(1.9rem, 5vw, 2.6rem);
+    text-shadow: 0 3px 16px rgba(0, 0, 0, 0.45);
+}
+
+.editProfileTheme #editProfilePreview {
+    display: block;
+    width: clamp(130px, 25vw, 180px);
+    height: clamp(130px, 25vw, 180px);
+    margin: 0 auto 28px;
+    border: 5px solid #ffd45c;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #160b1e;
+    box-shadow:
+        0 0 0 7px rgba(255, 212, 92, 0.08),
+        0 16px 35px rgba(0, 0, 0, 0.42);
+}
+
+.editProfileTheme #editProfileForm {
+    width: min(620px, 100%);
+    margin: 0 auto;
+}
+
+.editProfileTheme .formGroup {
+    margin: 20px 0;
+    text-align: left;
+}
+
+.editProfileTheme .formGroup label {
+    display: block;
+    margin-bottom: 8px;
+    color: #fff1bd;
+    font-size: 0.97rem;
+    font-weight: 850;
+}
+
+.editProfileTheme .formGroup input,
+.editProfileTheme .formGroup textarea {
+    width: 100%;
+    min-height: 48px;
+    padding: 13px 15px;
+    border: 1px solid rgba(255, 212, 92, 0.28);
+    border-radius: 14px;
+    color: #291729;
+    background: #fffaf0;
+    outline: none;
+    font: inherit;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.editProfileTheme .formGroup textarea {
+    min-height: 150px;
+    resize: vertical;
+    line-height: 1.55;
+}
+
+.editProfileTheme .formGroup input:focus,
+.editProfileTheme .formGroup textarea:focus {
+    border-color: #ffd45c;
+    box-shadow: 0 0 0 4px rgba(255, 212, 92, 0.14);
+}
+
+.editProfileTheme .mutedText,
+.editProfileTheme .reviewCharacterCount {
+    margin-top: 7px;
+    color: #cfc1d1;
+    font-size: 0.86rem;
+}
+
+.editProfileTheme .reviewCharacterCount {
+    text-align: right;
+}
+
+.editProfileTheme .buttonRow {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 25px;
+}
+
+.editProfileTheme #saveProfileButton,
+.editProfileTheme #cancelEditProfile {
+    display: inline-flex;
+    min-width: 150px;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 22px;
+    border: 1px solid rgba(255, 229, 155, 0.22);
+    border-radius: 14px;
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 850;
+    cursor: pointer;
+    transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.editProfileTheme #saveProfileButton {
+    background: linear-gradient(135deg, #d93a4e, #8f1730);
+    box-shadow: 0 10px 22px rgba(143, 23, 48, 0.28);
+}
+
+.editProfileTheme #cancelEditProfile {
+    background: linear-gradient(135deg, #604174, #372341);
+}
+
+.editProfileTheme #saveProfileButton:hover:not(:disabled),
+.editProfileTheme #cancelEditProfile:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.09);
+}
+
+.editProfileTheme #editProfileMessage {
+    min-height: 24px;
+    margin-top: 16px;
+    color: #72e7a4;
+    font-weight: 700;
+}
+
+.editProfileTheme .errorMessage {
+    color: #ff9c9c !important;
+}
+
+.editProfileTheme [hidden] {
+    display: none !important;
+}
+
+@media (max-width: 600px) {
+    body.editProfileTheme {
+        padding: 10px;
+        background-attachment: scroll;
+    }
+
+    .editProfileTheme .profileShell {
+        padding-top: 12px;
+    }
+
+    .editProfileTheme .editProfileCard {
+        padding: 23px 15px;
+        border-radius: 21px;
+    }
+
+    .editProfileTheme .buttonRow {
+        flex-direction: column;
+    }
+
+    .editProfileTheme #saveProfileButton,
+    .editProfileTheme #cancelEditProfile {
+        width: 100%;
+    }
+}

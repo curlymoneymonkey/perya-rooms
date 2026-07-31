@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#16070b">
+    <title>Find Profiles | PERYA DICE</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="profile.css">
+
+    <link rel="stylesheet" href="notifications.css"></head>
+<body class="profilePage profileSearchPage">
+    <header class="siteHeader accountOnlyHeader profileTopBar">
+        <a class="profileBrand" href="dashboard.html" aria-label="Perya Rooms dashboard">
+            <img src="images/PERYA.png" alt="Perya Rooms Online" onerror="this.src='favicon.png'">
+        </a>
+
+        <div id="notificationRoot" class="notificationRoot" hidden>
+            <button
+                id="notificationButton"
+                class="notificationButton"
+                type="button"
+                aria-label="Open notifications"
+                aria-expanded="false"
+                aria-controls="notificationPanel"
+            >
+                <span class="notificationBell" aria-hidden="true">🔔</span>
+                <span id="notificationBadge" class="notificationBadge" hidden>0</span>
+            </button>
+
+            <section id="notificationPanel" class="notificationPanel" aria-label="Notifications" hidden>
+                <div class="notificationPanelHeader">
+                    <div>
+                        <h2>Notifications</h2>
+                        <p id="notificationSummary">No unread notifications</p>
+                    </div>
+                    <button id="closeNotificationsButton" class="notificationIconButton" type="button" aria-label="Close notifications">×</button>
+                </div>
+
+                <div class="notificationToolbar">
+                    <button id="markAllNotificationsReadButton" class="notificationToolbarButton" type="button">✓ Mark all read</button>
+                    <button id="clearNotificationsButton" class="notificationToolbarButton dangerNotificationAction" type="button">🗑 Clear all</button>
+                </div>
+
+                <p id="notificationMessage" class="notificationMessage"></p>
+                <div id="notificationList" class="notificationList" aria-live="polite"></div>
+            </section>
+        </div>
+
+        <div id="accountMenuRoot" class="accountMenu" hidden>
+            <button class="accountMenuButton" type="button" data-account-button aria-label="Open account menu" aria-expanded="false">
+                <img class="accountAvatar" data-account-avatar src="favicon.png" alt="Profile picture">
+            </button>
+            <div class="accountDropdown" data-account-dropdown hidden>
+                <p class="accountMenuName" data-account-username>@user</p>
+                <a data-my-profile href="#">👤 My Profile</a>
+<a href="profile_search.html">🔍 Find Profiles</a>
+                <a data-admin-link href="pdo_hub.html" hidden>🛠 Admin Panel</a>
+                <button type="button" data-account-signout>🚪 Sign Out</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="profileShell profileSearchShell">
+        <nav class="profilePageNav" aria-label="Profile search navigation">
+            <a class="profileBackButton" href="dashboard.html">← Dashboard</a>
+            <span class="profilePageLabel">Creator Directory</span>
+        </nav>
+
+        <section class="publicProfileCard profileSearchCard">
+            <div class="profileCardGlow" aria-hidden="true"></div>
+
+            <header class="profileSearchHeading">
+                <span class="profileSearchIcon" aria-hidden="true">🔍</span>
+                <p class="profileSectionEyebrow">Perya Dice community</p>
+                <h1>Find Profiles</h1>
+                <p>Search for a creator, view their community reputation, and visit their permanent dice room.</p>
+            </header>
+
+            <form id="profileSearchForm" class="profileSearchForm" role="search">
+                <label class="profileSearchLabel" for="profileSearchInput">Username</label>
+                <div class="profileSearchControls">
+                    <div class="profileSearchInputWrap">
+                        <span aria-hidden="true">@</span>
+                        <input
+                            id="profileSearchInput"
+                            type="search"
+                            minlength="1"
+                            maxlength="20"
+                            placeholder="Enter username"
+                            autocomplete="off"
+                            spellcheck="false"
+                            required
+                        >
+                    </div>
+                    <button class="profileButton profileButtonPrimary profileSearchButton" type="submit">Search Profiles</button>
+                </div>
+            </form>
+
+            <p id="profileSearchMessage" class="profileSearchMessage joinMessage" aria-live="polite">
+                Search for a creator by username.
+            </p>
+
+            <section class="profileSearchResultSection" aria-label="Profile search results">
+                <div class="profileSectionHeading profileSearchResultsHeading">
+                    <span class="profileSectionIcon">👤</span>
+                    <div>
+                        <p class="profileSectionEyebrow">Results</p>
+                        <h2>Matching Profiles</h2>
+                    </div>
+                </div>
+                <div id="profileSearchResults" class="profileSearchResults"></div>
+            </section>
+        </section>
+    </main>
+
+    <script type="module" src="profile_search.js"></script>
+    <script type="module" src="notifications.js"></script>
+    <script type="module" src="account-menu.js"></script>
+    <script type="module" src="presence.js"></script>
+</body>
+</html>

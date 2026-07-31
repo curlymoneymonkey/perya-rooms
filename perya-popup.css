@@ -1,0 +1,155 @@
+/* =========================================================
+   PERYA CUSTOM POPUPS
+========================================================= */
+
+.peryaPopupOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(5px);
+}
+
+.peryaPopupOverlay[hidden] {
+    display: none !important;
+}
+
+.peryaPopupCard {
+    width: min(430px, 100%);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    background: linear-gradient(180deg, #202638, #141824);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.58);
+    color: #ffffff;
+    animation: peryaPopupOpen 0.18s ease-out;
+}
+
+@keyframes peryaPopupOpen {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.peryaPopupHeader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 22px 10px;
+}
+
+.peryaPopupIcon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(78, 156, 255, 0.16);
+    font-size: 22px;
+}
+
+.peryaPopupTitle {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.peryaPopupMessage {
+    margin: 0;
+    padding: 8px 22px 18px;
+    color: #d9deeb;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.peryaPopupInput {
+    display: block;
+    width: calc(100% - 44px);
+    min-height: 44px;
+    margin: 0 22px 18px;
+    padding: 11px 13px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    outline: none;
+    background: rgba(0, 0, 0, 0.25);
+    color: #ffffff;
+    font: inherit;
+}
+
+.peryaPopupInput:focus {
+    border-color: #6fb2ff;
+    box-shadow: 0 0 0 3px rgba(75, 151, 255, 0.15);
+}
+
+.peryaPopupActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 22px 22px;
+}
+
+.peryaPopupButton {
+    width: auto;
+    min-width: 92px;
+    margin: 0;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 9px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.peryaPopupCancelButton {
+    background: #3d4352;
+    color: #ffffff;
+}
+
+.peryaPopupConfirmButton {
+    background: #2f80ed;
+    color: #ffffff;
+}
+
+.peryaPopupOverlay[data-type="success"] .peryaPopupIcon {
+    background: rgba(45, 205, 112, 0.17);
+}
+
+.peryaPopupOverlay[data-type="warning"] .peryaPopupIcon {
+    background: rgba(255, 190, 55, 0.17);
+}
+
+.peryaPopupOverlay[data-type="error"] .peryaPopupIcon {
+    background: rgba(255, 80, 96, 0.17);
+}
+
+.peryaPopupOverlay[data-type="error"] .peryaPopupConfirmButton {
+    background: #d94b5b;
+}
+
+.peryaPopupOverlay[data-type="warning"] .peryaPopupConfirmButton {
+    background: #d28a16;
+}
+
+body.peryaPopupOpen {
+    overflow: hidden;
+}
+
+@media (max-width: 520px) {
+    .peryaPopupActions {
+        flex-direction: column-reverse;
+    }
+
+    .peryaPopupButton {
+        width: 100%;
+    }
+}

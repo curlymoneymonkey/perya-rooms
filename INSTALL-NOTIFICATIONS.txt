@@ -1,0 +1,41 @@
+PERYA DICE NOTIFICATION CENTER - FIXED VERSION
+
+FILES
+- notifications.js  (replace your old file)
+- notifications.css (replace your old file)
+- firebase.js       (use only if this matches your current Firebase configuration)
+
+IMPORTANT HTML LINKS
+Make sure dashboard.html contains these before </head> / </body>:
+
+<link rel="stylesheet" href="notifications.css">
+<script type="module" src="notifications.js"></script>
+
+The notification HTML must contain these IDs:
+notificationRoot
+notificationButton
+notificationBadge
+notificationPanel
+closeNotificationsButton
+notificationSummary
+notificationMessage
+notificationList
+markAllNotificationsReadButton
+clearNotificationsButton
+
+WHAT WAS FIXED
+Your notification documents contain BOTH:
+- recipientUid
+- uid
+
+This version listens using both fields and merges the results. This helps when your Firestore rules allow reads using uid but the old frontend queried only recipientUid.
+
+TEST
+1. Sign in using the account that favorited the room.
+2. Open dashboard.html.
+3. Press F12 and open Console.
+4. You should see: Notification center signed in as: <UID>
+5. Confirm that UID matches recipientUid or uid in the notification document.
+6. Make the favorite room go live after clearing the cooldown.
+
+If the panel shows a Firestore permission error, your Firestore rules must allow the signed-in recipient to read/update/delete their own notification document.

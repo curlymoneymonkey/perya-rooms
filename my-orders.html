@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#0b1020">
+
+    <title>My Orders | PERYA DICE</title>
+
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="orders.css">
+</head>
+
+<body class="ordersPage myOrdersPage">
+    <main class="ordersShell myOrdersShell">
+        <header class="myOrdersTopbar">
+            <a class="myOrdersBrand" href="dashboard.html" aria-label="Return to dashboard">
+                <img src="images/PERYA.png" alt="Perya Rooms Online" onerror="this.src='favicon.png'">
+            </a>
+
+            <a class="ordersHomeLink" href="dashboard.html">
+                <span aria-hidden="true">←</span>
+                Dashboard
+            </a>
+        </header>
+
+        <section class="myOrdersHero">
+            <div class="myOrdersHeroIcon" aria-hidden="true">🧾</div>
+
+            <div class="myOrdersHeroText">
+                <p class="ordersEyebrow">Buyer Dashboard</p>
+                <h1>My Orders</h1>
+                <p>Track your purchases, delivery updates, and completed orders in one place.</p>
+            </div>
+
+            <button id="refreshOrdersButton" class="myOrdersRefreshButton" type="button">
+                <span aria-hidden="true">↻</span>
+                Refresh
+            </button>
+        </section>
+
+        <section class="myOrdersToolbar" aria-label="Order summary">
+            <div>
+                <span class="myOrdersToolbarLabel">Status</span>
+                <strong id="ordersMessage" class="ordersMessage" aria-live="polite">Loading your orders…</strong>
+            </div>
+
+            <div class="myOrdersLegend" aria-label="Order status legend">
+                <span><i class="legendDot pending"></i>Order Sent</span>
+                <span><i class="legendDot completed"></i>Completed</span>
+                <span><i class="legendDot rejected"></i>Rejected</span>
+            </div>
+        </section>
+
+        <section
+            id="ordersList"
+            class="ordersList myOrdersList"
+            aria-label="Your orders"
+            aria-live="polite"
+            aria-busy="true"
+        >
+            <div class="myOrdersSkeleton" aria-hidden="true">
+                <div class="skeletonLine skeletonTitle"></div>
+                <div class="skeletonLine"></div>
+                <div class="skeletonLine skeletonShort"></div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="my-orders.js"></script>
+    <script type="module" src="presence.js"></script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#0b1020">
+    <title>Customer Orders | PERYA ROOMS</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="orders.css">
+    <link rel="stylesheet" href="notifications.css">
+</head>
+<body class="ordersPage">
+    <header class="siteHeader accountOnlyHeader ordersTopBar">
+        <a class="ordersBrand" href="dashboard.html" aria-label="Perya Rooms dashboard">
+            <img src="images/PERYA.png" alt="Perya Rooms Online" onerror="this.src='favicon.png'">
+        </a>
+
+        <div id="notificationRoot" class="notificationRoot" hidden>
+            <button id="notificationButton" class="notificationButton" type="button" aria-label="Open notifications" aria-expanded="false" aria-controls="notificationPanel">
+                <span class="notificationBell" aria-hidden="true">🔔</span>
+                <span id="notificationBadge" class="notificationBadge" hidden>0</span>
+            </button>
+            <section id="notificationPanel" class="notificationPanel" aria-label="Notifications" hidden>
+                <div class="notificationPanelHeader">
+                    <div>
+                        <h2>Notifications</h2>
+                        <p id="notificationSummary">No unread notifications</p>
+                    </div>
+                    <button id="closeNotificationsButton" class="notificationIconButton" type="button" aria-label="Close notifications">×</button>
+                </div>
+                <div class="notificationToolbar">
+                    <button id="markAllNotificationsReadButton" class="notificationToolbarButton" type="button">✓ Mark all read</button>
+                    <button id="clearNotificationsButton" class="notificationToolbarButton dangerNotificationAction" type="button">🗑 Clear all</button>
+                </div>
+                <p id="notificationMessage" class="notificationMessage"></p>
+                <div id="notificationList" class="notificationList" aria-live="polite"></div>
+            </section>
+        </div>
+
+        <div id="accountMenuRoot" class="accountMenu" hidden>
+            <button class="accountMenuButton" type="button" data-account-button aria-label="Open account menu" aria-expanded="false">
+                <img class="accountAvatar" data-account-avatar src="favicon.png" alt="Profile picture">
+            </button>
+            <div class="accountDropdown" data-account-dropdown hidden>
+                <p class="accountMenuName" data-account-username>@user</p>
+                <a data-my-profile href="#">👤 My Profile</a>
+                <a href="profile_search.html">🔍 Find Profiles</a>
+                <a data-admin-link href="pdo_hub.html" hidden>🛠 Admin Panel</a>
+                <button type="button" data-account-signout>🚪 Sign Out</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="ordersShell">
+        <div class="profileTopRow">
+            <a id="backToProfile" class="profileCenterButton" href="dashboard.html">
+                <span class="profileCenterIcon" aria-hidden="true">👤</span>
+                <span>
+                    <strong>My Profile</strong>
+                    <small>Return to your public page</small>
+                </span>
+                <span class="profileCenterArrow" aria-hidden="true">→</span>
+            </a>
+        </div>
+
+        <section class="ordersHero" aria-labelledby="ordersTitle">
+            <div class="ordersHeroIcon" aria-hidden="true">📦</div>
+            <div class="ordersHeroText">
+                <p class="ordersEyebrow">Seller dashboard</p>
+                <h1 id="ordersTitle">Customer Orders</h1>
+                <p>Review payments, manage purchases, and keep every order organized.</p>
+            </div>
+            <button id="refreshOrdersButton" class="ordersButton refreshButton" type="button">↻ Refresh Orders</button>
+        </section>
+
+        <section id="ordersLoading" class="ordersNotice">Loading orders…</section>
+        <section id="ordersError" class="ordersNotice ordersNoticeError" hidden></section>
+
+        <section id="ordersWorkspace" hidden>
+            <section class="dashboardSection" aria-labelledby="overviewTitle">
+                <div class="sectionHeading">
+                    <div>
+                        <p class="sectionKicker">Overview</p>
+                        <h2 id="overviewTitle">Order Summary</h2>
+                    </div>
+                    <p id="ordersMessage" class="ordersMessage" aria-live="polite"></p>
+                </div>
+
+                <div class="ordersSummary" aria-label="Order counts">
+                    <article class="summaryCard summaryPending"><span class="summaryIcon">📦</span><div><strong id="pendingCount">0</strong><span>Order Sent</span></div></article>
+                    <article class="summaryCard summaryCompleted"><span class="summaryIcon">✓</span><div><strong id="approvedCount">0</strong><span>Completed</span></div></article>
+                    <article class="summaryCard summaryRejected"><span class="summaryIcon">×</span><div><strong id="rejectedCount">0</strong><span>Rejected</span></div></article>
+                    <article class="summaryCard summaryAll"><span class="summaryIcon">▦</span><div><strong id="allCount">0</strong><span>All Orders</span></div></article>
+                </div>
+            </section>
+
+            <section class="dashboardSection ordersSection" aria-labelledby="listTitle">
+                <div class="sectionHeading sectionHeadingFilters">
+                    <div>
+                        <p class="sectionKicker">Manage</p>
+                        <h2 id="listTitle">Orders</h2>
+                    </div>
+                    <div class="ordersFilters" role="group" aria-label="Filter orders">
+                        <button class="ordersFilter active" type="button" data-filter="pending_verification">Order Sent</button>
+                        <button class="ordersFilter" type="button" data-filter="approved">Completed</button>
+                        <button class="ordersFilter" type="button" data-filter="rejected">Rejected</button>
+                        <button class="ordersFilter" type="button" data-filter="all">All</button>
+                    </div>
+                </div>
+                <div id="ordersList" class="ordersList" aria-live="polite"></div>
+            </section>
+        </section>
+    </main>
+
+    <div id="proofModal" class="ordersModal" hidden>
+        <button class="ordersModalBackdrop" type="button" data-close-proof aria-label="Close payment proof"></button>
+        <section class="ordersModalCard" role="dialog" aria-modal="true" aria-labelledby="proofModalTitle">
+            <button id="closeProofButton" class="ordersModalClose" type="button" aria-label="Close">&times;</button>
+            <p class="ordersEyebrow">Buyer upload</p>
+            <h2 id="proofModalTitle">Payment Proof</h2>
+            <img id="proofModalImage" src="" alt="Buyer payment proof">
+            <a id="proofOpenOriginal" class="ordersButton primaryButton" href="#" target="_blank" rel="noopener">Open Original Image</a>
+        </section>
+    </div>
+
+    <script type="module" src="orders.js"></script>
+    <script type="module" src="notifications.js"></script>
+    <script type="module" src="account-menu.js"></script>
+    <script type="module" src="presence.js"></script>
+</body>
+</html>

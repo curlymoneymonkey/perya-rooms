@@ -1,0 +1,42 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function registered() { return signedIn() && request.auth.token.firebase.sign_in_provider != "anonymous"; }
+    function imageUnder(maxBytes) { return request.resource.size < maxBytes && request.resource.contentType.matches('image/.*'); }
+
+    match /shop-products/{sellerUid}/{file=**} {
+      allow read: if true;
+      allow write: if registered() && request.auth.uid == sellerUid && imageUnder(2 * 1024 * 1024);
+    }
+    match /payment-qr/{sellerUid}/{file=**} {
+      allow read: if true;
+      allow write: if registered() && request.auth.uid == sellerUid && imageUnder(3 * 1024 * 1024);
+    }
+    match /payment-proofs/{sellerUid}/{buyerUid}/{file=**} {
+      allow create: if signedIn() && request.auth.uid == buyerUid && imageUnder(5 * 1024 * 1024);
+      allow read: if signedIn() && (request.auth.uid == sellerUid || request.auth.uid == buyerUid);
+      allow delete: if signedIn() && request.auth.uid == buyerUid;
+      allow update: if false;
+    }
+    match /delivery-proofs/{sellerUid}/{buyerUid}/{file=**} {
+      allow create: if registered() && request.auth.uid == sellerUid && imageUnder(5 * 1024 * 1024);
+      allow read: if signedIn() && (request.auth.uid == sellerUid || request.auth.uid == buyerUid);
+      allow update, delete: if registered() && request.auth.uid == sellerUid;
+    }
+    function isAdmin() {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data.enabled == true;
+    }
+
+    match /dice-skins/{skinId}/{fileName} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType == 'image/png';
+      allow delete: if isAdmin() && skinId != 'classic';
+    }
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}

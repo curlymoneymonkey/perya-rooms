@@ -1,0 +1,19 @@
+PERYA DICE NOTIFICATION CENTER
+
+1. Replace your current dashboard.html with the dashboard.html in this folder.
+2. Keep your current dashboard.js and style.css unchanged.
+3. Add notifications.js and notifications.css beside dashboard.html.
+4. Deploy all four files to Netlify/GitHub.
+
+The new dashboard.html loads:
+- your existing style.css
+- your existing favorites.css
+- notifications.css
+- your existing dashboard.js
+- notifications.js
+- your existing account-menu.js
+
+Firestore requirement:
+The signed-in user must be allowed to read notifications where recipientUid equals their UID, update the read field, and delete their own notification documents.
+
+No orderBy is used, so this frontend query does not need a composite index. Notifications are sorted newest-first in the browser.

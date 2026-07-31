@@ -1,0 +1,12 @@
+HOST REMOVAL STATUS UPDATE
+
+What changed:
+- Hosts see "Removal Request Pending" while waiting.
+- If rejected, the vouch stays visible and shows "Removal Request Rejected".
+- The administrator note is shown to the host when provided.
+- If approved, review_queue.js deletes the vouch, so it disappears.
+- Hosts cannot submit another request for the same vouch after rejection.
+
+Replace:
+- room.js
+- style.css

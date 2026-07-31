@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --pdo-bg: #eef3fb;
+  --pdo-surface: #ffffff;
+  --pdo-surface-soft: #f7f9fd;
+  --pdo-text: #162033;
+  --pdo-muted: #667085;
+  --pdo-border: #dfe6f1;
+  --pdo-primary: #315efb;
+  --pdo-primary-dark: #2348d8;
+  --pdo-danger: #d92d20;
+  --pdo-success: #138a5b;
+  --pdo-warning: #b54708;
+  --pdo-sidebar: #111a2e;
+  --pdo-sidebar-soft: #1b2741;
+  --pdo-shadow: 0 16px 44px rgba(23, 40, 75, .10);
+  --pdo-radius: 18px;
+}
+
+* { box-sizing: border-box; }
+html { min-height: 100%; background: var(--pdo-bg); }
+body.pdo-page {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--pdo-text);
+  background:
+    radial-gradient(circle at 85% 5%, rgba(49,94,251,.10), transparent 30rem),
+    var(--pdo-bg);
+  font-family: Inter, Arial, sans-serif;
+}
+button, input, select, textarea { font: inherit; }
+a { color: inherit; }
+[hidden] { display: none !important; }
+
+.pdo-app { min-height: 100vh; display: grid; grid-template-columns: 270px minmax(0,1fr); }
+.pdo-sidebar {
+  position: sticky; top: 0; height: 100vh; padding: 24px 18px;
+  color: #fff; background: linear-gradient(180deg,var(--pdo-sidebar),#0c1324);
+  display: flex; flex-direction: column; z-index: 20;
+}
+.pdo-brand { display:flex; align-items:center; gap:12px; padding: 4px 8px 24px; text-decoration:none; }
+.pdo-brand-logo { width:44px; height:44px; border-radius:14px; object-fit:cover; background:#fff; padding:4px; }
+.pdo-brand-copy strong { display:block; font-size:16px; letter-spacing:.02em; }
+.pdo-brand-copy span { display:block; margin-top:3px; color:#9fb0d2; font-size:12px; }
+.pdo-nav { display:grid; gap:7px; }
+.pdo-nav-section { margin:18px 10px 7px; color:#7587aa; font-size:11px; font-weight:800; letter-spacing:.12em; }
+.pdo-nav-link { display:flex; align-items:center; gap:12px; min-height:46px; padding:11px 13px; border-radius:12px; color:#cbd6ec; text-decoration:none; font-size:14px; font-weight:600; transition:.18s ease; }
+.pdo-nav-link:hover { color:#fff; background:rgba(255,255,255,.08); transform:translateX(2px); }
+.pdo-nav-link.active { color:#fff; background:linear-gradient(135deg,var(--pdo-primary),#6c8bff); box-shadow:0 10px 28px rgba(49,94,251,.28); }
+.pdo-nav-icon { width:22px; text-align:center; font-size:17px; }
+.pdo-sidebar-footer { margin-top:auto; padding:15px 12px 2px; border-top:1px solid rgba(255,255,255,.09); }
+.pdo-role-chip { display:inline-flex; align-items:center; gap:7px; padding:7px 10px; border-radius:999px; background:rgba(255,255,255,.08); color:#dce6fa; font-size:12px; font-weight:700; }
+.pdo-role-dot { width:7px; height:7px; border-radius:50%; background:#4ade80; box-shadow:0 0 0 4px rgba(74,222,128,.12); }
+
+.pdo-main { min-width:0; padding:26px 30px 42px; }
+.pdo-topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px; }
+.pdo-mobile-menu { display:none; border:1px solid var(--pdo-border); background:#fff; width:44px; height:44px; border-radius:12px; cursor:pointer; }
+.pdo-title-wrap { min-width:0; }
+.pdo-eyebrow { margin:0 0 6px; color:var(--pdo-primary); font-size:12px; font-weight:800; letter-spacing:.12em; }
+.pdo-title { margin:0; font-size:clamp(25px,3vw,36px); letter-spacing:-.035em; }
+.pdo-subtitle { margin:7px 0 0; color:var(--pdo-muted); font-size:14px; line-height:1.55; }
+.pdo-top-actions { display:flex; align-items:center; gap:10px; }
+.pdo-user-pill { display:flex; align-items:center; gap:10px; padding:8px 12px; border:1px solid var(--pdo-border); border-radius:14px; background:#fff; box-shadow:0 5px 18px rgba(23,40,75,.06); }
+.pdo-avatar { display:grid; place-items:center; width:34px; height:34px; border-radius:11px; color:#fff; background:linear-gradient(135deg,var(--pdo-primary),#8d65ff); font-weight:800; }
+.pdo-user-pill strong { display:block; font-size:13px; }
+.pdo-user-pill span { display:block; color:var(--pdo-muted); font-size:11px; margin-top:2px; }
+
+.pdo-card { background:var(--pdo-surface); border:1px solid var(--pdo-border); border-radius:var(--pdo-radius); box-shadow:var(--pdo-shadow); }
+.pdo-hero { padding:24px; display:flex; justify-content:space-between; align-items:center; gap:18px; overflow:hidden; position:relative; }
+.pdo-hero::after { content:""; position:absolute; width:220px; height:220px; border-radius:50%; right:-75px; top:-105px; background:rgba(49,94,251,.08); }
+.pdo-hero-copy { position:relative; z-index:1; }
+.pdo-hero h2 { margin:0 0 8px; font-size:21px; }
+.pdo-hero p { margin:0; color:var(--pdo-muted); line-height:1.55; }
+
+.pdo-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:18px; margin-top:18px; }
+.pdo-span-3 { grid-column:span 3; } .pdo-span-4 { grid-column:span 4; } .pdo-span-6 { grid-column:span 6; } .pdo-span-8 { grid-column:span 8; } .pdo-span-12 { grid-column:1/-1; }
+.pdo-action-card { display:flex; flex-direction:column; min-height:190px; padding:21px; text-decoration:none; transition:.2s ease; position:relative; overflow:hidden; }
+.pdo-action-card:hover { transform:translateY(-4px); border-color:#bdcafd; box-shadow:0 20px 48px rgba(49,94,251,.14); }
+.pdo-action-icon { display:grid; place-items:center; width:48px; height:48px; border-radius:15px; background:#edf2ff; font-size:23px; }
+.pdo-action-card h3 { margin:18px 0 8px; font-size:17px; }
+.pdo-action-card p { margin:0 0 20px; color:var(--pdo-muted); font-size:13px; line-height:1.55; }
+.pdo-action-arrow { margin-top:auto; color:var(--pdo-primary); font-weight:800; }
+.pdo-badge { display:inline-flex; align-items:center; padding:5px 9px; border-radius:999px; background:#eef4ff; color:var(--pdo-primary); font-size:11px; font-weight:800; }
+.pdo-badge.soon { background:#fff4e5; color:var(--pdo-warning); }
+
+.pdo-panel { padding:22px; }
+.pdo-panel-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:18px; }
+.pdo-panel-head h2 { margin:0; font-size:18px; }
+.pdo-panel-head p { margin:6px 0 0; color:var(--pdo-muted); font-size:13px; }
+.pdo-empty { padding:38px 20px; border:1px dashed #cbd5e5; border-radius:15px; background:var(--pdo-surface-soft); text-align:center; color:var(--pdo-muted); }
+.pdo-empty-icon { display:block; font-size:30px; margin-bottom:10px; }
+
+.pdo-button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:42px; padding:10px 15px; border:0; border-radius:11px; color:#fff; background:var(--pdo-primary); text-decoration:none; font-size:13px; font-weight:700; cursor:pointer; transition:.18s ease; }
+.pdo-button:hover { background:var(--pdo-primary-dark); transform:translateY(-1px); }
+.pdo-button.secondary { color:var(--pdo-text); background:#fff; border:1px solid var(--pdo-border); }
+.pdo-button.secondary:hover { background:#f5f7fb; }
+.pdo-button.danger { background:var(--pdo-danger); }
+.pdo-search { display:flex; gap:10px; }
+.pdo-input { width:100%; min-height:44px; padding:10px 13px; border:1px solid var(--pdo-border); border-radius:11px; color:var(--pdo-text); background:#fff; outline:none; }
+.pdo-input:focus { border-color:#87a0ff; box-shadow:0 0 0 4px rgba(49,94,251,.10); }
+
+.pdo-table-wrap { overflow:auto; border:1px solid var(--pdo-border); border-radius:14px; }
+.pdo-table { width:100%; border-collapse:collapse; min-width:650px; }
+.pdo-table th,.pdo-table td { padding:14px 15px; border-bottom:1px solid var(--pdo-border); text-align:left; font-size:13px; }
+.pdo-table th { background:#f7f9fc; color:#4d5a70; font-size:11px; text-transform:uppercase; letter-spacing:.06em; }
+.pdo-table tr:last-child td { border-bottom:0; }
+
+.pdo-backdrop { display:none; position:fixed; inset:0; background:rgba(4,10,22,.55); z-index:15; }
+@media (max-width: 1050px) { .pdo-span-3{grid-column:span 6}.pdo-span-4{grid-column:span 6}.pdo-span-8{grid-column:span 12} }
+@media (max-width: 760px) {
+  .pdo-app { grid-template-columns:1fr; }
+  .pdo-sidebar { position:fixed; left:-290px; width:270px; transition:left .22s ease; }
+  body.pdo-menu-open .pdo-sidebar { left:0; }
+  body.pdo-menu-open .pdo-backdrop { display:block; }
+  .pdo-main { padding:18px 16px 34px; }
+  .pdo-mobile-menu { display:inline-grid; place-items:center; }
+  .pdo-topbar { align-items:flex-start; }
+  .pdo-top-actions .pdo-user-pill { display:none; }
+  .pdo-span-3,.pdo-span-4,.pdo-span-6,.pdo-span-8 { grid-column:1/-1; }
+  .pdo-hero { align-items:flex-start; flex-direction:column; }
+}

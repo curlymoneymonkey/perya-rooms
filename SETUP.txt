@@ -1,0 +1,32 @@
+PERYA DICE — LIVE PRESENCE + LIVE MAP SETUP
+
+FILES
+1. Upload pdo_hub.html, pdo_hub.css, pdo_hub.js, presence.js, and firebase.js.
+2. Keep your existing staff.css and favicon.png.
+3. Add this before </body> on every page where users should appear online:
+   <script type="module" src="presence.js"></script>
+
+IMPORTANT
+- Presence only starts on pages that load presence.js.
+- The included pdo_hub.html already loads it.
+- The map uses optional users/{uid} fields: country, region, and city.
+- It never requests browser GPS and never displays exact coordinates or IP addresses.
+- Multiple tabs are tracked separately, while the Hub shows one row per account.
+
+REALTIME DATABASE RULES
+- database.rules.json is the secure production version. It requires Firebase Auth custom claims:
+    admin: true
+    moderator: true
+- Your current staff roles are stored in Firestore. Realtime Database rules cannot read Firestore documents.
+- Until you add custom claims using a trusted server or Cloud Function, the secure rule will deny Hub reads.
+- database.rules.temporary.json allows any authenticated account to read presence. Use it only temporarily because client-side page hiding is not database security.
+
+LOCATION
+Add optional fields to users/{uid}:
+  country: "Philippines"
+  region: "Central Visayas"
+  city: "Cebu City"
+Do not store exact addresses or GPS coordinates for this feature.
+
+RECOMMENDED NEXT STEP
+Use a Firebase Admin SDK server or Cloud Function to copy admin/moderator status into Auth custom claims, then deploy database.rules.json.

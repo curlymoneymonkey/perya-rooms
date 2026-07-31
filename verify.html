@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Verify Rolls - PERYA DICE</title>
+
+    <link rel="icon" type="image/png" href="favicon.png">
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <img 
+        class="logo" 
+        src="images/PERYA.png" 
+        alt="PERYA DICE"
+    >
+
+</header>
+
+
+
+<main>
+
+
+<section class="historyBox">
+
+
+    <h2>🔍 Roll Verification</h2>
+
+
+    <p>
+        Enter your Game ID to verify your dice roll.
+    </p>
+
+
+
+    <input 
+    id="gameIdInput"
+    type="text"
+    placeholder="Enter Game ID"
+>
+
+
+
+    <button id="verifyButton">
+
+        🔍 Verify Game ID
+
+    </button>
+
+
+
+
+    <h3>
+        Result:
+    </h3>
+
+
+
+    <table class="verifyTable">
+
+
+        <thead>
+
+            <tr>
+            </tr>
+
+        </thead>
+
+
+
+<tbody id="results"></tbody>
+
+
+    </table>
+
+
+
+
+    <br>
+
+
+
+
+    <button onclick="window.location.href='index.html'">
+
+        🎲 Back to Dice
+
+    </button>
+
+
+
+</section>
+
+
+</main>
+
+
+
+<script type="module" src="verify.js"></script>
+
+
+</body>
+
+</html>

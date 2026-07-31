@@ -1,0 +1,919 @@
+/* =============================================
+   PERYA DICE — PUBLIC PROFILE
+   Gold, red and deep-purple carnival styling.
+============================================= */
+
+.profilePage {
+    --profile-gold: #ffd45a;
+    --profile-gold-dark: #d99a19;
+    --profile-red: #d52f39;
+    --profile-red-dark: #8d1420;
+    --profile-purple: #35134f;
+    --profile-ink: #16070b;
+    --profile-panel: rgba(29, 10, 22, 0.9);
+    --profile-panel-soft: rgba(255, 255, 255, 0.065);
+    --profile-border: rgba(255, 213, 90, 0.24);
+    --profile-muted: #d7c9cf;
+
+    min-height: 100vh;
+    padding: 0 16px 64px;
+    color: #fff8eb;
+    text-align: left;
+    background:
+        radial-gradient(circle at 50% -15%, rgba(213, 47, 57, 0.3), transparent 42%),
+        linear-gradient(rgba(14, 3, 9, 0.8), rgba(14, 3, 9, 0.94)),
+        url("images/peryahan.png") center / cover fixed;
+}
+
+.profilePage::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+        linear-gradient(90deg, rgba(255, 212, 90, 0.025) 1px, transparent 1px),
+        linear-gradient(rgba(255, 212, 90, 0.025) 1px, transparent 1px);
+    background-size: 34px 34px;
+}
+
+.profileTopBar {
+    width: min(1040px, 100%);
+    min-height: 92px;
+    margin: 0 auto;
+    padding: 12px 0;
+}
+
+.profileBrand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: min(270px, 58vw);
+    text-decoration: none;
+}
+
+.profileBrand img {
+    display: block;
+    width: 100%;
+    max-height: 74px;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45));
+}
+
+.profilePage .accountMenu {
+    top: 20px;
+    right: 0;
+}
+
+.profilePage .accountMenuButton {
+    border-color: var(--profile-gold);
+    background: #260b14;
+    box-shadow: 0 0 0 4px rgba(255, 212, 90, 0.12), 0 10px 25px rgba(0, 0, 0, 0.42);
+}
+
+.profilePage .accountDropdown {
+    border: 1px solid var(--profile-border);
+    background: rgba(24, 7, 15, 0.98);
+}
+
+.profileShell {
+    width: min(1500px, 100%);
+    margin: 12px auto 0;
+}
+
+.profilePageNav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.profilePageLabel {
+    color: var(--profile-gold);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.profileBackButton,
+.profileButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 11px 17px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 800;
+    line-height: 1.1;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.profileBackButton,
+.profileButtonSecondary {
+    border-color: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.profileBackButton:hover,
+.profileButtonSecondary:hover:not(:disabled) {
+    border-color: rgba(255, 212, 90, 0.52);
+    background: rgba(255, 212, 90, 0.12);
+    transform: translateY(-1px);
+}
+
+.profileButtonPrimary {
+    border-color: #ffe28a;
+    background: linear-gradient(180deg, #ef4b4f, var(--profile-red-dark));
+    box-shadow: 0 8px 20px rgba(141, 20, 32, 0.3), inset 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.profileButtonPrimary:hover:not(:disabled) {
+    background: linear-gradient(180deg, #ff5b60, #a51927);
+    box-shadow: 0 10px 25px rgba(141, 20, 32, 0.42), 0 0 0 3px rgba(255, 212, 90, 0.1);
+    transform: translateY(-1px);
+}
+
+.profileNotice {
+    padding: 22px;
+    border: 1px solid var(--profile-border);
+    border-radius: 18px;
+    background: rgba(29, 10, 22, 0.92);
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.32);
+    color: var(--profile-muted);
+    text-align: center;
+}
+
+.profileNoticeError {
+    border-color: rgba(255, 94, 99, 0.45);
+    color: #ffb8bb;
+}
+
+.publicProfileCard {
+    position: relative;
+    overflow: hidden;
+    padding: 34px;
+    border: 1px solid var(--profile-border);
+    border-radius: 28px;
+    color: #fff8eb;
+    background:
+        linear-gradient(150deg, rgba(64, 20, 45, 0.95), rgba(22, 7, 15, 0.97) 55%, rgba(31, 9, 18, 0.98));
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.48), inset 0 1px rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(14px);
+}
+
+.profileCardGlow {
+    position: absolute;
+    top: -180px;
+    left: 50%;
+    width: 520px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 212, 90, 0.22), transparent 68%);
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+.profileIdentity {
+    position: relative;
+    z-index: 1;
+    max-width: 680px;
+    margin: 0 auto 30px;
+    text-align: center;
+}
+
+.profilePhotoFrame {
+    position: relative;
+    width: 142px;
+    height: 142px;
+    margin: 0 auto 12px;
+    padding: 5px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #fff1a8, var(--profile-gold-dark), #f65b55);
+    box-shadow: 0 0 0 7px rgba(255, 212, 90, 0.09), 0 18px 40px rgba(0, 0, 0, 0.42);
+}
+
+.profilePhoto {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 4px solid #250a15;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #fff;
+}
+
+.profileDiceMark {
+    position: absolute;
+    right: -3px;
+    bottom: 6px;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 3px solid #2a0b16;
+    border-radius: 50%;
+    background: var(--profile-gold);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35);
+    font-size: 18px;
+}
+
+.profilePhotoNote,
+.profileMemberSince {
+    color: #bfaeb5;
+    font-size: 12px;
+}
+
+.profileIdentity h1 {
+    margin: 13px 0 8px;
+    color: #fff;
+    font-size: clamp(30px, 6vw, 46px);
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+    text-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.profileTrust {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    margin: 0 auto;
+    padding: 7px 13px;
+    border: 1px solid rgba(255, 212, 90, 0.25);
+    border-radius: 999px;
+    color: #ffe791;
+    background: rgba(255, 212, 90, 0.09);
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.profileBio {
+    max-width: 590px;
+    margin: 19px auto 10px;
+    color: #f0e6e9;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.profileIdentity .profileButton {
+    margin-top: 17px;
+}
+
+.profileContentGrid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 18px;
+}
+
+.profilePanel,
+.staffManagement {
+    min-width: 0;
+    padding: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    background: var(--profile-panel-soft);
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.045);
+}
+
+.profileSectionHeading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    text-align: left;
+}
+
+.profileSectionIcon {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(255, 212, 90, 0.26);
+    border-radius: 13px;
+    background: rgba(255, 212, 90, 0.1);
+    font-size: 20px;
+}
+
+.profileSectionEyebrow {
+    margin: 0 0 3px;
+    color: var(--profile-gold);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.profileSectionHeading h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 20px;
+}
+
+.profileRoomSection {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.profileRoomBody {
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.profileRoomBody h3 {
+    margin: 0 0 9px;
+    color: #fff;
+    font-size: 21px;
+    overflow-wrap: anywhere;
+}
+
+.profileRoomStatus {
+    margin: 5px 0;
+    color: #ffcc62;
+    font-weight: 900;
+}
+
+.profileRoomMeta {
+    margin: 7px 0 0;
+    color: var(--profile-muted);
+    line-height: 1.45;
+}
+
+.profileJoinRoom {
+    width: 100%;
+    margin-top: 15px;
+}
+
+.profileReviewsSection {
+    text-align: left;
+}
+
+.profileReviewList {
+    display: grid;
+    gap: 11px;
+    margin: 0 0 15px;
+}
+
+.profileReviewList:empty::before {
+    content: "No community reviews yet.";
+    display: block;
+    padding: 20px 14px;
+    border: 1px dashed rgba(255, 255, 255, 0.13);
+    border-radius: 13px;
+    color: #bfaeb5;
+    text-align: center;
+}
+
+.profileReviewCard {
+    position: relative;
+    padding: 15px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.19);
+}
+
+.profileReviewCard strong {
+    display: block;
+    color: #ffe58b;
+    font-size: 13px;
+}
+
+.profileReviewCard p {
+    margin: 9px 0;
+    color: #f1e7ea;
+    line-height: 1.52;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.profileReviewCard small {
+    color: #bfaeb5;
+}
+
+.profileUsernameLink {
+    color: #ffd974;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.profileUsernameLink:hover {
+    color: #fff1b9;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.staffManagement {
+    margin-top: 18px;
+    border-color: rgba(192, 132, 252, 0.26);
+    background: linear-gradient(135deg, rgba(76, 29, 149, 0.18), rgba(0, 0, 0, 0.12));
+    text-align: left;
+}
+
+.staffRoleLine {
+    margin: 0 0 14px;
+    color: var(--profile-muted);
+}
+
+.staffRoleLine strong {
+    color: #e6c6ff;
+}
+
+.profileReviewsDialog {
+    width: min(620px, 100%);
+    border: 1px solid var(--profile-border);
+    background: linear-gradient(155deg, rgba(57, 17, 40, 0.99), rgba(20, 6, 14, 0.99));
+    color: #fff8eb;
+}
+
+.profileReviewsDialog > h2 {
+    margin: 0 0 20px;
+    text-align: left;
+}
+
+.profileReviewsDialog .modalCloseButton {
+    color: #fff;
+}
+
+.profilePage .joinMessage {
+    color: #9cf1b9;
+}
+
+.profilePage .errorMessage {
+    color: #ff9fa3;
+}
+
+@media (max-width: 760px) {
+    .profilePage {
+        padding-inline: 10px;
+    }
+
+    .profileTopBar {
+        min-height: 78px;
+    }
+
+    .profileBrand {
+        width: min(220px, 56vw);
+    }
+
+    .profileContentGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .publicProfileCard {
+        padding: 26px 18px;
+        border-radius: 23px;
+    }
+}
+
+@media (max-width: 480px) {
+    .profilePageNav {
+        align-items: stretch;
+        flex-direction: column-reverse;
+    }
+
+    .profilePageLabel {
+        text-align: center;
+    }
+
+    .profileBackButton {
+        width: 100%;
+    }
+
+    .profilePage .accountMenu {
+        top: 14px;
+        right: 2px;
+    }
+
+    .profilePage .accountMenuButton {
+        width: 44px;
+        height: 44px;
+    }
+
+    .profilePhotoFrame {
+        width: 122px;
+        height: 122px;
+    }
+
+    .profilePanel,
+    .staffManagement {
+        padding: 17px;
+    }
+
+    .profileButton {
+        width: 100%;
+    }
+}
+
+/* =============================================
+   PERYA DICE — PROFILE SEARCH
+============================================= */
+.profileSearchShell {
+    width: min(880px, 100%);
+}
+
+.profileSearchCard {
+    min-height: 520px;
+}
+
+.profileSearchHeading {
+    position: relative;
+    z-index: 1;
+    max-width: 660px;
+    margin: 0 auto 28px;
+    text-align: center;
+}
+
+.profileSearchIcon {
+    display: grid;
+    place-items: center;
+    width: 74px;
+    height: 74px;
+    margin: 0 auto 15px;
+    border: 1px solid rgba(255, 212, 90, 0.34);
+    border-radius: 22px;
+    background: linear-gradient(145deg, rgba(255, 212, 90, 0.18), rgba(213, 47, 57, 0.16));
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.32), inset 0 1px rgba(255, 255, 255, 0.12);
+    font-size: 31px;
+}
+
+.profileSearchHeading h1 {
+    margin: 5px 0 10px;
+    color: #fff;
+    font-size: clamp(32px, 6vw, 48px);
+    line-height: 1.05;
+}
+
+.profileSearchHeading > p:last-child {
+    color: var(--profile-muted);
+    line-height: 1.65;
+}
+
+.profileSearchForm {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 19px;
+    border: 1px solid rgba(255, 212, 90, 0.16);
+    border-radius: 18px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.profileSearchLabel {
+    display: block;
+    margin-bottom: 8px;
+    color: #ffe58b;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.profileSearchControls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+}
+
+.profileSearchInputWrap {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    min-height: 50px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.08);
+}
+
+.profileSearchInputWrap:focus-within {
+    border-color: var(--profile-gold);
+    box-shadow: 0 0 0 4px rgba(255, 212, 90, 0.13);
+}
+
+.profileSearchInputWrap > span {
+    flex: 0 0 auto;
+    margin-right: 4px;
+    color: #8d1420;
+    font-weight: 900;
+}
+
+.profileSearchInputWrap input {
+    width: 100%;
+    min-width: 0;
+    padding: 13px 4px;
+    border: 0;
+    outline: 0;
+    color: #1f1015;
+    background: transparent;
+    font: inherit;
+    font-weight: 700;
+}
+
+.profileSearchInputWrap input::placeholder {
+    color: #8d7c82;
+    font-weight: 500;
+}
+
+.profileSearchButton {
+    min-width: 158px;
+}
+
+.profileSearchMessage {
+    min-height: 24px;
+    margin: 14px 0 18px;
+    text-align: center;
+}
+
+.profileSearchResultSection {
+    position: relative;
+    z-index: 1;
+    margin-top: 5px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 19px;
+    background: rgba(255, 255, 255, 0.045);
+}
+
+.profileSearchResultsHeading {
+    margin-bottom: 14px;
+}
+
+.profileSearchResults {
+    display: grid;
+    gap: 12px;
+}
+
+.profileSearchResults:empty::before {
+    content: "No profiles to show yet.";
+    display: block;
+    padding: 26px 16px;
+    border: 1px dashed rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    color: #bfaeb5;
+    text-align: center;
+}
+
+.profileSearchResults > * {
+    min-width: 0;
+}
+
+.profileSearchResults a,
+.profileSearchResults article,
+.profileSearchResults .profileSearchResult {
+    border-color: rgba(255, 212, 90, 0.16);
+    background: rgba(0, 0, 0, 0.18);
+}
+
+@media (max-width: 620px) {
+    .profileSearchControls {
+        grid-template-columns: 1fr;
+    }
+
+    .profileSearchButton {
+        width: 100%;
+    }
+
+    .profileSearchForm,
+    .profileSearchResultSection {
+        padding: 15px;
+    }
+}
+
+
+/* Room favorites */
+.profileRoomFavorites {
+    display: inline-flex;
+    width: fit-content;
+    margin: 10px 0 4px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 212, 90, 0.28);
+    border-radius: 999px;
+    color: #ffe791;
+    background: rgba(255, 212, 90, 0.09);
+    font-size: 14px;
+    font-weight: 900;
+}
+
+
+/* =============================================
+   INTEGRATED PROFILE SHOP — 8-COLUMN DESKTOP GRID
+============================================= */
+.profileShopSection {
+    margin-top: 18px;
+    padding: 24px;
+    border: 1px solid rgba(255, 212, 90, 0.2);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.055);
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.05);
+}
+.profileShopHeader { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:18px; }
+.profileShopHeader .profileSectionHeading { margin-bottom:0; }
+.shopMessage { margin:10px 0 0; color:var(--profile-muted); text-align:right; }
+.sellerControls { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; }
+.profileProductGrid {
+    display:grid;
+    grid-template-columns:repeat(8, minmax(0, 1fr));
+    gap:12px;
+}
+.profileProductGrid > p { grid-column:1 / -1; padding:24px; text-align:center; color:var(--profile-muted); }
+.productCard { min-width:0; overflow:hidden; padding:10px; border:1px solid rgba(255,255,255,.11); border-radius:14px; background:rgba(0,0,0,.24); }
+.productImageContainer { width:100%; aspect-ratio:1/1; margin-bottom:9px; overflow:hidden; border-radius:10px; background:rgba(0,0,0,.35); }
+.productImage { display:block; width:100%; height:100%; object-fit:cover; }
+.productCard h3 { margin:7px 0; font-size:14px; line-height:1.2; text-align:center; overflow-wrap:anywhere; }
+.productCard p { margin:4px 0; font-size:11px; text-align:center; overflow-wrap:anywhere; }
+.productPrice { color:#ffe58b; font-size:15px !important; font-weight:900; }
+.productDescription { display:-webkit-box; min-height:30px; overflow:hidden; color:var(--profile-muted); line-height:1.35; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+.productActions { display:flex; gap:5px; margin-top:9px; }
+.productActions button { flex:1; min-width:0; padding:8px 4px; border:0; border-radius:8px; color:#fff; font-size:10px; font-weight:800; cursor:pointer; }
+.editProductButton { background:#1976d2; } .deleteProductButton { background:#9e1b1b; } .buyNowButton { width:100%; background:#16843d; } .soldOutButton { width:100%; background:#555; }
+.paymentInfoButton { color:#fff; }
+.modalOverlay { position:fixed; z-index:2000; inset:0; display:grid; place-items:center; padding:18px; overflow-y:auto; background:rgba(0,0,0,.82); }
+.modalCard { width:min(100%,560px); max-height:calc(100vh - 36px); overflow-y:auto; padding:22px; border:1px solid var(--profile-border); border-radius:18px; color:#fff8eb; background:linear-gradient(155deg,rgba(57,17,40,.99),rgba(20,6,14,.99)); box-shadow:0 18px 50px rgba(0,0,0,.5); }
+.modalCard h2,.modalCard h3 { text-align:center; }
+.fieldLabel { display:block; margin-bottom:13px; font-weight:800; }
+.fieldLabel input,.fieldLabel textarea,.fieldLabel select { width:100%; margin-top:7px; padding:11px; border:1px solid #777; border-radius:8px; color:#111; background:#fff; font:inherit; }
+.fieldLabel textarea { min-height:110px; resize:vertical; }
+.fieldLabel small { display:block; margin-top:5px; color:var(--profile-muted); font-weight:400; }
+.imagePreviewBox,.qrPreviewBox,.proofPreviewBox,.buyerQrBox { display:grid; place-items:center; min-height:100px; margin:12px 0; overflow:hidden; border:1px dashed rgba(255,255,255,.2); border-radius:12px; background:rgba(0,0,0,.22); }
+.imagePreviewBox img,.qrPreviewBox img,.proofPreviewBox img,.buyerQrBox img { display:none; max-width:100%; max-height:300px; object-fit:contain; }
+.modalActions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+.modalActions button,.quantityControls button { border:0; border-radius:9px; padding:11px 16px; color:#fff; background:#1976d2; font-weight:800; cursor:pointer; }
+.secondaryButton { background:#555 !important; }
+.buyProductImage { display:none; width:100px; height:100px; margin:0 auto 15px; border-radius:12px; object-fit:cover; }
+.checkoutSummary { margin:0; } .checkoutSummary div,.totalRow { display:flex; justify-content:space-between; gap:15px; padding:8px 0; } .checkoutSummary dd { margin:0; text-align:right; }
+.quantitySection { display:flex; align-items:center; justify-content:space-between; margin:15px 0; } .quantityControls { display:flex; align-items:center; gap:12px; }
+.paymentWarning,.noProofWarning { color:#ffd45a; text-align:center; } .paymentDetails { text-align:center; }
+@media (max-width:1300px){ .profileProductGrid{grid-template-columns:repeat(6,minmax(0,1fr));} }
+@media (max-width:1050px){ .profileProductGrid{grid-template-columns:repeat(4,minmax(0,1fr));} }
+@media (max-width:760px){ .profileProductGrid{grid-template-columns:repeat(3,minmax(0,1fr));} .profileShopHeader{display:block}.shopMessage{text-align:left}.profileShopSection{padding:17px;} }
+@media (max-width:520px){ .profileProductGrid{grid-template-columns:repeat(2,minmax(0,1fr));} .sellerControls .profileButton{width:100%;} }
+@media (max-width:340px){ .profileProductGrid{grid-template-columns:1fr;} }
+
+/* Seller shop action row: Payment, Orders, Add Product */
+.sellerControls {
+    grid-template-columns: repeat(3, minmax(0, auto));
+}
+@media (max-width: 760px) {
+    .sellerControls { grid-template-columns: 1fr; }
+    .sellerControls .profileButton { width: 100%; }
+}
+
+/* Multi-item shopping cart */
+.buyerCartControls { display:flex; justify-content:flex-end; margin:0 0 16px; }
+.cartCard { width:min(760px, 100%); }
+.cartItems { display:grid; gap:10px; margin:14px 0; }
+.cartEmpty { padding:28px; text-align:center; color:var(--profile-muted); }
+.cartItem { display:grid; grid-template-columns:64px minmax(120px,1fr) auto auto auto; align-items:center; gap:12px; padding:10px; border:1px solid rgba(255,255,255,.1); border-radius:12px; background:rgba(0,0,0,.2); }
+.cartItem > img { width:64px; height:64px; border-radius:9px; object-fit:cover; background:#1b1117; }
+.cartItemInfo { display:grid; gap:4px; min-width:0; }
+.cartItemInfo strong { overflow-wrap:anywhere; }
+.cartItemInfo span { color:var(--profile-muted); font-size:12px; }
+.cartQuantityControls { display:flex; align-items:center; gap:8px; }
+.cartQuantityControls button { width:32px; height:32px; padding:0; border:0; border-radius:8px; color:#fff; background:#6b2340; font-weight:900; cursor:pointer; }
+.cartQuantityControls button:disabled { opacity:.45; cursor:not-allowed; }
+.cartItemSubtotal { color:#ffe58b; white-space:nowrap; }
+.cartRemoveButton { padding:8px 10px; border:0; border-radius:8px; color:#fff; background:#9e1b1b; font-weight:800; cursor:pointer; }
+.cartGrandTotal { margin-top:10px; border-top:1px solid rgba(255,255,255,.12); font-size:18px; }
+.paymentCartSummary { padding:12px; border:1px solid rgba(255,255,255,.1); border-radius:12px; background:rgba(0,0,0,.2); }
+.paymentCartSummary h3 { margin-top:0; }
+.paymentCartItems { display:grid; gap:8px; }
+.paymentCartItem { display:flex; justify-content:space-between; gap:12px; font-size:13px; }
+@media (max-width:700px){
+  .buyerCartControls .profileButton { width:100%; }
+  .cartItem { grid-template-columns:54px 1fr auto; }
+  .cartItem > img { width:54px; height:54px; }
+  .cartQuantityControls { grid-column:2; }
+  .cartItemSubtotal { grid-column:3; grid-row:2; }
+  .cartRemoveButton { grid-column:2 / 4; width:100%; }
+}
+
+
+/* Marketplace checkout additions */
+.shopToggleField {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px 14px;
+}
+
+.shopToggleField input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.shopToggleField small {
+    grid-column: 1 / -1;
+}
+
+.refundSection {
+    margin: 18px 0 4px;
+    padding: 16px;
+    border: 1px solid rgba(255, 212, 90, 0.28);
+    border-radius: 14px;
+    background: rgba(255, 212, 90, 0.06);
+}
+
+.refundSection h3 {
+    margin: 0 0 7px;
+    text-align: left;
+}
+
+.refundSection h3 span {
+    color: #d7c9cf;
+    font-size: 0.75em;
+    font-weight: 700;
+}
+
+.refundSection > p {
+    margin: 0 0 14px;
+    color: #d7c9cf;
+    line-height: 1.5;
+}
+
+/* =============================================
+   STAGE 2 — PROFILE / SHOP SYNCHRONIZATION
+============================================= */
+.profileShopHeaderActions{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.profileShopHeaderActions .shopMessage{margin:0}
+#profileVisitShop{white-space:nowrap}
+.sellingStatusMessage{margin:0 0 16px;padding:12px 16px;border:1px solid rgba(255,255,255,.12);border-radius:12px;text-align:center;font-weight:900}
+.sellingStatusMessage.shopOpen{color:#a9f3bd;border-color:rgba(61,190,99,.35);background:rgba(31,128,59,.16)}
+.sellingStatusMessage.shopClosed{color:#ffb8bb;border-color:rgba(239,75,79,.38);background:rgba(141,20,32,.2)}
+.sellingToggleButton.isSelling{border:1px solid rgba(255,202,83,.35);background:#8d5b12}
+.sellingToggleButton.isStopped{border:1px solid rgba(91,219,127,.35);background:#1d7c3d}
+.profileUsernameLink,.profileUsernameLink:hover,.profileUsernameLink:focus{text-decoration:none}
+.wideModal{width:min(760px,100%)}
+.fieldGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.stepText{color:var(--profile-muted);text-align:center}
+.methodToggleList{display:grid;gap:10px;margin:16px 0}
+.methodToggle{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(0,0,0,.2);cursor:pointer}
+.methodToggle span{display:grid;gap:4px}.methodToggle small{color:var(--profile-muted)}.methodToggle input{width:22px;height:22px;flex:0 0 auto}
+.guestToggle{margin-top:12px}.formError{margin:8px 0;color:#ffb0b4;text-align:center}
+.paymentAccordion{margin-bottom:12px;overflow:hidden;border:1px solid rgba(255,255,255,.12);border-radius:12px}
+.paymentAccordion>button{width:100%;display:flex;justify-content:space-between;padding:14px 16px;border:0;color:#fff;background:rgba(255,255,255,.08);font-weight:900;cursor:pointer}
+.paymentAccordionBody{padding:15px}
+.paymentMethodChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.paymentMethodChoice{padding:12px;border:1px solid rgba(255,255,255,.16);border-radius:10px;color:#fff;background:rgba(255,255,255,.08);font-weight:900;cursor:pointer}
+.paymentMethodChoice.selected{border-color:#ffe28a;background:rgba(255,212,90,.18)}
+.selectedPaymentDetails{margin:14px 0;padding:15px;border:1px solid rgba(255,255,255,.12);border-radius:13px;background:rgba(0,0,0,.2);text-align:center}
+.copyPaymentRow{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:10px}
+.copyPaymentRow button{padding:9px 12px;border:0;border-radius:8px;color:#fff;background:#1976d2;font-weight:800;cursor:pointer}
+@media(max-width:760px){.profileShopHeaderActions{align-items:stretch;margin-top:12px}.profileShopHeaderActions .shopMessage{text-align:left}#profileVisitShop{width:100%}.fieldGrid,.paymentMethodChoices{grid-template-columns:1fr}}
+
+
+/* Admin-visible VIP identity badge */
+.profileNameRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 13px 0 8px;
+}
+
+.profileNameRow h1 {
+    margin: 0;
+}
+
+.profileVipBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 6px 11px;
+    border: 1px solid #ffe991;
+    border-radius: 999px;
+    color: #3a2100;
+    background: linear-gradient(180deg, #fff2a8, #e8b83f);
+    box-shadow: 0 6px 18px rgba(232, 184, 63, 0.25), inset 0 1px rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    .profileNameRow {
+        gap: 7px;
+    }
+
+    .profileVipBadge {
+        min-height: 29px;
+        padding: 5px 9px;
+        font-size: 11px;
+    }
+}
