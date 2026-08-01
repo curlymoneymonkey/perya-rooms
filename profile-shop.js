@@ -471,6 +471,8 @@ function renderCustomerOrders() {
                 image.src = item.imageUrl;
                 image.alt = item.productName || "Ordered product";
                 image.loading = "lazy";
+            image.decoding = "async";
+            image.fetchPriority = "low";
                 imageWrap.appendChild(image);
             } else {
                 const placeholder = document.createElement("span");
@@ -562,6 +564,8 @@ function renderCustomerOrders() {
             proofImage.src = order.paymentProofUrl;
             proofImage.alt = "Buyer payment proof";
             proofImage.loading = "lazy";
+            proofImage.decoding = "async";
+            proofImage.fetchPriority = "low";
             proofThumb.appendChild(proofImage);
             proofThumb.addEventListener("click", () => openCustomerProof(order.paymentProofUrl));
             proofPanel.appendChild(proofThumb);

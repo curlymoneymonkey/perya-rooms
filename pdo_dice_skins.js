@@ -48,7 +48,7 @@ function buildUploads() {
   uploadGrid.innerHTML = "";
   COLORS.forEach(color => {
     const card = document.createElement("div"); card.className = "upload-card";
-    card.innerHTML = `<label><span>${color[0].toUpperCase()+color.slice(1)} Dice</span><div class="upload-thumb" id="thumb-${color}"><span class="upload-placeholder">No image selected</span></div><input id="file-${color}" type="file" accept="image/png"></label><div class="upload-progress" id="progress-${color}"></div>`;
+    card.innerHTML = `<label><span>${color[0].toUpperCase()+color.slice(1)} Dice</span><div class="upload-thumb" id="thumb-${color}"><span class="upload-placeholder">No image selected</span></div><input id="file-${color}" type="file" accept="image/png,image/webp,.png,.webp"></label><div class="upload-progress" id="progress-${color}"></div>`;
     uploadGrid.appendChild(card);
     const input = card.querySelector("input"); fileInputs.set(color,input);
     input.addEventListener("change", () => previewFile(color,input.files?.[0]));
@@ -59,8 +59,103 @@ function previewFile(color,file) { if(objectUrls.has(color)) URL.revokeObjectURL
 function renderPreview(){ preview.innerHTML=""; COLORS.forEach(color=>{const src=objectUrls.get(color)||imageMap(editingSkin)[color]||""; if(src){const img=document.createElement("img");img.src=src;img.alt=`${color} dice`;preview.appendChild(img);}}); if(!preview.children.length) preview.innerHTML='<span class="skin-help">Your six dice previews will appear here.</span>'; }
 function clearObjectUrls(){objectUrls.forEach(url=>URL.revokeObjectURL(url));objectUrls.clear();}
 function resetForm(){ editingId=null;editingSkin=null;clearObjectUrls();form.reset();enabledInput.checked=true;setSelectedAccessLevels(["everyone"]);title.textContent="Create Dice Skin";subtitle.textContent="Add a new selectable dice design.";saveButton.textContent="Create Skin";cancelButton.hidden=true;fileInputs.forEach((input,color)=>{input.value="";setThumb(color,"");document.getElementById(`progress-${color}`).textContent="";});setMessage("");renderPreview(); }
-async function validateImage(file){ if(!file) return; if(file.type!=="image/png") throw new Error(`${file.name} must be a PNG image.`); if(file.size>5*1024*1024) throw new Error(`${file.name} is larger than 5 MB.`); const size=await new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{URL.revokeObjectURL(url);resolve([img.naturalWidth,img.naturalHeight]);};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error(`Could not read ${file.name}.`));};img.src=url;}); if(size[0]!==size[1]) throw new Error(`${file.name} must be square.`); }
-async function uploadColor(skinId,color,file){ const progress=document.getElementById(`progress-${color}`);progress.textContent="Uploading…";const storageRef=ref(storage,`dice-skins/${skinId}/${color}-${Date.now()}.png`);await uploadBytes(storageRef,file,{contentType:"image/png"});const url=await getDownloadURL(storageRef);progress.textContent="Uploaded";return url; }
+async function readImageDimensions(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve([image.naturalWidth, image.naturalHeight]);
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error(`Could not read ${file.name}.`));
+    };
+
+    image.src = url;
+  });
+}
+
+async function validateImage(file) {
+  if (!file) return;
+
+  const allowedTypes = new Set(["image/png", "image/webp"]);
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  const allowedExtension = extension === "png" || extension === "webp";
+
+  if (!allowedTypes.has(file.type) && !allowedExtension) {
+    throw new Error(`${file.name} must be a PNG or WebP image.`);
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error(`${file.name} is larger than 5 MB.`);
+  }
+
+  const [width, height] = await readImageDimensions(file);
+  if (width !== height) {
+    throw new Error(`${file.name} must be square.`);
+  }
+}
+
+async function convertPngToWebP(file) {
+  if (file.type === "image/webp" || file.name.toLowerCase().endsWith(".webp")) {
+    return file;
+  }
+
+  const image = await createImageBitmap(file);
+  const canvas = document.createElement("canvas");
+  canvas.width = image.width;
+  canvas.height = image.height;
+
+  const context = canvas.getContext("2d", { alpha: true });
+  if (!context) {
+    image.close?.();
+    throw new Error(`Could not optimize ${file.name}.`);
+  }
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.imageSmoothingEnabled = false;
+  context.drawImage(image, 0, 0);
+  image.close?.();
+
+  const blob = await new Promise(resolve => {
+    canvas.toBlob(resolve, "image/webp", 0.92);
+  });
+
+  if (!blob) {
+    throw new Error(`Could not convert ${file.name} to WebP.`);
+  }
+
+  const baseName = file.name.replace(/\.[^.]+$/, "") || "dice";
+  return new File([blob], `${baseName}.webp`, {
+    type: "image/webp",
+    lastModified: Date.now()
+  });
+}
+
+async function uploadColor(skinId, color, file) {
+  const progress = document.getElementById(`progress-${color}`);
+  progress.textContent = file.type === "image/png" ? "Optimizing…" : "Preparing…";
+
+  const optimizedFile = await convertPngToWebP(file);
+  progress.textContent = "Uploading…";
+
+  const storageRef = ref(
+    storage,
+    `dice-skins/${skinId}/${color}-${Date.now()}.webp`
+  );
+
+  await uploadBytes(storageRef, optimizedFile, {
+    contentType: "image/webp",
+    cacheControl: "public,max-age=31536000,immutable"
+  });
+
+  const url = await getDownloadURL(storageRef);
+  progress.textContent = "Uploaded as WebP";
+  return url;
+}
 async function verifyAdmin(){ currentUser=await waitForAuthState(); if(!currentUser||currentUser.isAnonymous) throw new Error("Administrator sign-in required."); const snap=await getDoc(doc(db,"admins",currentUser.uid)); if(!snap.exists()||snap.data().enabled!==true) throw new Error("Administrator access required."); }
 async function ensureClassic(){
   const classicRef=doc(db,"diceSkins","classic");

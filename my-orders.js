@@ -116,6 +116,8 @@ function createOrderItems(order) {
             image.src = item.imageUrl;
             image.alt = item.productName || "Product";
             image.loading = "lazy";
+            image.decoding = "async";
+            image.fetchPriority = "low";
             itemMain.appendChild(image);
         }
 

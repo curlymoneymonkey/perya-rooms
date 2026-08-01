@@ -4603,3 +4603,46 @@ background:#3498db;
     .shopPopupActions { flex-wrap: wrap; }
     .shopPopupButton { flex: 1 1 120px; }
 }
+
+
+/* Dice rendering performance */
+.results {
+    contain: layout paint;
+}
+
+.results img,
+.dice,
+.historyDice {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+body.diceRolling .results .dice {
+    will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .diceResultReveal {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+
+/* Dashboard-only performance and responsive layout refinements */
+.dashboardSearchGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.dashboardSearchGrid > .card {
+    min-width: 0;
+}
+
+@media (max-width: 760px) {
+    .dashboardSearchGrid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+}

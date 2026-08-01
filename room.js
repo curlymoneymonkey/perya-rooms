@@ -1,6 +1,13 @@
 import { authReady, db, realtimeDb, functions } from "./firebase.js";
 
 import {
+    RESULT_REVEAL_AFTER_SOUND_MS,
+    PREPARING_WOBBLE_DURATION_MS,
+    PREPARING_WOBBLE_ROTATION_DEG,
+    PREPARING_WOBBLE_BOUNCE_PX
+} from "./roll-settings.js";
+
+import {
     collection,
     doc,
     getDoc,
@@ -46,24 +53,151 @@ let diceImages = [...defaultDiceImages];
 let availableDiceSkins = [];
 let currentDiceSkinId = "default";
 const whiteDiceImage = "images/white.png";
+
+const resolvedAssetUrlCache = new Map();
+function resolvedAssetUrl(source) {
+    const key = String(source || "");
+    if (!resolvedAssetUrlCache.has(key)) {
+        resolvedAssetUrlCache.set(
+            key,
+            new URL(key, document.baseURI).href
+        );
+    }
+    return resolvedAssetUrlCache.get(key);
+}
+const diceImagePreloadCache = new Map();
+let mainDiceRenderVersion = 0;
+
+function preloadDiceImage(source) {
+    const key = String(source || "").trim();
+    if (!key) return Promise.resolve();
+
+    if (diceImagePreloadCache.has(key)) {
+        return diceImagePreloadCache.get(key);
+    }
+
+    const promise = new Promise(resolve => {
+        const image = new Image();
+        image.decoding = "async";
+        image.fetchPriority = "high";
+        image.src = key;
+
+        const finish = () => resolve();
+
+        if (typeof image.decode === "function") {
+            image.decode().then(finish).catch(finish);
+            return;
+        }
+
+        if (image.complete) {
+            finish();
+            return;
+        }
+
+        image.addEventListener("load", finish, { once: true });
+        image.addEventListener("error", finish, { once: true });
+    });
+
+    diceImagePreloadCache.set(key, promise);
+    return promise;
+}
+
+function preloadDiceImages(sources) {
+    return Promise.all(
+        [...new Set((sources || []).filter(Boolean))].map(preloadDiceImage)
+    );
+}
+
 const rollSound = new Audio("sounds/dice-roll.mp3");
+rollSound.preload = "auto";
 rollSound.volume = 0.6;
 
 
-function playRollSound(){
-  try{rollSound.pause();rollSound.currentTime=0;const p=rollSound.play();if(p&&p.catch)p.catch(()=>{});}catch(e){}
-}
-// Decode dice images early so the first roll does not pause while loading them.
-[...defaultDiceImages, whiteDiceImage].forEach(source => {
-    const image = new Image();
-    image.src = source;
-    if (typeof image.decode === "function") {
-        image.decode().catch(() => {});
+function playRollSound() {
+    // This function is called only by the animation-start lock. A new roll
+    // deliberately restarts the sound; repeated Firebase renders never reach it.
+    rollSoundActive = true;
+
+    try {
+        rollSound.pause();
+        rollSound.currentTime = 0;
+
+        const playPromise = rollSound.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(() => {
+                rollSoundActive = false;
+            });
+        }
+    } catch (error) {
+        rollSoundActive = false;
     }
+}
+
+rollSound.addEventListener("ended", () => {
+    rollSoundActive = false;
 });
+
+// Decode the built-in dice early so the first render is instant.
+preloadDiceImages([...defaultDiceImages, whiteDiceImage]).catch(() => {});
 const newOrderSound = new Audio("sounds/new-order.mp3");
 newOrderSound.volume = 0.8;
 const AUTO_OFFLINE_MS = 60 * 60 * 1000;
+
+const PREPARING_ROLL_MESSAGES = [
+    "🎲 Stretching my corners...",
+    "🎲 Checking all six sides...",
+    "🎲 Practicing my bounce...",
+    "🎲 Getting ready to tumble...",
+    "🎲 Loosening up my corners...",
+    "🎲 Trying not to roll away...",
+    "🎲 Warming up for the big roll...",
+    "🎲 Preparing for takeoff...",
+    "🎲 Finding my balance...",
+    "🎲 One tiny warm-up first..."
+];
+
+let lastPreparingRollMessage = "";
+
+function nextPreparingRollMessage() {
+    const choices = PREPARING_ROLL_MESSAGES.filter(
+        message => message !== lastPreparingRollMessage
+    );
+    const message = choices[Math.floor(Math.random() * choices.length)]
+        || PREPARING_ROLL_MESSAGES[0];
+    lastPreparingRollMessage = message;
+    return message;
+}
+
+function installPreparingRollStyle() {
+    if (document.getElementById("peryaPreparingRollStyle")) return;
+
+    const style = document.createElement("style");
+    style.id = "peryaPreparingRollStyle";
+    style.textContent = `
+        @keyframes peryaDicePreparingWobble {
+            0%, 100% {
+                transform: rotate(-${PREPARING_WOBBLE_ROTATION_DEG}deg) translateY(0);
+            }
+            50% {
+                transform: rotate(${PREPARING_WOBBLE_ROTATION_DEG}deg) translateY(-${PREPARING_WOBBLE_BOUNCE_PX}px);
+            }
+        }
+
+        .dicePreparing {
+            animation: peryaDicePreparingWobble ${PREPARING_WOBBLE_DURATION_MS}ms ease-in-out infinite;
+            transform-origin: center;
+            will-change: transform;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .dicePreparing { animation: none; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+installPreparingRollStyle();
+
 
 const roomLoading = document.getElementById("roomLoading");
 const roomScreen = document.getElementById("permanentRoom");
@@ -195,11 +329,11 @@ let roomRef = null;
 let currentRoom = null;
 let isHost = false;
 let animationTimer = null;
+let rollingAnimationActive = false;
+let rollSoundActive = false;
 let rollingLocally = false;
-let revealUnlockAt = 0;
+
 let accountRestrictionsLoaded = false;
-let startupHostRollTriggered = false;
-let startupHostRollTimer = null;
 let hostControlsHidden = false;
 
 // Viewer-only fallback for rolls where Firestore delivers the completed
@@ -560,12 +694,10 @@ function listenForAccountRestrictions() {
         populatePermanentDiceSkinSelect();
         if (currentRoom) renderRoom(currentRoom);
         if (currentReviews) renderReviews();
-        tryStartStartupHostRoll();
     }, error => {
         console.error("Could not load account restrictions:", error);
         currentAccount = {};
         accountRestrictionsLoaded = true;
-        tryStartStartupHostRoll();
     });
 }
 
@@ -614,10 +746,14 @@ function diceSkinAccessLabel(skin) {
 function setMiniDicePreview(container, images) {
     if (!container) return;
     container.innerHTML = "";
+
     images.forEach(source => {
         const image = document.createElement("img");
         image.src = source;
         image.alt = "";
+        image.loading = "lazy";
+        image.decoding = "async";
+        image.fetchPriority = "low";
         container.appendChild(image);
     });
 }
@@ -661,7 +797,7 @@ function renderPermanentDiceSkinGallery() {
             const levels = diceSkinAccessLevels(skin);
 
             if (levels.includes("users")) {
-                status.textContent = "🔒 LOGGED-IN USERS / VIP ONLY";
+                status.textContent = "🔒 LOGGED-IN USERS ONLY";
             } else if (levels.includes("vip")) {
                 status.textContent = "👑 VIP ONLY";
             } else {
@@ -689,6 +825,9 @@ function applyDiceSkin(skinId) {
     const images = normalizedSkinImages(skin);
     diceImages = images || [...defaultDiceImages];
     currentDiceSkinId = images ? cleanedId : "default";
+
+    // Begin downloading and decoding the selected skin immediately.
+    preloadDiceImages(diceImages).catch(() => {});
 }
 
 function populatePermanentDiceSkinSelect() {
@@ -770,6 +909,10 @@ function createImage(source, className) {
     image.src = source;
     image.className = className;
     image.alt = "Dice";
+    image.decoding = "async";
+    image.loading = "eager";
+    image.fetchPriority = "high";
+    image.draggable = false;
     return image;
 }
 function updateDiceElements(container, sources, className) {
@@ -786,7 +929,7 @@ function updateDiceElements(container, sources, className) {
             image = createImage(source, className);
             container.appendChild(image);
         } else {
-            if (image.src !== new URL(source, window.location.href).href) {
+            if (image.src !== resolvedAssetUrl(source)) {
                 image.src = source;
             }
             image.className = className;
@@ -800,12 +943,51 @@ function updateDiceElements(container, sources, className) {
 }
 
 function showDice(container, values, className = "dice") {
+    const shouldReveal =
+        container === results &&
+        Array.from(container.children).some(element =>
+            element instanceof HTMLImageElement &&
+            element.src.includes(whiteDiceImage)
+        );
+
     const sources = values
         .map(Number)
         .filter(value => Number.isInteger(value) && diceImages[value])
         .map(value => diceImages[value]);
 
-    updateDiceElements(container, sources, className);
+    const finishRender = () => {
+        updateDiceElements(container, sources, className);
+
+        if (shouldReveal) {
+            for (const die of container.children) {
+                if (!(die instanceof HTMLImageElement)) continue;
+
+                die.classList.remove("diceResultReveal");
+                void die.offsetWidth;
+                die.classList.add("diceResultReveal");
+            }
+        }
+    };
+
+    // Wait until every visible custom-skin image is decoded, then swap all
+    // dice in the same render. This prevents one-by-one loading.
+    if (container === results) {
+        const renderVersion = ++mainDiceRenderVersion;
+
+        preloadDiceImages(sources)
+            .then(() => {
+                if (renderVersion !== mainDiceRenderVersion) return;
+                finishRender();
+            })
+            .catch(() => {
+                if (renderVersion !== mainDiceRenderVersion) return;
+                finishRender();
+            });
+
+        return;
+    }
+
+    finishRender();
 }
 
 function showWhiteDice(amount) {
@@ -816,32 +998,78 @@ function showWhiteDice(amount) {
     );
 }
 
-function startAnimation(amount) {
-    stopAnimation();
-    showWhiteDice(amount);
 
-    let lastUpdate = 0;
-    const frameDelay = 100;
-
-    const animate = timestamp => {
-        if (timestamp - lastUpdate >= frameDelay) {
-            showDice(results, generateDice(amount), "dice shake");
-            lastUpdate = timestamp;
+function startPreparingRoll() {
+    if (rollStatus) rollStatus.textContent = nextPreparingRollMessage();
+    document.body.classList.add("dicePreparingStage");
+    for (const die of results.children) {
+        if (die instanceof HTMLImageElement) {
+            die.classList.remove("shake");
+            die.classList.add("dicePreparing");
         }
+    }
+}
 
-        animationTimer = window.requestAnimationFrame(animate);
-    };
+function stopPreparingRoll() {
+    document.body.classList.remove("dicePreparingStage");
+    for (const die of results.children) {
+        if (die instanceof HTMLImageElement) die.classList.remove("dicePreparing");
+    }
+}
 
-    animationTimer = window.requestAnimationFrame(animate);
+function startAnimation(amount, { playSound = true } = {}) {
+    stopPreparingRoll();
+    // The secure request is started first by the host roll handler. Then the
+    // sound begins, followed by the visible Rolling state and white dice.
+    // Viewer snapshots use the default and start their own sound once.
+    if (rollingAnimationActive) {
+        if (rollStatus) rollStatus.textContent = "🎲 Rolling...";
+        return;
+    }
+
+    rollingAnimationActive = true;
+
+    // Viewers play the sound when the Firestore rolling state arrives.
+    // The host waits until the secure Firebase response returns, preventing
+    // the same roll from triggering the audio twice.
+    if (playSound && !rollingLocally) {
+        playRollSound();
+    }
+
+    if (rollStatus) {
+        rollStatus.textContent = "🎲 Rolling...";
+    }
+
+    showWhiteDice(amount);
+    document.body.classList.add("diceRolling");
+
+    for (const die of results.children) {
+        if (die instanceof HTMLImageElement) die.classList.add("shake");
+    }
 }
 
 function stopAnimation() {
+    stopPreparingRoll();
     if (animationTimer !== null) {
         window.cancelAnimationFrame(animationTimer);
         animationTimer = null;
     }
+
+    rollingAnimationActive = false;
+    document.body.classList.remove("diceRolling");
+
+    for (const die of results.children) {
+        if (die instanceof HTMLImageElement) die.classList.remove("shake");
+    }
 }
+let previousRenderedHistorySignature = null;
+
 function renderHistory(room) {
+    const sourceHistory = Array.isArray(room?.history) ? room.history : [];
+    const historySignature = JSON.stringify(sourceHistory);
+    if (historySignature === previousRenderedHistorySignature) return;
+    previousRenderedHistorySignature = historySignature;
+
     history.innerHTML = "";
     const rows = Array.isArray(room.history) ? room.history.slice(-9).reverse() : [];
     if (!rows.length) {
@@ -1418,6 +1646,8 @@ function renderCustomerOrders() {
                 image.src = item.imageUrl;
                 image.alt = item.productName || "Ordered product";
                 image.loading = "lazy";
+            image.decoding = "async";
+            image.fetchPriority = "low";
                 imageWrap.appendChild(image);
             } else {
                 const placeholder = document.createElement("span");
@@ -1514,6 +1744,8 @@ function renderCustomerOrders() {
                 proofImage.src = order.paymentProofUrl;
                 proofImage.alt = "Buyer payment proof";
                 proofImage.loading = "lazy";
+            proofImage.decoding = "async";
+            proofImage.fetchPriority = "low";
                 proofThumb.appendChild(proofImage);
                 proofThumb.addEventListener("click", () => openCustomerProof(order.paymentProofUrl));
                 proofPanel.appendChild(proofThumb);
@@ -1942,36 +2174,46 @@ function permanentRollMarker(room) {
     return `fallback:${historyLength}:${latestResult}`;
 }
 
-function revealPermanentViewerRollAfterFallback(marker, amount, finalResult) {
+function revealPermanentViewerRollAfterFallback(marker, amount, finalResult, hadPreparingStage = false) {
     if (viewerRevealTimer !== null) {
         window.clearTimeout(viewerRevealTimer);
     }
 
     viewerFallbackRollMarker = marker;
-    rollStatus.textContent = "🎲 Rolling...";
 
-    if (animationTimer === null) {
+    const beginRealRoll = () => {
+        if (viewerFallbackRollMarker !== marker) return;
+
+        rollStatus.textContent = "🎲 Rolling...";
+        startAnimation(amount, { playSound: false });
         playRollSound();
-    startAnimation(amount);
+
+        viewerRevealTimer = window.setTimeout(() => {
+            viewerRevealTimer = null;
+
+            if (viewerFallbackRollMarker !== marker) return;
+
+            viewerFallbackRollMarker = null;
+            stopAnimation();
+            showDice(results, finalResult, "dice");
+
+            if (currentRoom) renderHistory(currentRoom);
+            rollStatus.textContent = "Waiting for the host to roll.";
+        }, RESULT_REVEAL_AFTER_SOUND_MS);
+    };
+
+    if (hadPreparingStage) {
+        beginRealRoll();
+        return;
     }
 
+    // If the viewer missed rolling:true, provide a short host-style preparation
+    // stage before playing the sound and showing the white shaking dice.
+    startPreparingRoll();
     viewerRevealTimer = window.setTimeout(() => {
         viewerRevealTimer = null;
-
-        if (viewerFallbackRollMarker !== marker) {
-            return;
-        }
-
-        viewerFallbackRollMarker = null;
-        stopAnimation();
-        showDice(results, finalResult, "dice");
-
-        if (currentRoom) {
-            renderHistory(currentRoom);
-        }
-
-        rollStatus.textContent = "Waiting for the host to roll.";
-    }, 1850);
+        beginRealRoll();
+    }, 350);
 }
 
 function renderRoom(room) {
@@ -2091,23 +2333,20 @@ function renderRoom(room) {
     }
 
     if (!isHost && room.rolling === true) {
-        viewerObservedRolling = true;
+        if (!viewerObservedRolling) {
+            viewerObservedRolling = true;
+            startPreparingRoll();
+        }
     }
 
-    const revealIsLocked =
-        rollingLocally &&
-        performance.now() < revealUnlockAt;
+    // Prevent an early snapshot from revealing the host result, but do not
+    // impose a fixed reveal timer.
+    const revealIsLocked = rollingLocally;
 
     if (revealIsLocked) {
-        rollStatus.textContent = "🎲 Rolling...";
-
-        if (animationTimer === null) {
-            playRollSound();
-    startAnimation(amount);
-        }
-
-        // The Firestore snapshot may already contain latestResult and history.
-        // Keep both hidden until the exact three-second reveal point.
+        // The host is still waiting for the callable response. Keep the current
+        // dice visible with the slow preparation wobble; do not let a Firestore
+        // snapshot start the real white-dice roll animation early.
         enforceAutoOffline(room).catch(console.error);
         return;
     }
@@ -2115,9 +2354,8 @@ function renderRoom(room) {
     if (!isHost && viewerFallbackRollMarker !== null) {
         rollStatus.textContent = "🎲 Rolling...";
 
-        if (animationTimer === null) {
-            playRollSound();
-    startAnimation(amount);
+        if (!rollingAnimationActive) {
+            startAnimation(amount);
         }
 
         enforceAutoOffline(room).catch(console.error);
@@ -2135,25 +2373,34 @@ function renderRoom(room) {
     if (viewerReceivedNewCompletedRoll) {
         lastViewerRollMarker = currentRollMarker;
 
-        if (!viewerObservedRolling) {
-            revealPermanentViewerRollAfterFallback(
-                currentRollMarker,
-                amount,
-                room.latestResult.map(Number)
-            );
-            enforceAutoOffline(room).catch(console.error);
-            return;
-        }
-
+        const hadPreparingStage = viewerObservedRolling;
         viewerObservedRolling = false;
+
+        revealPermanentViewerRollAfterFallback(
+            currentRollMarker,
+            amount,
+            room.latestResult.map(Number),
+            hadPreparingStage
+        );
+        enforceAutoOffline(room).catch(console.error);
+        return;
     }
 
     renderHistory(room);
 
     if (room.rolling) {
+        // Viewers mirror the host's slow preparation stage first. The real
+        // white-dice animation begins only after Firebase publishes the result.
+        if (!isHost) {
+            if (!document.body.classList.contains("dicePreparingStage")) {
+                startPreparingRoll();
+            }
+            enforceAutoOffline(room).catch(console.error);
+            return;
+        }
+
         rollStatus.textContent = "🎲 Rolling...";
-        if (animationTimer === null) playRollSound();
-    startAnimation(amount);
+        startAnimation(amount);
     } else {
         stopAnimation();
         const accountMessage = accountRestrictionMessage("roll");
@@ -2179,64 +2426,6 @@ async function findRoomByDiceId(diceId) {
     return { ref: documentSnapshot.ref, data: documentSnapshot.data() };
 }
 
-function tryStartStartupHostRoll() {
-    if (
-        startupHostRollTriggered ||
-        startupHostRollTimer !== null ||
-        !accountRestrictionsLoaded ||
-        !isHost ||
-        !roomRef ||
-        !currentRoom ||
-        rollingLocally
-    ) {
-        return;
-    }
-
-    startupHostRollTriggered = true;
-
-    // Every time the host enters the permanent room, clear the old roll display
-    // and Previous Rolls first. The automatic startup roll then becomes the
-    // first roll of the new room session.
-    startupHostRollTimer = window.setTimeout(async () => {
-        startupHostRollTimer = null;
-
-        try {
-            await updateDoc(roomRef, {
-                history: [],
-                latestResult: [],
-                pendingResult: [],
-                rolling: false,
-                updatedAt: serverTimestamp()
-            });
-
-            currentRoom = {
-                ...currentRoom,
-                history: [],
-                latestResult: [],
-                pendingResult: [],
-                rolling: false
-            };
-
-            renderHistory(currentRoom);
-            showWhiteDice(clampDiceCount(currentRoom.diceCount));
-
-            if (
-                currentRoom.rollingSuspended === true ||
-                Boolean(accountRestrictionMessage("roll"))
-            ) {
-                renderRoom(currentRoom);
-                return;
-            }
-
-            await rollDice();
-        } catch (error) {
-            console.error("Could not reset Previous Rolls on startup:", error);
-            startupHostRollTriggered = false;
-        }
-    }, 150);
-}
-
-
 async function rollDice() {
     if (
         !isHost ||
@@ -2251,44 +2440,24 @@ async function rollDice() {
         return;
     }
 
-    const rollClickedAt = performance.now();
-    const revealDurationMs = 1850; // compensates for the existing ~1s startup delay, for ~2.85s total
-    revealUnlockAt = rollClickedAt + revealDurationMs;
-
     rollingLocally = true;
     const amount = clampDiceCount(diceCountSelect.value);
     let selectedResult = [];
     let rollCompleted = false;
 
     try {
-        playRollSound();
-    startAnimation(amount);
-
-        try {
-            rollSound.pause();
-            rollSound.loop = false;
-            rollSound.playbackRate = 1;
-            rollSound.currentTime = 0;
-
-            const playPromise = rollSound.play();
-            if (playPromise && typeof playPromise.catch === "function") {
-                playPromise.catch(() => {});
-            }
-        } catch {}
-
-        const response = await startSecureRoll({
+        // Start the Firebase request first so no network time is wasted.
+        const rollRequest = startSecureRoll({
             roomType: "permanent",
             roomId: roomRef.id
         });
 
-        const remainingRevealTime = Math.max(
-            0,
-            revealDurationMs - (performance.now() - rollClickedAt)
-        );
+        // Give instant feedback while Firebase prepares the secure result.
+        // Keep the existing dice visible and use only a slow transform wobble.
+        startPreparingRoll();
 
-        if (remainingRevealTime > 0) {
-            await wait(remainingRevealTime);
-        }
+        const response = await rollRequest;
+
 
         selectedResult = Array.isArray(response.data?.result)
             ? response.data.result.map(Number)
@@ -2299,6 +2468,13 @@ async function rollDice() {
         }
 
         rollCompleted = true;
+
+        // Firebase has returned the secure result. This is the real roll stage:
+        // show white shaking dice and start the sound together, then reveal.
+        if (rollStatus) rollStatus.textContent = "🎲 Rolling...";
+        startAnimation(amount, { playSound: false });
+        playRollSound();
+        await wait(RESULT_REVEAL_AFTER_SOUND_MS);
         stopAnimation();
         showDice(results, selectedResult, "dice");
 
@@ -3292,10 +3468,6 @@ document.getElementById("backHomeButton").addEventListener("click", () => locati
 
 
 window.addEventListener("beforeunload", () => {
-    if (startupHostRollTimer !== null) {
-        window.clearTimeout(startupHostRollTimer);
-        startupHostRollTimer = null;
-    }
     if (viewerCountUnsubscribe) viewerCountUnsubscribe();
     if (viewerConnectionUnsubscribe) viewerConnectionUnsubscribe();
 });
@@ -3353,7 +3525,6 @@ async function start() {
         roomLoading.hidden = true;
         roomScreen.hidden = false;
         renderRoom(snapshot.data());
-        tryStartStartupHostRoll();
     }, error => {
         console.error(error);
         roomLoading.innerHTML = "<h2>Could not load this room.</h2>";

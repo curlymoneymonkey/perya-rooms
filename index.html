@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://asia-southeast1-peryadice.cloudfunctions.net" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="dns-prefetch" href="//asia-southeast1-peryadice.cloudfunctions.net">
     <title>PERYA DICE</title>
     <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="preload" as="image" href="images/peryahan.webp" fetchpriority="high">
     <link rel="preload" as="image" href="images/PERYA.png">
     <link rel="stylesheet" href="style.css">
 
@@ -255,6 +258,32 @@ text-align:center;
 }
 </style>
 
+
+    <style>
+        /* Lightweight white-to-result reveal. Uses only transform and opacity. */
+        .dice.diceResultReveal {
+            animation: diceResultReveal 180ms ease-out both;
+            will-change: transform, opacity;
+        }
+
+        @keyframes diceResultReveal {
+            from {
+                opacity: 0.35;
+                transform: scale(0.86);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .dice.diceResultReveal {
+                animation: none;
+            }
+        }
+    </style>
+
 </head>
 <body>
     <header class="siteHeader">
@@ -408,6 +437,17 @@ text-align:center;
                 <p>Enter the user's exact username to view thei
                     r profile, shop, rooms, and reputation.
 </p>
+            </section>
+
+            <section id="rollAsGuestSection" class="rollAsGuestSection" hidden>
+                <button id="rollAsGuestButton" class="rollAsGuestButton" type="button">
+                    <span class="rollAsGuestIcon" aria-hidden="true">🎲</span>
+                    <span class="rollAsGuestText">
+                        <strong>Roll As Guest</strong>
+                        <small>Create your own temporary room</small>
+                    </span>
+                    <span class="rollAsGuestArrow" aria-hidden="true">→</span>
+                </button>
             </section>
 
             <section class="card about guestAbout">

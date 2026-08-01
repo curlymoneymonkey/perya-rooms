@@ -182,6 +182,8 @@ function createOrderCard(order) {
         proof.src = order.paymentProofUrl;
         proof.alt = "Payment proof";
         proof.loading = "lazy";
+        proof.decoding = "async";
+        proof.fetchPriority = "low";
 
         const copy = document.createElement("span");
         copy.className = "proofCopy";

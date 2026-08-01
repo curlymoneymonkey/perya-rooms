@@ -253,6 +253,9 @@ async function loadProfile() {
     if (!profileSnapshot.exists()) throw new Error("This profile does not exist.");
 
     const profile = profileSnapshot.data();
+    photo.decoding = "async";
+    photo.loading = "eager";
+    photo.fetchPriority = "high";
     photo.src = profile.photoURL || "favicon.png";
     username.textContent = `@${profile.username || "user"}`;
     bio.textContent = profile.bio?.trim() || "No bio added.";

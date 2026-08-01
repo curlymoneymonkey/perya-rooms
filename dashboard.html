@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | PERYA DICE</title>
     <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preload" as="image" href="images/PERYA.png">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="favorites.css">
     <link rel="stylesheet" href="notifications.css">
 </head>
 <body>
     <header class="siteHeader">
-        <img class="logo" src="images/PERYA.png" alt="PERYA DICE">
+        <img class="logo" src="images/PERYA.png" alt="PERYA DICE" decoding="async" fetchpriority="high" width="700" height="220">
 
         <div id="notificationRoot" class="notificationRoot" hidden>
             <button
@@ -197,7 +200,7 @@
             <p id="createRoomMessage" class="joinMessage"></p>
         </section> <br><br>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="dashboardSearchGrid">
         <section class="card searchDiceCard">
             <h2>🔍 Search for a Room</h2>
             <p class="mutedText">Find a permanent creator room using its Room ID.</p>

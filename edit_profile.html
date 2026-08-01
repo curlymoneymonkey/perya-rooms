@@ -7,7 +7,12 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="style.css">
 
-    <link rel="stylesheet" href="notifications.css"></head>
+    <link rel="stylesheet" href="notifications.css">
+<style>
+.profilePictureEditor{display:grid;gap:14px;margin:18px 0 24px;padding:16px;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:rgba(0,0,0,.18)}
+.profilePictureCurrent{display:flex;align-items:center;gap:15px}.profilePictureCurrent h2{margin:0 0 5px;font-size:18px}.profilePictureCurrent p{margin:0}.profilePhotoActions{display:flex;flex-wrap:wrap;gap:10px}.profilePhotoActions button{width:auto;margin:0}.dangerButton{border-color:rgba(255,100,100,.4);color:#ffd1d1}.profileCropControls{display:grid;justify-items:center;gap:12px}.profileCropControls>p{margin:0}.profileCropControls canvas{display:block;width:min(360px,100%);height:auto;aspect-ratio:1;border:2px solid rgba(255,255,255,.18);border-radius:50%;background:#151925;cursor:grab;touch-action:none;box-shadow:0 12px 30px rgba(0,0,0,.3)}.profileCropControls canvas.dragging{cursor:grabbing}.profileZoomControl{display:grid;grid-template-columns:auto minmax(180px,320px);align-items:center;gap:12px;width:min(420px,100%)}.profileZoomControl input{width:100%}@media(max-width:560px){.profilePictureCurrent{align-items:flex-start}.profilePictureCurrent .profilePhoto{width:78px;height:78px}.profilePhotoActions{display:grid;grid-template-columns:1fr}.profilePhotoActions button{width:100%}}
+</style>
+</head>
 <body class="profilePage editProfileTheme">
     <header class="siteHeader accountOnlyHeader">
         <div id="notificationRoot" class="notificationRoot" hidden>
@@ -62,11 +67,31 @@
         <section class="publicProfileCard editProfileCard">
             <h1>Edit Profile</h1>
 
-            <div class="googleProfilePictureBlock">
-                <img id="editProfilePreview" class="profilePhoto" src="favicon.png" alt="Google profile picture">
-                <p class="mutedText googleProfileNotice">
-                    Your profile picture comes from your Google account and cannot be changed on PERYA DICE.
-                </p>
+            <div class="profilePictureEditor">
+                <div class="profilePictureCurrent">
+                    <img id="editProfilePreview" class="profilePhoto" src="favicon.png" alt="Current profile picture">
+                    <div>
+                        <h2>Profile Picture</h2>
+                        <p class="mutedText">Upload PNG, JPG, or WebP. It will be cropped to a square and saved as an optimized WebP image.</p>
+                    </div>
+                </div>
+
+                <input id="profilePhotoInput" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" hidden>
+
+                <div class="profilePhotoActions">
+                    <button id="chooseProfilePhotoButton" type="button" class="secondaryButton">Choose Picture</button>
+                    <button id="removeProfilePhotoButton" type="button" class="secondaryButton dangerButton">Use Google Picture</button>
+                </div>
+
+                <section id="profileCropControls" class="profileCropControls" hidden>
+                    <p class="mutedText">Drag the image to reposition it.</p>
+                    <canvas id="profileCropCanvas" width="360" height="360" aria-label="Profile picture crop preview"></canvas>
+                    <label class="profileZoomControl" for="profilePhotoZoom">
+                        <span>Zoom</span>
+                        <input id="profilePhotoZoom" type="range" min="1" max="3" step="0.01" value="1">
+                    </label>
+                    <button id="resetProfileCropButton" type="button" class="secondaryButton">Reset Position</button>
+                </section>
             </div>
 
             <form id="editProfileForm">

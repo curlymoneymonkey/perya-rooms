@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://asia-southeast1-peryadice.cloudfunctions.net" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="dns-prefetch" href="//asia-southeast1-peryadice.cloudfunctions.net">
     <title>Permanent Room | PERYA DICE</title>
     <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="preload" as="image" href="images/peryahan.webp" fetchpriority="high">
     <link rel="preload" as="image" href="images/PERYA.png">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="favorites.css">
@@ -905,6 +908,32 @@ body.customerProofModalOpen {
 }
 </style>
 
+
+    <style>
+        /* Lightweight white-to-result reveal. Uses only transform and opacity. */
+        .dice.diceResultReveal {
+            animation: diceResultReveal 180ms ease-out both;
+            will-change: transform, opacity;
+        }
+
+        @keyframes diceResultReveal {
+            from {
+                opacity: 0.35;
+                transform: scale(0.86);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .dice.diceResultReveal {
+                animation: none;
+            }
+        }
+    </style>
+
 </head>
 
 <body>
@@ -1011,7 +1040,7 @@ body.customerProofModalOpen {
         <div id="permanentHostSettings" class="hostSettings" hidden>
             <div class="hostWebsiteBrand diceSkinHeaderBar" aria-label="Perya Rooms website">
                 <div class="diceSkinBrandText">
-                    <span aria-hidden="true">🌐 perya-rooms.com </span>
+                    <span aria-hidden="true">🌐 <strong>perya-rooms.com</strong></span>
                     <strong><Perya-Rooms class="com"></Perya-Rooms></strong>
                 </div>
                 <div id="permanentDiceSkinControl" class="diceSkinControl" hidden>
@@ -1128,6 +1157,7 @@ body.customerProofModalOpen {
         📋
     </button>
 </p>
+ <p id="permanentRollStatus" class="roomStatus"></p>
 <div id="permanentResults" class="results"></div>
                 <p><strong>Room ID:</strong> <span id="permanentDiceId"></span></p>
                 <p id="publicRoomViewerRow">
@@ -1136,7 +1166,7 @@ body.customerProofModalOpen {
                 </p>
                 <button id="permanentRollButton" class="rollButton" type="button" hidden>🎲 ROLL</button>
                 <p id="permanentWaitingText" class="waitingText" hidden>Only the host can roll.</p>
-                                <p id="permanentRollStatus" class="roomStatus"></p>
+                            
             </section>
 
             <div class="bottomPanels">

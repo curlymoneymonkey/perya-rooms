@@ -34,7 +34,7 @@
       <div class="pdo-top-actions"><a class="pdo-button secondary" href="pdo_hub.html">Control Hub</a><div class="pdo-user-pill"><span class="pdo-avatar">P</span><span><strong>Staff Account</strong><span data-staff-role>Verifying…</span></span></div></div>
     </header>
 
-    <section class="pdo-card pdo-hero"><div class="pdo-hero-copy"><h2>Six images create one complete skin</h2><p>Upload square PNG images for red, blue, green, yellow, purple, and orange. Exact pixel dimensions are not required.</p></div><span class="pdo-badge">Administrator only</span></section>
+    <section class="pdo-card pdo-hero"><div class="pdo-hero-copy"><h2>Six images create one complete skin</h2><p>Upload square PNG or WebP images for red, blue, green, yellow, purple, and orange. PNG files are automatically optimized to WebP.</p></div><span class="pdo-badge">Administrator only</span></section>
 
     <section class="skin-layout">
       <section class="pdo-card pdo-panel skin-editor">
@@ -52,7 +52,7 @@
             <label class="skin-enabled"><input id="skinEnabled" type="checkbox" checked><span>Enabled and selectable</span></label>
           </div>
           <div class="upload-grid" id="uploadGrid"></div>
-          <p class="skin-help">PNG only, maximum 5 MB each. Images must be square, but they do not need to be 1080 × 1080.</p>
+          <p class="skin-help">PNG or WebP, maximum 5 MB each. Images must be square. PNG uploads are automatically converted to transparent WebP for faster loading.</p>
           <div class="preview-section"><h3>Live Preview</h3><div class="dice-preview" id="dicePreview"></div></div>
           <p class="skin-message" id="skinMessage" aria-live="polite"></p>
           <div class="skin-actions"><button class="pdo-button" id="saveSkinButton" type="submit">Create Skin</button><button class="pdo-button secondary" id="resetSkinButton" type="button">Reset</button></div>

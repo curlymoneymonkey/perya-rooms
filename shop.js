@@ -331,6 +331,100 @@ function setPreview(imageElement, source) {
     imageElement.style.display = "block";
 }
 
+const IMAGE_UPLOAD_SETTINGS = Object.freeze({
+    product: { maxWidth: 1200, maxHeight: 1200, quality: 0.84 },
+    qr: { maxWidth: 1600, maxHeight: 1600, quality: 0.98 },
+    proof: { maxWidth: 2000, maxHeight: 2000, quality: 0.92 }
+});
+
+function canvasToWebpBlob(canvas, quality) {
+    return new Promise((resolve, reject) => {
+        canvas.toBlob(blob => {
+            if (blob) resolve(blob);
+            else reject(new Error("This browser could not create an optimized WebP image."));
+        }, "image/webp", quality);
+    });
+}
+
+async function loadUploadBitmap(file) {
+    if (typeof createImageBitmap === "function") {
+        return createImageBitmap(file);
+    }
+
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        const url = URL.createObjectURL(file);
+        image.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(image);
+        };
+        image.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error(`Could not read ${file.name}.`));
+        };
+        image.src = url;
+    });
+}
+
+async function optimizeImageToWebp(file, settings) {
+    const allowed = ["image/png", "image/jpeg", "image/webp"];
+    if (!allowed.includes(file?.type)) {
+        throw new Error("Choose a PNG, JPG, or WebP image.");
+    }
+
+    const source = await loadUploadBitmap(file);
+    const sourceWidth = source.width || source.naturalWidth;
+    const sourceHeight = source.height || source.naturalHeight;
+
+    if (!sourceWidth || !sourceHeight) {
+        source.close?.();
+        throw new Error(`Could not read ${file.name}.`);
+    }
+
+    const scale = Math.min(
+        1,
+        settings.maxWidth / sourceWidth,
+        settings.maxHeight / sourceHeight
+    );
+    const width = Math.max(1, Math.round(sourceWidth * scale));
+    const height = Math.max(1, Math.round(sourceHeight * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d", { alpha: true });
+    if (!context) {
+        source.close?.();
+        throw new Error("Image optimization is not supported by this browser.");
+    }
+
+    context.clearRect(0, 0, width, height);
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(source, 0, 0, width, height);
+    source.close?.();
+
+    return canvasToWebpBlob(canvas, settings.quality);
+}
+
+async function uploadOptimizedWebp(path, file, settings, cacheControl) {
+    const optimized = await optimizeImageToWebp(file, settings);
+    const storageReference = ref(storage, path);
+
+    await uploadBytes(storageReference, optimized, {
+        contentType: "image/webp",
+        cacheControl
+    });
+
+    return {
+        url: await getDownloadURL(storageReference),
+        path,
+        originalBytes: file.size,
+        optimizedBytes: optimized.size
+    };
+}
+
 function previewFile(input, imageElement, maximumBytes) {
     const file = input.files?.[0];
 
@@ -568,19 +662,19 @@ function validateProduct(data) {
 async function uploadProductImage(productId) {
     const file = productImageInput.files?.[0];
 
-    if (!file) {
-        return null;
-    }
+    if (!file) return null;
 
-    const extension = file.name.split(".").pop()?.toLowerCase() || "image";
-    const path = `shop-products/${currentUser.uid}/${productId}.${extension}`;
-    const storageReference = ref(storage, path);
-
-    await uploadBytes(storageReference, file, { contentType: file.type });
+    const path = `shop-products/${currentUser.uid}/${productId}-${Date.now()}.webp`;
+    const uploaded = await uploadOptimizedWebp(
+        path,
+        file,
+        IMAGE_UPLOAD_SETTINGS.product,
+        "public,max-age=31536000,immutable"
+    );
 
     return {
-        imageUrl: await getDownloadURL(storageReference),
-        imagePath: path
+        imageUrl: uploaded.url,
+        imagePath: uploaded.path
     };
 }
 
@@ -799,11 +893,19 @@ function togglePaymentAccordion(button) {
 async function uploadPaymentQr(input, method) {
     const file = input.files?.[0];
     if (!file) return null;
-    const extension = file.name.split(".").pop()?.toLowerCase() || "image";
-    const path = `payment-qr/${currentUser.uid}/${method}.${extension}`;
-    const storageReference = ref(storage, path);
-    await uploadBytes(storageReference, file, { contentType: file.type });
-    return { qrImageUrl: await getDownloadURL(storageReference), qrImagePath: path };
+
+    const path = `payment-qr/${currentUser.uid}/${method}-${Date.now()}.webp`;
+    const uploaded = await uploadOptimizedWebp(
+        path,
+        file,
+        IMAGE_UPLOAD_SETTINGS.qr,
+        "public,max-age=31536000,immutable"
+    );
+
+    return {
+        qrImageUrl: uploaded.url,
+        qrImagePath: uploaded.path
+    };
 }
 
 function validateEnabledPaymentMethod(label, enabled, name, destination, qrUrl, needsName = true) {
@@ -867,6 +969,19 @@ async function savePaymentInformation() {
         if (!validateEnabledPaymentMethod("PayPal", methods.paypal.enabled, "", methods.paypal.email, methods.paypal.qrImageUrl, false)) return;
         const data = { methods: Object.keys(methods).filter(key => methods[key].enabled), gcash: methods.gcash, maya: methods.maya, paypal: methods.paypal, allowGuestOrders: allowGuestOrdersInput.checked, updatedAt: serverTimestamp() };
         await setDoc(paymentInformationReference(currentUser.uid), data, { merge: true });
+
+        const replacedQrPaths = [
+            [gcashUpload, old.gcash.qrImagePath],
+            [mayaUpload, old.maya.qrImagePath],
+            [paypalUpload, old.paypal.qrImagePath]
+        ];
+        await Promise.allSettled(
+            replacedQrPaths.map(([uploaded, previousPath]) => {
+                if (!uploaded || !previousPath || previousPath === uploaded.qrImagePath) return null;
+                return deleteStoredFile(previousPath);
+            })
+        );
+
         sellerPaymentInformation = data;
         closeModal(paymentInfoModal);
         showShopAlert("Payment information saved.");
@@ -1226,14 +1341,20 @@ async function continueToPayment() {
 
 async function uploadPaymentProof(orderId) {
     const file = paymentProofInput.files?.[0];
-    const extension = file.name.split(".").pop()?.toLowerCase() || "image";
+    if (!file) throw new Error("Upload your payment proof.");
+
     const buyerFolder = currentUser?.uid || "unknown-buyer";
-    const path = `payment-proofs/${shopOwnerUid}/${buyerFolder}/${orderId}.${extension}`;
-    const storageReference = ref(storage, path);
-    await uploadBytes(storageReference, file, { contentType: file.type });
+    const path = `payment-proofs/${shopOwnerUid}/${buyerFolder}/${orderId}.webp`;
+    const uploaded = await uploadOptimizedWebp(
+        path,
+        file,
+        IMAGE_UPLOAD_SETTINGS.proof,
+        "private,max-age=31536000,immutable"
+    );
+
     return {
-        paymentProofUrl: await getDownloadURL(storageReference),
-        paymentProofPath: path
+        paymentProofUrl: uploaded.url,
+        paymentProofPath: uploaded.path
     };
 }
 
@@ -1281,7 +1402,7 @@ async function submitOrder() {
     if (!referenceNumber) return showShopAlert(selectedPaymentMethod === "paypal" ? "Enter the PayPal transaction ID." : "Enter the payment reference number.");
     if (!proof) return showShopAlert("Upload your payment proof.");
     if (!buyerUsername) return showShopAlert("Enter your username or IGN.");
-    if (!previewFileValidation(proof, 2 * 1024 * 1024)) return;
+    if (!previewFileValidation(proof, 8 * 1024 * 1024)) return;
 
     submitOrderButton.disabled = true;
     submitOrderButton.textContent = "Sending Order...";
@@ -1590,7 +1711,7 @@ if (gcashNumberInput) {
 }
 
 productImageInput.addEventListener("change", () => {
-    const valid = previewFile(productImageInput, productImagePreview, 1024 * 1024);
+    const valid = previewFile(productImageInput, productImagePreview, 8 * 1024 * 1024);
 
     if (!valid && editingProductImageUrl) {
         setPreview(productImagePreview, editingProductImageUrl);
@@ -1608,9 +1729,9 @@ document.querySelectorAll("[data-payment-accordion]").forEach(button => {
 });
 savePaymentInfoButton.addEventListener("click", savePaymentInformation);
 
-gcashQrInput.addEventListener("change", () => previewFile(gcashQrInput, gcashQrPreview, 2 * 1024 * 1024));
-mayaQrInput.addEventListener("change", () => previewFile(mayaQrInput, mayaQrPreview, 2 * 1024 * 1024));
-paypalQrInput.addEventListener("change", () => previewFile(paypalQrInput, paypalQrPreview, 2 * 1024 * 1024));
+gcashQrInput.addEventListener("change", () => previewFile(gcashQrInput, gcashQrPreview, 8 * 1024 * 1024));
+mayaQrInput.addEventListener("change", () => previewFile(mayaQrInput, mayaQrPreview, 8 * 1024 * 1024));
+paypalQrInput.addEventListener("change", () => previewFile(paypalQrInput, paypalQrPreview, 8 * 1024 * 1024));
 copyPaymentDestinationButton.addEventListener("click", async () => {
     const value = buyerPaymentDestination.textContent.trim();
     if (!value || value === "—") return;

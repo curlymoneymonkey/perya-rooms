@@ -100,6 +100,14 @@ function createTextElement(tagName, className, text) {
     return element;
 }
 
+function debounce(callback, delay = 200) {
+    let timer = null;
+    return (...args) => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => callback(...args), delay);
+    };
+}
+
 function timestampMillis(value) {
     if (value?.toMillis) return value.toMillis();
     if (value instanceof Date) return value.getTime();
@@ -302,7 +310,10 @@ function renderLiveRooms() {
 
     favoriteRoomsSection.hidden = favoriteRooms.length === 0;
     favoriteRoomsMessage.textContent = "";
-    favoriteRooms.forEach(room => favoriteRoomsList.appendChild(createDirectoryRoomCard(room, true)));
+
+    const favoriteFragment = document.createDocumentFragment();
+    favoriteRooms.forEach(room => favoriteFragment.appendChild(createDirectoryRoomCard(room, true)));
+    favoriteRoomsList.appendChild(favoriteFragment);
 
     if (rooms.length === 0) {
         liveRoomsMessage.textContent = sectionEmptyMessage();
@@ -312,7 +323,10 @@ function renderLiveRooms() {
 
     liveRoomsMessage.textContent = otherRooms.length ? "" : "All matching live rooms are already shown in Favorite Rooms.";
     liveRoomsMessage.classList.remove("errorMessage");
-    otherRooms.forEach(room => liveRoomsList.appendChild(createDirectoryRoomCard(room, false)));
+
+    const roomsFragment = document.createDocumentFragment();
+    otherRooms.forEach(room => roomsFragment.appendChild(createDirectoryRoomCard(room, false)));
+    liveRoomsList.appendChild(roomsFragment);
 }
 
 function startFavoriteRoomsListener() {
@@ -552,7 +566,7 @@ directoryTabs.forEach(tab => {
     tab.addEventListener("click", () => setDirectorySection(tab.dataset.directorySection));
 });
 
-directorySearchInput.addEventListener("input", renderLiveRooms);
+directorySearchInput.addEventListener("input", debounce(renderLiveRooms, 180));
 directoryGameFilter.addEventListener("change", () => {
     updateRobloxDirectoryFilter();
     renderLiveRooms();
@@ -720,7 +734,6 @@ createRoomForm.addEventListener("submit", async event => {
                 platform: platformSelect.value,
                 ign: ignInput.value.trim(),
                 visibility: visibilitySelect.value,
-                ign: ignInput.value.trim(),
                 updatedAt: serverTimestamp()
             });
             window.location.reload();
