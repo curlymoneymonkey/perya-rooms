@@ -10,6 +10,14 @@ import {
 const ordersList = document.getElementById("ordersList");
 const ordersMessage = document.getElementById("ordersMessage");
 const refreshOrdersButton = document.getElementById("refreshOrdersButton");
+const filters = [...document.querySelectorAll("[data-filter]")];
+const pendingCount = document.getElementById("pendingCount");
+const completedCount = document.getElementById("completedCount");
+const rejectedCount = document.getElementById("rejectedCount");
+const allCount = document.getElementById("allCount");
+
+let orders = [];
+let activeFilter = "order_sent";
 
 const STATUS_DETAILS = {
     order_sent: {
@@ -155,7 +163,7 @@ function createOrderCard(order) {
     card.className = "orderCard myOrderCard";
 
     const header = document.createElement("div");
-    header.className = "orderCardHeader";
+    header.className = "orderCardHeader myOrderCardHeader";
 
     const titleGroup = document.createElement("div");
     titleGroup.className = "orderTitleGroup";
@@ -172,11 +180,14 @@ function createOrderCard(order) {
     const statusDetails = getStatusDetails(order.status);
     const status = createTextElement(
         "span",
-        `orderStatus ${statusDetails.className}`,
+        `orderStatus ${normalizeStatus(order.status)} ${statusDetails.className}`,
         `${statusDetails.icon} ${statusDetails.label}`
     );
 
     header.append(titleGroup, status);
+
+    const body = document.createElement("div");
+    body.className = "orderCardBody myOrderCardBody";
 
     const details = document.createElement("div");
     details.className = "orderDetailsGrid";
@@ -187,20 +198,20 @@ function createOrderCard(order) {
         createDetail("Reference", order.paymentReferenceNumber || "Not provided")
     );
 
-    card.append(
-        header,
-        createOrderItems(order),
-        details
-    );
+    body.append(createOrderItems(order), details);
+    card.append(header, body);
 
     if (order.deliveryProofUrl) {
         const proofLink = document.createElement("a");
-        proofLink.className = "proofLink";
+        proofLink.className = "ordersButton myOrdersProofLink";
         proofLink.href = order.deliveryProofUrl;
         proofLink.target = "_blank";
         proofLink.rel = "noopener noreferrer";
-        proofLink.textContent = "View Delivery Proof";
-        card.appendChild(proofLink);
+        proofLink.textContent = "↗ View Delivery Proof";
+        const footer = document.createElement("div");
+        footer.className = "myOrderCardFooter";
+        footer.appendChild(proofLink);
+        card.appendChild(footer);
     }
 
     if (order.deliveryNotes) {
@@ -222,25 +233,46 @@ function createOrderCard(order) {
     return card;
 }
 
-function renderEmptyState() {
-    const emptyState = document.createElement("div");
-    emptyState.className = "ordersEmpty myOrdersState";
+function updateCounts() {
+    pendingCount.textContent = String(orders.filter(order => normalizeStatus(order.status) === "order_sent").length);
+    completedCount.textContent = String(orders.filter(order => normalizeStatus(order.status) === "completed").length);
+    rejectedCount.textContent = String(orders.filter(order => normalizeStatus(order.status) === "rejected").length);
+    allCount.textContent = String(orders.length);
+}
 
-    emptyState.append(
-        createTextElement("div", "ordersEmptyIcon", "🛍️"),
-        createTextElement("h2", "ordersEmptyTitle", "No orders yet"),
-        createTextElement(
-            "p",
-            "ordersEmptyText",
-            "Your purchases will appear here after you send an order to a seller."
-        ),
-        createTextElement("a", "myOrdersStateButton", "Return to Dashboard")
-    );
+function renderOrders() {
+    const visibleOrders = activeFilter === "all"
+        ? orders
+        : orders.filter(order => normalizeStatus(order.status) === activeFilter);
 
-    const link = emptyState.querySelector(".myOrdersStateButton");
-    link.href = "dashboard.html";
+    if (!visibleOrders.length) {
+        const emptyState = document.createElement("div");
+        emptyState.className = "ordersEmpty myOrdersState";
 
-    ordersList.replaceChildren(emptyState);
+        const emptyTitle = orders.length ? `No ${activeFilter.replace("_", " ")} orders` : "No orders yet";
+        const emptyText = orders.length
+            ? "Choose another status to view your other purchases."
+            : "Your purchases will appear here after you send an order to a seller.";
+
+        emptyState.append(
+            createTextElement("div", "ordersEmptyIcon", orders.length ? "📭" : "🛍️"),
+            createTextElement("h2", "ordersEmptyTitle", emptyTitle),
+            createTextElement("p", "ordersEmptyText", emptyText)
+        );
+
+        if (!orders.length) {
+            const link = createTextElement("a", "myOrdersStateButton", "Return to Dashboard");
+            link.href = "dashboard.html";
+            emptyState.appendChild(link);
+        }
+
+        ordersList.replaceChildren(emptyState);
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    visibleOrders.forEach(order => fragment.appendChild(createOrderCard(order)));
+    ordersList.replaceChildren(fragment);
 }
 
 function readableOrderError(error) {
@@ -320,7 +352,7 @@ async function loadOrders() {
 
         const snapshot = await getDocs(ordersQuery);
 
-        const orders = snapshot.docs
+        orders = snapshot.docs
             .map(documentSnapshot => ({
                 id: documentSnapshot.id,
                 ...documentSnapshot.data()
@@ -330,17 +362,9 @@ async function loadOrders() {
                 - (first.createdAt?.toMillis?.() || 0)
             ));
 
-        ordersMessage.textContent =
-            `${orders.length} order${orders.length === 1 ? "" : "s"}`;
-
-        if (!orders.length) {
-            renderEmptyState();
-            return;
-        }
-
-        const fragment = document.createDocumentFragment();
-        orders.forEach(order => fragment.appendChild(createOrderCard(order)));
-        ordersList.replaceChildren(fragment);
+        updateCounts();
+        renderOrders();
+        ordersMessage.textContent = `${orders.length} order${orders.length === 1 ? "" : "s"}`;
     } catch (error) {
         console.error("Could not load orders:", error);
         const details = readableOrderError(error);
@@ -351,6 +375,14 @@ async function loadOrders() {
         refreshOrdersButton.disabled = false;
     }
 }
+
+filters.forEach(button => {
+    button.addEventListener("click", () => {
+        activeFilter = button.dataset.filter || "all";
+        filters.forEach(filter => filter.classList.toggle("active", filter === button));
+        renderOrders();
+    });
+});
 
 refreshOrdersButton?.addEventListener("click", loadOrders);
 loadOrders();

@@ -139,7 +139,11 @@
                     </div>
 
                     <div id="profileReviewPreview" class="profileReviewList"></div>
-                    <button id="viewAllReviewsButton" class="profileButton profileButtonSecondary" type="button" hidden>View All Reviews</button>
+                    <div class="profileReviewActions">
+                        <button id="submitReviewButton" class="profileButton profileButtonPrimary" type="button" hidden>✍️ Submit Review</button>
+                        <button id="viewAllReviewsButton" class="profileButton profileButtonSecondary" type="button" hidden>View All Reviews</button>
+                    </div>
+                    <p id="reviewEligibilityMessage" class="reviewEligibilityMessage" hidden></p>
                 </section>
             </div>
 
@@ -224,6 +228,36 @@
         </section>
     </div>
 
+    <div id="submitReviewModal" class="reviewModal" hidden>
+        <div class="reviewModalBackdrop" data-close-submit-review></div>
+        <section class="reviewModalDialog submitReviewDialog" role="dialog" aria-modal="true" aria-labelledby="submitReviewTitle">
+            <button id="closeSubmitReviewButton" class="modalCloseButton" type="button" aria-label="Close">&times;</button>
+            <p class="profileSectionEyebrow">Share your experience</p>
+            <h2 id="submitReviewTitle">Submit Community Review</h2>
+            <p class="submitReviewHelp">Choose whether you vouch for this user, then add an optional comment.</p>
+
+            <div class="reviewVoteChoices" role="radiogroup" aria-label="Review recommendation">
+                <button id="reviewVouchButton" class="reviewVoteButton reviewVotePositive" type="button" data-review-choice="true" aria-pressed="false">
+                    <span>👍</span><strong>I Vouch</strong><small>Positive experience</small>
+                </button>
+                <button id="reviewAgainstButton" class="reviewVoteButton reviewVoteNegative" type="button" data-review-choice="false" aria-pressed="false">
+                    <span>👎</span><strong>I Don’t Vouch</strong><small>Negative experience</small>
+                </button>
+            </div>
+
+            <label class="reviewCommentLabel" for="reviewComment">Review comment <span>(optional)</span></label>
+            <textarea id="reviewComment" class="reviewComment" maxlength="500" placeholder="Describe your experience with this user..."></textarea>
+            <div class="reviewFormMeta">
+                <span id="reviewFormMessage" class="reviewFormMessage" aria-live="polite"></span>
+                <span id="reviewCharacterCount">0 / 500</span>
+            </div>
+
+            <div class="reviewSubmitActions">
+                <button id="cancelSubmitReviewButton" class="profileButton profileButtonSecondary" type="button">Cancel</button>
+                <button id="saveReviewButton" class="profileButton profileButtonPrimary" type="button">Submit Review</button>
+            </div>
+        </section>
+    </div>
 
     <!-- Integrated Stage 2 shop dialogs -->
 <div id="productModal" class="modalOverlay" hidden>
@@ -265,6 +299,18 @@
 <div id="paymentModal" class="modalOverlay" hidden><section class="modalCard wideModal paymentCard" role="dialog" aria-modal="true" aria-labelledby="paymentTitle"><h2 id="paymentTitle">PAYMENT</h2><p class="paymentWarning">⚠️ Take a screenshot or photo of your receipt after sending payment.</p><div class="paymentCartSummary"><h3>Order Summary</h3><div id="paymentCartItems" class="paymentCartItems"></div></div><div class="totalRow"><span>Amount</span><strong id="paymentAmount">₱0</strong></div><h3 id="buyerPaymentMethodTitle">Choose Payment Method</h3><div id="paymentMethodChoices" class="paymentMethodChoices"></div><section id="selectedPaymentDetails" class="selectedPaymentDetails" hidden><div class="buyerQrBox"><img id="buyerQrImage" alt="Seller payment QR code"></div><p id="buyerAccountName" class="accountName"></p><div class="copyPaymentRow"><strong id="buyerPaymentDestination">—</strong><button id="copyPaymentDestinationButton" type="button">Copy</button></div></section><section id="paymentFillUpForm" hidden><div class="fieldGrid"><label class="fieldLabel">Payment Date *<input id="paymentDate" type="date"></label><label class="fieldLabel">Payment Time *<input id="paymentTime" type="time"></label></div><label class="fieldLabel"><span id="paymentReferenceLabel">Reference Number *</span><input id="paymentReference" type="text" maxlength="100"></label><label class="fieldLabel">Upload Payment Proof *<input id="paymentProof" type="file" accept="image/png,image/jpeg,image/webp"></label><div class="proofPreviewBox"><img id="paymentProofPreview" alt="Payment proof preview"></div><p class="noProofWarning">No payment proof = no item delivery.</p><label class="fieldLabel">Username / IGN *<input id="buyerUsername" type="text" maxlength="100"></label><label class="fieldLabel">Buyer Notes<textarea id="buyerNotes" maxlength="500" placeholder="Optional instructions for the seller"></textarea></label></section><div class="modalActions"><button id="backToCartButton" class="secondaryButton" type="button">Back to Cart</button><button id="submitOrderButton" type="button">Send Order</button></div></section></div>
 
 
+
+
+<div id="customerProofModal" class="customerProofModal" hidden>
+    <button class="customerProofModalBackdrop" type="button" data-close-customer-proof aria-label="Close payment proof"></button>
+    <section class="customerProofModalDialog" role="dialog" aria-modal="true" aria-labelledby="customerProofModalTitle">
+        <button id="closeCustomerProofButton" class="customerProofModalClose" type="button" aria-label="Close">&times;</button>
+        <p class="profileSectionEyebrow">Buyer upload</p>
+        <h2 id="customerProofModalTitle">Payment Proof</h2>
+        <img id="customerProofModalImage" src="" alt="Buyer payment proof">
+        <a id="customerProofOpenOriginal" class="profileButton profileButtonPrimary customerProofOriginalLink" href="#" target="_blank" rel="noopener">Open Original Image</a>
+    </section>
+</div>
 
 <!-- PERYA custom popup -->
 <div

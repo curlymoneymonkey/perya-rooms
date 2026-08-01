@@ -917,3 +917,303 @@
         font-size: 11px;
     }
 }
+
+
+/* =============================================
+   COMMUNITY REVIEW SUBMISSION
+============================================= */
+.profileReviewActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.profileReviewActions .profileButton { flex: 1 1 170px; }
+.reviewEligibilityMessage {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border: 1px dashed rgba(255,255,255,.14);
+    border-radius: 11px;
+    color: var(--profile-muted);
+    background: rgba(0,0,0,.14);
+    font-size: 12px;
+    text-align: center;
+}
+.submitReviewDialog { width: min(590px, 100%); }
+.submitReviewDialog > h2 { margin: 0 0 8px; text-align: left; }
+.submitReviewHelp { margin: 0 0 17px; color: var(--profile-muted); line-height: 1.5; }
+.reviewVoteChoices { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.reviewVoteButton {
+    display: grid;
+    grid-template-columns: 38px 1fr;
+    gap: 2px 10px;
+    align-items: center;
+    min-height: 82px;
+    padding: 13px;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 13px;
+    color: #fff;
+    background: rgba(255,255,255,.055);
+    text-align: left;
+    cursor: pointer;
+}
+.reviewVoteButton > span { grid-row: 1 / 3; font-size: 25px; text-align: center; }
+.reviewVoteButton strong { font-size: 14px; }
+.reviewVoteButton small { color: var(--profile-muted); }
+.reviewVotePositive.selected { border-color: rgba(85,213,138,.65); background: rgba(85,213,138,.15); box-shadow: 0 0 0 3px rgba(85,213,138,.08); }
+.reviewVoteNegative.selected { border-color: rgba(255,111,126,.65); background: rgba(255,111,126,.15); box-shadow: 0 0 0 3px rgba(255,111,126,.08); }
+.reviewCommentLabel { display: block; margin: 17px 0 7px; color: #ffe58b; font-size: 12px; font-weight: 900; }
+.reviewCommentLabel span { color: var(--profile-muted); font-weight: 500; }
+.reviewComment {
+    width: 100%;
+    min-height: 125px;
+    padding: 13px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 12px;
+    outline: none;
+    color: #201117;
+    background: #fff;
+    font: inherit;
+    resize: vertical;
+}
+.reviewComment:focus { border-color: var(--profile-gold); box-shadow: 0 0 0 4px rgba(255,212,90,.12); }
+.reviewFormMeta { display: flex; justify-content: space-between; gap: 12px; min-height: 25px; margin-top: 6px; color: var(--profile-muted); font-size: 11px; }
+.reviewFormMessage { color: #ffcf72; }
+.reviewSubmitActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
+
+/* =============================================
+   PROFILE CUSTOMER ORDER CARD IMPROVEMENTS
+============================================= */
+.profileCustomerOrdersBox .pendingCustomerOrder { position: relative; overflow: hidden; }
+.pendingCustomerOrderItems { display: grid; gap: 12px; padding: 12px; }
+.pendingCustomerOrderItemRow {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    align-items: stretch;
+    gap: 16px;
+    padding: 14px;
+    border: 1px solid rgba(255,212,90,.25);
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(255,212,90,.09), rgba(255,255,255,.035));
+    box-shadow: inset 0 1px rgba(255,255,255,.05), 0 8px 20px rgba(0,0,0,.13);
+}
+.pendingCustomerOrderItemImageWrap {
+    width: 92px;
+    min-height: 92px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    align-self: center;
+    border: 1px solid rgba(255,212,90,.34);
+    border-radius: 12px;
+    background: rgba(0,0,0,.28);
+}
+.pendingCustomerOrderItemImage {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 92px;
+    object-fit: cover;
+}
+.pendingCustomerOrderItemImagePlaceholder {
+    padding: 8px;
+    color: var(--profile-muted);
+    font-size: 11px;
+    font-weight: 800;
+    text-align: center;
+}
+.pendingCustomerOrderItemInfo {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+}
+.pendingCustomerOrderProductName {
+    display: block;
+    color: #fff8dc;
+    font-size: 20px;
+    font-weight: 950;
+    line-height: 1.2;
+    letter-spacing: .015em;
+    overflow-wrap: anywhere;
+}
+.pendingCustomerOrderItemMeta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 20px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,.11);
+}
+.pendingCustomerOrderQuantity,
+.pendingCustomerOrderAmount {
+    min-width: 0;
+    color: #eee3e7;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.3;
+}
+.pendingCustomerOrderQuantity strong {
+    color: #fff;
+    font-size: 17px;
+    font-weight: 950;
+}
+.pendingCustomerOrderAmount {
+    text-align: right;
+    white-space: nowrap;
+}
+.pendingCustomerOrderAmount strong {
+    color: #ffe27a;
+    font-size: 19px;
+    font-weight: 950;
+}
+.pendingCustomerOrderTotal { min-width: 165px; padding: 10px 13px; border: 1px solid rgba(255,212,90,.3); border-radius: 11px; background: rgba(255,212,90,.09); text-align: right; }
+.pendingCustomerOrderTotal span, .pendingCustomerOrderTotal strong { display: block; }
+.pendingCustomerOrderTotal span { color: var(--profile-muted); font-size: 9px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.pendingCustomerOrderTotal strong { margin-top: 3px; color: #ffe58b; font-size: 18px; }
+.pendingCustomerOrderBuyer { font-weight: 900; }
+
+@media (max-width: 520px) {
+    .reviewVoteChoices { grid-template-columns: 1fr; }
+    .reviewSubmitActions { flex-direction: column-reverse; }
+    .reviewSubmitActions .profileButton { width: 100%; }
+    .pendingCustomerOrderItemRow { grid-template-columns: 76px minmax(0, 1fr); gap: 11px; padding: 11px; }
+    .pendingCustomerOrderItemImageWrap { width: 76px; min-height: 76px; }
+    .pendingCustomerOrderItemImage { min-height: 76px; }
+    .pendingCustomerOrderItemInfo { gap: 11px; }
+    .pendingCustomerOrderProductName { font-size: 17px; }
+    .pendingCustomerOrderItemMeta { grid-template-columns: 1fr; gap: 7px; padding-top: 9px; }
+    .pendingCustomerOrderQuantity, .pendingCustomerOrderAmount { font-size: 14px; }
+    .pendingCustomerOrderAmount { text-align: left; }
+    .pendingCustomerOrderAmount strong { font-size: 17px; }
+    .pendingCustomerOrderTotal { width: 100%; }
+}
+
+
+/* =============================================
+   SELLER PAYMENT PROOF PREVIEW
+============================================= */
+.customerProofToggle {
+    width: calc(100% - 24px);
+    min-height: 38px;
+    margin: 0 12px 12px;
+    padding: 8px 12px;
+    border: 1px solid rgba(103,183,247,.28);
+    border-radius: 10px;
+    color: #dff3ff;
+    background: rgba(69,169,232,.10);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+}
+.customerProofToggle:hover:not(:disabled) { background: rgba(69,169,232,.18); }
+.customerProofToggle:disabled { opacity: .55; cursor: not-allowed; }
+.pendingCustomerOrderFooter[hidden] { display: none; }
+.pendingCustomerOrderFooter {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(165px, 1fr);
+    align-items: stretch;
+    gap: 10px;
+    padding: 0 12px 12px;
+}
+.pendingCustomerOrderProofPanel,
+.pendingCustomerOrderTotal {
+    min-height: 82px;
+}
+.pendingCustomerOrderProofPanel {
+    overflow: hidden;
+    border: 1px solid rgba(103,183,247,.24);
+    border-radius: 11px;
+    background: rgba(103,183,247,.07);
+}
+.customerProofThumbnailButton {
+    width: 100%;
+    height: 100%;
+    min-height: 82px;
+    display: block;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    background: rgba(0,0,0,.22);
+    cursor: zoom-in;
+}
+.customerProofThumbnailButton img {
+    display: block;
+    width: 100%;
+    height: 82px;
+    object-fit: cover;
+}
+.customerProofMissing {
+    min-height: 82px;
+    display: grid;
+    place-items: center;
+    padding: 10px;
+    color: var(--profile-muted);
+    font-size: 10px;
+    text-align: center;
+}
+.pendingCustomerOrderTotal {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.customerProofModal[hidden] { display: none; }
+.customerProofModal {
+    position: fixed;
+    inset: 0;
+    z-index: 3500;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+}
+.customerProofModalBackdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgba(3,7,14,.86);
+    backdrop-filter: blur(8px);
+}
+.customerProofModalDialog {
+    position: relative;
+    width: min(760px, 100%);
+    max-height: calc(100vh - 36px);
+    overflow: auto;
+    padding: 22px;
+    border: 1px solid var(--profile-border);
+    border-radius: 18px;
+    color: #fff8eb;
+    background: linear-gradient(155deg,rgba(57,17,40,.99),rgba(20,6,14,.99));
+    box-shadow: 0 30px 90px rgba(0,0,0,.62);
+}
+.customerProofModalDialog h2 { margin: 0 0 14px; }
+.customerProofModalDialog img {
+    display: block;
+    width: 100%;
+    max-height: 72vh;
+    object-fit: contain;
+    border-radius: 12px;
+    background: #080d18;
+}
+.customerProofModalClose {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 50%;
+    color: #fff;
+    background: rgba(255,255,255,.08);
+    font-size: 23px;
+    cursor: pointer;
+}
+.customerProofOriginalLink { width: 100%; margin-top: 14px; }
+@media (max-width: 520px) {
+    .pendingCustomerOrderFooter { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .pendingCustomerOrderProofPanel, .pendingCustomerOrderTotal { min-height: 76px; }
+    .customerProofThumbnailButton, .customerProofThumbnailButton img, .customerProofMissing { min-height: 76px; height: 76px; }
+    .pendingCustomerOrderTotal { width: auto; padding: 8px 10px; }
+    .pendingCustomerOrderTotal strong { font-size: 16px; }
+}

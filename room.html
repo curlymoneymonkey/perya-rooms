@@ -541,6 +541,370 @@ body.peryaPopupOpen {
         }
 
 </style>
+
+<style>
+/* =========================================================
+   ROOM SHOP — MATCHED CUSTOMER ORDER CARDS
+========================================================= */
+.roomCustomerOrderCard {
+    position: relative;
+    overflow: hidden;
+}
+
+.pendingCustomerOrderItems {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+}
+
+.pendingCustomerOrderItemRow {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    align-items: stretch;
+    gap: 16px;
+    padding: 14px;
+    border: 1px solid rgba(255, 212, 90, 0.28);
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(255, 212, 90, 0.1), rgba(255, 255, 255, 0.045));
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.06), 0 8px 20px rgba(0, 0, 0, 0.16);
+}
+
+.pendingCustomerOrderItemImageWrap {
+    width: 92px;
+    min-height: 92px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    align-self: center;
+    border: 1px solid rgba(255, 212, 90, 0.38);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.pendingCustomerOrderItemImage {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 92px;
+    object-fit: cover;
+}
+
+.pendingCustomerOrderItemImagePlaceholder {
+    padding: 8px;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 11px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.pendingCustomerOrderItemInfo {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+}
+
+.pendingCustomerOrderProductName {
+    display: block;
+    color: #fff8dc;
+    font-size: 20px;
+    font-weight: 950;
+    line-height: 1.2;
+    letter-spacing: 0.015em;
+    overflow-wrap: anywhere;
+}
+
+.pendingCustomerOrderItemMeta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 20px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.pendingCustomerOrderQuantity,
+.pendingCustomerOrderAmount {
+    min-width: 0;
+    color: #eee3e7;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.3;
+}
+
+.pendingCustomerOrderQuantity strong {
+    color: #fff;
+    font-size: 17px;
+    font-weight: 950;
+}
+
+.pendingCustomerOrderAmount {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.pendingCustomerOrderAmount strong {
+    color: #ffe27a;
+    font-size: 19px;
+    font-weight: 950;
+}
+
+.pendingCustomerOrderPrivateDetails p {
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.pendingCustomerOrderPrivateDetails strong,
+.pendingCustomerOrderBuyer {
+    color: #fff;
+    font-weight: 950;
+}
+
+.customerProofToggle {
+    width: calc(100% - 24px);
+    min-height: 40px;
+    margin: 0 12px 12px;
+    padding: 8px 12px;
+    border: 1px solid rgba(103, 183, 247, 0.32);
+    border-radius: 10px;
+    color: #dff3ff;
+    background: rgba(69, 169, 232, 0.12);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.customerProofToggle:hover:not(:disabled) {
+    background: rgba(69, 169, 232, 0.2);
+}
+
+.customerProofToggle:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.pendingCustomerOrderFooter[hidden] {
+    display: none !important;
+}
+
+.pendingCustomerOrderFooter {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(165px, 1fr);
+    align-items: stretch;
+    gap: 10px;
+    padding: 0 12px 12px;
+}
+
+.pendingCustomerOrderProofPanel,
+.pendingCustomerOrderTotal {
+    min-height: 84px;
+}
+
+.pendingCustomerOrderProofPanel {
+    overflow: hidden;
+    border: 1px solid rgba(103, 183, 247, 0.28);
+    border-radius: 11px;
+    background: rgba(103, 183, 247, 0.08);
+}
+
+.customerProofThumbnailButton {
+    width: 100%;
+    height: 100%;
+    min-height: 84px;
+    display: block;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    background: rgba(0, 0, 0, 0.24);
+    cursor: zoom-in;
+}
+
+.customerProofThumbnailButton img {
+    display: block;
+    width: 100%;
+    height: 84px;
+    object-fit: cover;
+}
+
+.customerProofMissing {
+    min-height: 84px;
+    display: grid;
+    place-items: center;
+    padding: 10px;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 11px;
+    text-align: center;
+}
+
+.pendingCustomerOrderTotal {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 11px 14px;
+    border: 1px solid rgba(255, 212, 90, 0.34);
+    border-radius: 11px;
+    background: rgba(255, 212, 90, 0.1);
+    text-align: right;
+}
+
+.pendingCustomerOrderTotal span,
+.pendingCustomerOrderTotal strong {
+    display: block;
+}
+
+.pendingCustomerOrderTotal span {
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.pendingCustomerOrderTotal strong {
+    margin-top: 4px;
+    color: #ffe58b;
+    font-size: 21px;
+    font-weight: 950;
+}
+
+.customerProofModal[hidden] {
+    display: none !important;
+}
+
+.customerProofModal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+}
+
+.customerProofModalBackdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgba(3, 7, 14, 0.88);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+
+.customerProofModalDialog {
+    position: relative;
+    width: min(760px, 100%);
+    max-height: calc(100vh - 36px);
+    overflow: auto;
+    padding: 22px;
+    border: 1px solid rgba(255, 212, 90, 0.3);
+    border-radius: 18px;
+    color: #fff;
+    background: linear-gradient(155deg, rgba(57, 17, 40, 0.99), rgba(20, 6, 14, 0.99));
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65);
+}
+
+.customerProofModalDialog h2 {
+    margin: 0 0 14px;
+    font-size: 23px;
+}
+
+.customerProofModalDialog img {
+    display: block;
+    width: 100%;
+    max-height: 72vh;
+    object-fit: contain;
+    border-radius: 12px;
+    background: #080d18;
+}
+
+.customerProofModalClose {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 50%;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.customerProofOpenOriginal {
+    width: 100%;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 14px;
+    border-radius: 10px;
+    color: #fff;
+    background: #2f80ed;
+    font-weight: 900;
+    text-decoration: none;
+}
+
+body.customerProofModalOpen {
+    overflow: hidden;
+}
+
+@media (max-width: 520px) {
+    .pendingCustomerOrderItemRow {
+        grid-template-columns: 76px minmax(0, 1fr);
+        gap: 11px;
+        padding: 11px;
+    }
+
+    .pendingCustomerOrderItemImageWrap {
+        width: 76px;
+        min-height: 76px;
+    }
+
+    .pendingCustomerOrderItemImage {
+        min-height: 76px;
+    }
+
+    .pendingCustomerOrderItemInfo {
+        gap: 11px;
+    }
+
+    .pendingCustomerOrderProductName {
+        font-size: 17px;
+    }
+
+    .pendingCustomerOrderItemMeta {
+        grid-template-columns: 1fr;
+        gap: 7px;
+        padding-top: 9px;
+    }
+
+    .pendingCustomerOrderQuantity,
+    .pendingCustomerOrderAmount {
+        font-size: 14px;
+    }
+
+    .pendingCustomerOrderAmount {
+        text-align: left;
+    }
+
+    .pendingCustomerOrderAmount strong {
+        font-size: 17px;
+    }
+
+    .pendingCustomerOrderFooter {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .customerProofModalDialog {
+        padding: 18px;
+    }
+}
+</style>
+
 </head>
 
 <body>
@@ -1271,6 +1635,18 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
+
+
+<!-- Buyer payment proof viewer -->
+<div id="customerProofModal" class="customerProofModal" hidden>
+    <button class="customerProofModalBackdrop" type="button" data-close-customer-proof aria-label="Close payment proof"></button>
+    <section class="customerProofModalDialog" role="dialog" aria-modal="true" aria-labelledby="customerProofModalTitle">
+        <button id="closeCustomerProofButton" class="customerProofModalClose" type="button" aria-label="Close">&times;</button>
+        <h2 id="customerProofModalTitle">Buyer Payment Proof</h2>
+        <img id="customerProofModalImage" src="" alt="Buyer payment proof">
+        <a id="customerProofOpenOriginal" class="customerProofOpenOriginal" href="#" target="_blank" rel="noopener noreferrer">Open Original Image</a>
+    </section>
+</div>
 
 <!-- PERYA custom alert / confirm / prompt popup -->
 <div

@@ -355,3 +355,68 @@
     .proofThumbnailButton { grid-template-columns: 76px minmax(0,1fr); }
     .proofThumbnailButton img { width: 76px; height: 70px; }
 }
+
+/* ==================================
+   MY ORDERS / BUYER DASHBOARD
+================================== */
+.ordersHeaderActions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.profileChip {
+    min-height: 48px;
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 16px;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 11px;
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 999px;
+    background: rgba(255,255,255,.045);
+    color: #fff;
+    text-decoration: none;
+}
+.profileChipIcon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: rgba(103,183,247,.13); }
+.profileChipText strong, .profileChipText small { display: block; }
+.profileChipText strong { font-size: 11px; }
+.profileChipText small { margin-top: 2px; color: var(--orders-muted); font-size: 8px; }
+.profileChipArrow { color: var(--orders-blue); }
+.myOrdersHero { margin-bottom: 0; }
+.myOrderCardHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.orderTitleGroup { min-width: 0; }
+.orderDate { display: block; margin-top: 6px; color: var(--orders-muted); font-size: 9px; }
+.myOrderCardBody { gap: 12px; }
+.orderItems { display: grid; gap: 7px; }
+.myOrderItemRow { grid-template-columns: minmax(0,1fr) auto; align-items: center; }
+.myOrderItemMain { min-width: 0; display: flex; align-items: center; gap: 10px; }
+.myOrderItemImage { width: 46px; height: 46px; flex: 0 0 auto; object-fit: cover; border-radius: 10px; border: 1px solid rgba(255,255,255,.08); background: rgba(0,0,0,.18); }
+.myOrderItemText { min-width: 0; }
+.orderItemName { display: block; }
+.myOrderItemMeta { display: block; margin-top: 4px; color: var(--orders-muted); font-size: 9px; }
+.myOrderItemSubtotal { align-self: center; }
+.orderDetailsGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+.myOrderCardFooter { margin-top: auto; padding: 0 15px 15px; }
+.myOrdersProofLink { width: 100%; min-height: 38px; border-color: rgba(103,183,247,.28); background: rgba(69,169,232,.13); color: #dff3ff; text-decoration: none; }
+.orderNote { margin: 0 15px 13px; padding: 11px; border: 1px solid rgba(255,255,255,.07); border-radius: 10px; background: rgba(255,255,255,.035); }
+.orderNoteTitle { display: block; color: var(--orders-gold); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
+.orderNoteText { margin: 6px 0 0; color: var(--orders-muted); font-size: 10px; line-height: 1.5; white-space: pre-wrap; }
+.orderNoteRejected { border-color: rgba(255,111,126,.22); background: rgba(255,111,126,.06); }
+.orderNoteRejected .orderNoteTitle { color: #ff9ca7; }
+.myOrdersState { grid-auto-flow: row; align-content: center; gap: 8px; }
+.ordersEmptyIcon { font-size: 32px; }
+.ordersEmptyTitle { margin: 0; color: #fff; font-size: 20px; }
+.ordersEmptyText { max-width: 460px; margin: 0; line-height: 1.55; }
+.myOrdersStateButton { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; margin-top: 6px; padding: 0 15px; border: 1px solid rgba(103,183,247,.28); border-radius: 10px; background: rgba(69,169,232,.14); color: #e7f7ff; font: inherit; font-size: 10px; font-weight: 900; text-decoration: none; cursor: pointer; }
+.myOrdersSkeletonCard { min-height: 220px; padding: 18px; }
+.myOrdersSkeleton { width: 100%; display: grid; gap: 12px; }
+.skeletonLine { height: 13px; border-radius: 999px; background: linear-gradient(90deg, rgba(255,255,255,.05), rgba(255,255,255,.11), rgba(255,255,255,.05)); background-size: 200% 100%; animation: ordersSkeleton 1.25s linear infinite; }
+.skeletonTitle { width: 68%; height: 19px; }
+.skeletonShort { width: 42%; }
+@keyframes ordersSkeleton { to { background-position: -200% 0; } }
+
+@media (max-width: 760px) {
+    .profileChipText, .profileChipArrow { display: none; }
+    .profileChip { grid-template-columns: 34px; padding: 6px; }
+    .ordersHeaderActions { gap: 6px; }
+}
+@media (max-width: 520px) {
+    .orderDetailsGrid { grid-template-columns: 1fr; }
+    .myOrderItemImage { width: 40px; height: 40px; }
+}

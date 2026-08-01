@@ -30,6 +30,17 @@ const viewAllButton = document.getElementById("viewAllReviewsButton");
 const reviewsModal = document.getElementById("reviewsModal");
 const closeReviewsButton = document.getElementById("closeReviewsButton");
 const allReviewsList = document.getElementById("allReviewsList");
+const submitReviewButton = document.getElementById("submitReviewButton");
+const reviewEligibilityMessage = document.getElementById("reviewEligibilityMessage");
+const submitReviewModal = document.getElementById("submitReviewModal");
+const closeSubmitReviewButton = document.getElementById("closeSubmitReviewButton");
+const cancelSubmitReviewButton = document.getElementById("cancelSubmitReviewButton");
+const reviewVouchButton = document.getElementById("reviewVouchButton");
+const reviewAgainstButton = document.getElementById("reviewAgainstButton");
+const reviewComment = document.getElementById("reviewComment");
+const reviewFormMessage = document.getElementById("reviewFormMessage");
+const reviewCharacterCount = document.getElementById("reviewCharacterCount");
+const saveReviewButton = document.getElementById("saveReviewButton");
 const staffManagement = document.getElementById("staffManagement");
 const internalRole = document.getElementById("internalRole");
 const toggleModeratorButton = document.getElementById("toggleModeratorButton");
@@ -44,6 +55,8 @@ let targetIsModerator = false;
 let targetIsAdmin = false;
 let targetIsVip = false;
 let reviews = [];
+let selectedReviewRecommendation = null;
+let viewerProfile = null;
 
 function formatDate(value) {
     if (!value?.toDate) return "";
@@ -63,6 +76,115 @@ function relativeDate(value) {
 
 function timestampMillis(value) {
     return value?.toMillis?.() || 0;
+}
+
+function viewerCanReview() {
+    return Boolean(currentViewer && !currentViewer.isAnonymous && currentViewer.uid !== targetUid);
+}
+
+function existingViewerReview() {
+    if (!currentViewer) return null;
+    return reviews.find(review => review.reviewerUid === currentViewer.uid || review.id === currentViewer.uid) || null;
+}
+
+function updateReviewChoiceButtons() {
+    [reviewVouchButton, reviewAgainstButton].forEach(button => {
+        const selected = String(selectedReviewRecommendation) === button.dataset.reviewChoice;
+        button.classList.toggle("selected", selected);
+        button.setAttribute("aria-pressed", String(selected));
+    });
+}
+
+function configureReviewButton() {
+    submitReviewButton.hidden = true;
+    reviewEligibilityMessage.hidden = true;
+
+    if (!currentViewer || currentViewer.isAnonymous) {
+        reviewEligibilityMessage.textContent = "Sign in with Google to submit a community review.";
+        reviewEligibilityMessage.hidden = false;
+        return;
+    }
+
+    if (currentViewer.uid === targetUid) {
+        reviewEligibilityMessage.textContent = "You cannot review your own profile.";
+        reviewEligibilityMessage.hidden = false;
+        return;
+    }
+
+    submitReviewButton.textContent = existingViewerReview() ? "✏️ Edit My Review" : "✍️ Submit Review";
+    submitReviewButton.hidden = false;
+}
+
+function openSubmitReview() {
+    if (!viewerCanReview()) return;
+    const currentReview = existingViewerReview();
+    selectedReviewRecommendation = currentReview ? currentReview.recommend === true : null;
+    reviewComment.value = String(currentReview?.review || "");
+    reviewCharacterCount.textContent = `${reviewComment.value.length} / 500`;
+    reviewFormMessage.textContent = "";
+    updateReviewChoiceButtons();
+    submitReviewModal.hidden = false;
+    document.body.classList.add("modalOpen");
+}
+
+function closeSubmitReview() {
+    submitReviewModal.hidden = true;
+    reviewFormMessage.textContent = "";
+    document.body.classList.remove("modalOpen");
+}
+
+async function submitCommunityReview() {
+    if (!viewerCanReview()) return;
+    if (selectedReviewRecommendation === null) {
+        reviewFormMessage.textContent = "Choose I Vouch or I Don’t Vouch.";
+        return;
+    }
+
+    saveReviewButton.disabled = true;
+    reviewVouchButton.disabled = true;
+    reviewAgainstButton.disabled = true;
+    reviewFormMessage.textContent = "Saving review…";
+
+    try {
+        if (!viewerProfile) {
+            const viewerSnapshot = await getDoc(doc(db, "publicProfiles", currentViewer.uid));
+            viewerProfile = viewerSnapshot.exists() ? viewerSnapshot.data() : {};
+        }
+
+        const reviewRef = doc(db, "users", targetUid, "reviews", currentViewer.uid);
+        const previous = existingViewerReview();
+        const reviewData = {
+            reviewerUid: currentViewer.uid,
+            username: viewerProfile?.username || currentViewer.displayName || "Player",
+            recommend: selectedReviewRecommendation,
+            review: reviewComment.value.trim().slice(0, 500),
+            updatedAt: serverTimestamp()
+        };
+        if (!previous) reviewData.createdAt = serverTimestamp();
+
+        await setDoc(reviewRef, reviewData, { merge: true });
+        await loadReviews();
+        closeSubmitReview();
+    } catch (error) {
+        console.error("Could not submit community review:", error);
+        reviewFormMessage.textContent = error?.code === "permission-denied"
+            ? "You do not have permission to submit this review. Check Firestore rules."
+            : "Could not submit your review. Please try again.";
+    } finally {
+        saveReviewButton.disabled = false;
+        reviewVouchButton.disabled = false;
+        reviewAgainstButton.disabled = false;
+    }
+}
+
+async function loadReviews() {
+    const reviewSnapshot = await getDocs(collection(db, "users", targetUid, "reviews"));
+    reviews = reviewSnapshot.docs
+        .map(item => ({ id: item.id, ...item.data() }))
+        .sort((a, b) => timestampMillis(b.createdAt || b.updatedAt) - timestampMillis(a.createdAt || a.updatedAt));
+    renderTrust();
+    renderReviews();
+    configureReviewButton();
 }
 
 function createReviewCard(review) {
@@ -123,10 +245,9 @@ async function loadProfile() {
 
     if (profileVisitShop) profileVisitShop.href = `my_shop.html?id=${encodeURIComponent(targetUid)}`;
 
-    const [profileSnapshot, roomSnapshot, reviewSnapshot] = await Promise.all([
+    const [profileSnapshot, roomSnapshot] = await Promise.all([
         getDoc(doc(db, "publicProfiles", targetUid)),
-        getDoc(doc(db, "permanentRooms", targetUid)),
-        getDocs(collection(db, "users", targetUid, "reviews"))
+        getDoc(doc(db, "permanentRooms", targetUid))
     ]);
 
     if (!profileSnapshot.exists()) throw new Error("This profile does not exist.");
@@ -137,12 +258,7 @@ async function loadProfile() {
     bio.textContent = profile.bio?.trim() || "No bio added.";
     memberSince.textContent = profile.createdAt ? `Member since ${formatDate(profile.createdAt)}` : "";
 
-    reviews = reviewSnapshot.docs
-        .map(item => ({ id: item.id, ...item.data() }))
-        .sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
-
-    renderTrust();
-    renderReviews();
+    await loadReviews();
 
     if (roomSnapshot.exists()) {
         const room = roomSnapshot.data();
@@ -250,10 +366,30 @@ viewAllButton.addEventListener("click", () => {
 });
 closeReviewsButton.addEventListener("click", closeReviews);
 reviewsModal.querySelector("[data-close-reviews]").addEventListener("click", closeReviews);
+submitReviewButton.addEventListener("click", openSubmitReview);
+closeSubmitReviewButton.addEventListener("click", closeSubmitReview);
+cancelSubmitReviewButton.addEventListener("click", closeSubmitReview);
+submitReviewModal.querySelector("[data-close-submit-review]").addEventListener("click", closeSubmitReview);
+reviewVouchButton.addEventListener("click", () => {
+    selectedReviewRecommendation = true;
+    reviewFormMessage.textContent = "";
+    updateReviewChoiceButtons();
+});
+reviewAgainstButton.addEventListener("click", () => {
+    selectedReviewRecommendation = false;
+    reviewFormMessage.textContent = "";
+    updateReviewChoiceButtons();
+});
+reviewComment.addEventListener("input", () => {
+    reviewCharacterCount.textContent = `${reviewComment.value.length} / 500`;
+});
+saveReviewButton.addEventListener("click", submitCommunityReview);
 toggleModeratorButton.addEventListener("click", toggleModerator);
 
 document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !reviewsModal.hidden) closeReviews();
+    if (event.key !== "Escape") return;
+    if (!submitReviewModal.hidden) closeSubmitReview();
+    else if (!reviewsModal.hidden) closeReviews();
 });
 
 (async function initialize() {

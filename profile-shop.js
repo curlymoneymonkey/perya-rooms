@@ -15,6 +15,27 @@ const customerOrdersList = document.getElementById("profileCustomerOrdersList");
 const customerOrdersSummary = document.getElementById("profileCustomerOrdersSummary");
 const customerOrderSearch = document.getElementById("profileCustomerOrderSearch");
 
+const customerProofModal = document.getElementById("customerProofModal");
+const customerProofModalImage = document.getElementById("customerProofModalImage");
+const customerProofOpenOriginal = document.getElementById("customerProofOpenOriginal");
+const closeCustomerProofButton = document.getElementById("closeCustomerProofButton");
+
+function openCustomerProof(url) {
+    if (!url || !customerProofModal || !customerProofModalImage) return;
+    customerProofModalImage.src = url;
+    if (customerProofOpenOriginal) customerProofOpenOriginal.href = url;
+    customerProofModal.hidden = false;
+    document.body.classList.add("modalOpen");
+}
+
+function closeCustomerProof() {
+    if (!customerProofModal) return;
+    customerProofModal.hidden = true;
+    customerProofModalImage?.removeAttribute("src");
+    if (customerProofOpenOriginal) customerProofOpenOriginal.href = "#";
+    document.body.classList.remove("modalOpen");
+}
+
 const newOrderSound = new Audio("sounds/new-order.mp3");
 newOrderSound.volume = 0.8;
 newOrderSound.preload = "auto";
@@ -432,64 +453,81 @@ function renderCustomerOrders() {
         card.appendChild(header);
 
         const content = document.createElement("div");
-        content.className = "pendingCustomerOrderContent";
-
-        const firstItem = items[0] || {};
-        const imageWrap = document.createElement("div");
-        imageWrap.className = "pendingCustomerOrderImageWrap";
-
-        if (firstItem.imageUrl) {
-            const image = document.createElement("img");
-            image.className = "pendingCustomerOrderImage";
-            image.src = firstItem.imageUrl;
-            image.alt = firstItem.productName || "Ordered product";
-            image.loading = "lazy";
-            imageWrap.appendChild(image);
-        } else {
-            imageWrap.textContent = "No image";
-        }
-
-        const info = document.createElement("div");
-        info.className = "pendingCustomerOrderInfo";
+        content.className = "pendingCustomerOrderItems";
 
         items.forEach(item => {
-            const itemBlock = document.createElement("div");
-            itemBlock.className = "pendingCustomerOrderItem";
+            const itemRow = document.createElement("div");
+            itemRow.className = "pendingCustomerOrderItemRow";
 
             const amount = item.subtotal
                 ?? Number(item.price || 0) * Number(item.quantity || 0);
+
+            const imageWrap = document.createElement("div");
+            imageWrap.className = "pendingCustomerOrderItemImageWrap";
+
+            if (item.imageUrl) {
+                const image = document.createElement("img");
+                image.className = "pendingCustomerOrderItemImage";
+                image.src = item.imageUrl;
+                image.alt = item.productName || "Ordered product";
+                image.loading = "lazy";
+                imageWrap.appendChild(image);
+            } else {
+                const placeholder = document.createElement("span");
+                placeholder.className = "pendingCustomerOrderItemImagePlaceholder";
+                placeholder.textContent = "No image";
+                imageWrap.appendChild(placeholder);
+            }
+
+            const itemInfo = document.createElement("div");
+            itemInfo.className = "pendingCustomerOrderItemInfo";
 
             const name = document.createElement("strong");
             name.className = "pendingCustomerOrderProductName";
             name.textContent = item.productName || "Unknown Product";
 
-            const quantity = document.createElement("p");
-            quantity.textContent = `Quantity: ${Number(item.quantity || 0)}x`;
+            const itemMeta = document.createElement("div");
+            itemMeta.className = "pendingCustomerOrderItemMeta";
 
-            const amountLine = document.createElement("p");
-            amountLine.textContent = `Amount: ${formatPrice(amount)}`;
+            const quantity = document.createElement("div");
+            quantity.className = "pendingCustomerOrderQuantity";
+            quantity.append("Quantity: ");
+            const quantityValue = document.createElement("strong");
+            quantityValue.textContent = `${Number(item.quantity || 0)}x`;
+            quantity.appendChild(quantityValue);
 
-            itemBlock.append(name, quantity, amountLine);
-            info.appendChild(itemBlock);
+            const amountLine = document.createElement("div");
+            amountLine.className = "pendingCustomerOrderAmount";
+            amountLine.append("Amount: ");
+            const amountValue = document.createElement("strong");
+            amountValue.textContent = `₱${formatPrice(amount)}`;
+            amountLine.appendChild(amountValue);
+
+            itemMeta.append(quantity, amountLine);
+            itemInfo.append(name, itemMeta);
+            itemRow.append(imageWrap, itemInfo);
+            content.appendChild(itemRow);
         });
 
         const privateDetails = document.createElement("div");
         privateDetails.className = "pendingCustomerOrderPrivateDetails";
 
-        const payment = document.createElement("p");
-        payment.textContent = `💳 Payment: ${formatPaymentMethod(order.paymentMethod)}`;
+        const makeBuyerDetail = (label, value) => {
+            const row = document.createElement("p");
+            row.append(`${label}: `);
+            const strong = document.createElement("strong");
+            strong.textContent = value;
+            row.appendChild(strong);
+            return row;
+        };
 
-        const reference = document.createElement("p");
-        reference.textContent = `# Ref No.: ${String(order.paymentReferenceNumber || "Not provided")}`;
+        privateDetails.append(
+            makeBuyerDetail("💳 Payment", formatPaymentMethod(order.paymentMethod)),
+            makeBuyerDetail("# Ref No.", String(order.paymentReferenceNumber || "Not provided")),
+            makeBuyerDetail("🗓 Paid on", formatPaymentDateTime(order.paymentDate, order.paymentTime))
+        );
 
-        const paid = document.createElement("p");
-        paid.textContent = `🗓 Paid on: ${formatPaymentDateTime(order.paymentDate, order.paymentTime)}`;
-
-        privateDetails.append(payment, reference, paid);
-        info.appendChild(privateDetails);
-
-        content.append(imageWrap, info);
-        card.appendChild(content);
+        card.append(content, privateDetails);
 
         if (status === "rejected" && order.rejectionReason) {
             const reason = document.createElement("p");
@@ -497,6 +535,61 @@ function renderCustomerOrders() {
             reason.textContent = `Reason: ${String(order.rejectionReason).slice(0, 300)}`;
             card.appendChild(reason);
         }
+
+        const proofToggle = document.createElement("button");
+        proofToggle.type = "button";
+        proofToggle.className = "customerProofToggle";
+        proofToggle.textContent = order.paymentProofUrl
+            ? "📷 Show Payment Proof"
+            : "📷 No Payment Proof";
+        proofToggle.disabled = !order.paymentProofUrl;
+
+        const orderFooter = document.createElement("div");
+        orderFooter.className = "pendingCustomerOrderFooter";
+        orderFooter.hidden = true;
+
+        const proofPanel = document.createElement("div");
+        proofPanel.className = "pendingCustomerOrderProofPanel";
+
+        if (order.paymentProofUrl) {
+            const proofThumb = document.createElement("button");
+            proofThumb.type = "button";
+            proofThumb.className = "customerProofThumbnailButton";
+            proofThumb.title = "Click to enlarge payment proof";
+            proofThumb.setAttribute("aria-label", "Open buyer payment proof in full screen");
+
+            const proofImage = document.createElement("img");
+            proofImage.src = order.paymentProofUrl;
+            proofImage.alt = "Buyer payment proof";
+            proofImage.loading = "lazy";
+            proofThumb.appendChild(proofImage);
+            proofThumb.addEventListener("click", () => openCustomerProof(order.paymentProofUrl));
+            proofPanel.appendChild(proofThumb);
+        } else {
+            const noProof = document.createElement("div");
+            noProof.className = "customerProofMissing";
+            noProof.textContent = "No payment proof uploaded";
+            proofPanel.appendChild(noProof);
+        }
+
+        const totalAmount = document.createElement("div");
+        totalAmount.className = "pendingCustomerOrderTotal";
+        const computedTotal = order.totalAmount ?? items.reduce((sum, item) => (
+            sum + Number(item.subtotal ?? Number(item.price || 0) * Number(item.quantity || 0))
+        ), 0);
+        totalAmount.innerHTML = `<span>Total Amount</span><strong>₱${formatPrice(computedTotal)}</strong>`;
+        orderFooter.append(proofPanel, totalAmount);
+
+        proofToggle.addEventListener("click", () => {
+            const willShow = orderFooter.hidden;
+            orderFooter.hidden = !willShow;
+            proofToggle.textContent = willShow
+                ? "🙈 Hide Payment Proof"
+                : "📷 Show Payment Proof";
+            proofToggle.setAttribute("aria-expanded", String(willShow));
+        });
+
+        card.append(proofToggle, orderFooter);
 
         const actions = document.createElement("div");
         actions.className = "pendingCustomerOrderActions";
@@ -588,6 +681,13 @@ function listenForCustomerOrders() {
 }
 
 customerOrderSearch?.addEventListener("input", renderCustomerOrders);
+closeCustomerProofButton?.addEventListener("click", closeCustomerProof);
+customerProofModal?.querySelector("[data-close-customer-proof]")?.addEventListener("click", closeCustomerProof);
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && customerProofModal && !customerProofModal.hidden) {
+        closeCustomerProof();
+    }
+});
 
 window.addEventListener("pagehide", () => {
     ordersUnsubscribe?.();
