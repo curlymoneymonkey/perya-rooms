@@ -238,6 +238,8 @@ let unsubscribeRoom = null;
 let animationTimer = null;
 let startupRollNumber = null;
 let revealUnlockAt = 0;
+let startupHostRollTriggered = false;
+let startupHostRollTimer = null;
 
 // Viewer-only fallback for rolls where Firestore delivers the completed
 // snapshot before the brief rolling:true snapshot is observed.
@@ -926,6 +928,11 @@ async function createRoom() {
 
     currentRoomId = roomId;
     startupRollNumber = null;
+    startupHostRollTriggered = false;
+    if (startupHostRollTimer !== null) {
+        window.clearTimeout(startupHostRollTimer);
+        startupHostRollTimer = null;
+    }
 
     setRoomInUrl(roomId);
     listenToRoom();
@@ -966,6 +973,11 @@ async function joinRoom(roomId) {
 
         currentRoomId = cleanedRoomId;
         startupRollNumber = null;
+        startupHostRollTriggered = false;
+        if (startupHostRollTimer !== null) {
+            window.clearTimeout(startupHostRollTimer);
+            startupHostRollTimer = null;
+        }
 
         setRoomInUrl(cleanedRoomId);
         listenToRoom();
@@ -1026,12 +1038,14 @@ function listenToHostAccountControls(hostUid) {
             hostAccountControls = snapshot.exists() ? snapshot.data() : {};
             hostAccountControlsLoaded = true;
             updateScreen();
+            tryStartStartupHostRoll();
         },
         error => {
             console.error("Could not read host account controls:", error);
             hostAccountControls = {};
             hostAccountControlsLoaded = true;
             updateScreen();
+            tryStartStartupHostRoll();
         }
     );
 }
@@ -1085,6 +1099,7 @@ function listenToRoom() {
 
             updateScreen();
             showGame();
+            tryStartStartupHostRoll();
         },
 
         error => {
@@ -1424,6 +1439,64 @@ function updateScreen() {
             currentResultPanel.hidden = true;
         }
     }
+}
+
+
+function tryStartStartupHostRoll() {
+    if (
+        startupHostRollTriggered ||
+        startupHostRollTimer !== null ||
+        !isHost ||
+        !currentRoomId ||
+        !currentRoom ||
+        hostAccountControlsLoaded !== true ||
+        isRollingLocally
+    ) {
+        return;
+    }
+
+    startupHostRollTriggered = true;
+
+    // Every time the host enters the temporary room, clear the old roll display
+    // and Previous Rolls first. The automatic startup roll then becomes the
+    // first roll of the new room session.
+    startupHostRollTimer = window.setTimeout(async () => {
+        startupHostRollTimer = null;
+
+        try {
+            await updateDoc(roomReference(currentRoomId), {
+                history: [],
+                latestResult: [],
+                pendingResult: [],
+                rolling: false,
+                updatedAt: serverTimestamp()
+            });
+
+            currentRoom = {
+                ...currentRoom,
+                history: [],
+                latestResult: [],
+                pendingResult: [],
+                rolling: false
+            };
+
+            renderHistory(currentRoom);
+            showWhiteDice(clampDiceCount(currentRoom.diceCount));
+
+            if (
+                currentRoom.rollingSuspended === true ||
+                hostAccountControls.rollingRestricted === true
+            ) {
+                updateScreen();
+                return;
+            }
+
+            await rollDice();
+        } catch (error) {
+            console.error("Could not reset Previous Rolls on startup:", error);
+            startupHostRollTriggered = false;
+        }
+    }, 150);
 }
 
 
@@ -2035,6 +2108,11 @@ window.addEventListener(
     () => {
 
         stopRollingAnimation();
+
+        if (startupHostRollTimer !== null) {
+            window.clearTimeout(startupHostRollTimer);
+            startupHostRollTimer = null;
+        }
 
         if (unsubscribeRoom) {
             unsubscribeRoom();

@@ -176,6 +176,9 @@ let isHost = false;
 let animationTimer = null;
 let rollingLocally = false;
 let revealUnlockAt = 0;
+let accountRestrictionsLoaded = false;
+let startupHostRollTriggered = false;
+let startupHostRollTimer = null;
 let hostControlsHidden = false;
 
 // Viewer-only fallback for rolls where Firestore delivers the completed
@@ -525,17 +528,23 @@ function listenForAccountRestrictions() {
     if (accountUnsubscribe) accountUnsubscribe();
     if (!currentUser || currentUser.isAnonymous) {
         currentAccount = {};
+        accountRestrictionsLoaded = true;
         return;
     }
 
     const userRef = doc(db, "users", currentUser.uid);
     accountUnsubscribe = onSnapshot(userRef, snapshot => {
         currentAccount = snapshot.exists() ? snapshot.data() : {};
+        accountRestrictionsLoaded = true;
         populatePermanentDiceSkinSelect();
         if (currentRoom) renderRoom(currentRoom);
         if (currentReviews) renderReviews();
+        tryStartStartupHostRoll();
     }, error => {
         console.error("Could not load account restrictions:", error);
+        currentAccount = {};
+        accountRestrictionsLoaded = true;
+        tryStartStartupHostRoll();
     });
 }
 
@@ -2066,6 +2075,64 @@ async function findRoomByDiceId(diceId) {
     return { ref: documentSnapshot.ref, data: documentSnapshot.data() };
 }
 
+function tryStartStartupHostRoll() {
+    if (
+        startupHostRollTriggered ||
+        startupHostRollTimer !== null ||
+        !accountRestrictionsLoaded ||
+        !isHost ||
+        !roomRef ||
+        !currentRoom ||
+        rollingLocally
+    ) {
+        return;
+    }
+
+    startupHostRollTriggered = true;
+
+    // Every time the host enters the permanent room, clear the old roll display
+    // and Previous Rolls first. The automatic startup roll then becomes the
+    // first roll of the new room session.
+    startupHostRollTimer = window.setTimeout(async () => {
+        startupHostRollTimer = null;
+
+        try {
+            await updateDoc(roomRef, {
+                history: [],
+                latestResult: [],
+                pendingResult: [],
+                rolling: false,
+                updatedAt: serverTimestamp()
+            });
+
+            currentRoom = {
+                ...currentRoom,
+                history: [],
+                latestResult: [],
+                pendingResult: [],
+                rolling: false
+            };
+
+            renderHistory(currentRoom);
+            showWhiteDice(clampDiceCount(currentRoom.diceCount));
+
+            if (
+                currentRoom.rollingSuspended === true ||
+                Boolean(accountRestrictionMessage("roll"))
+            ) {
+                renderRoom(currentRoom);
+                return;
+            }
+
+            await rollDice();
+        } catch (error) {
+            console.error("Could not reset Previous Rolls on startup:", error);
+            startupHostRollTriggered = false;
+        }
+    }, 150);
+}
+
+
 async function rollDice() {
     if (
         !isHost ||
@@ -3121,6 +3188,10 @@ document.getElementById("backHomeButton").addEventListener("click", () => locati
 
 
 window.addEventListener("beforeunload", () => {
+    if (startupHostRollTimer !== null) {
+        window.clearTimeout(startupHostRollTimer);
+        startupHostRollTimer = null;
+    }
     if (viewerCountUnsubscribe) viewerCountUnsubscribe();
     if (viewerConnectionUnsubscribe) viewerConnectionUnsubscribe();
 });
@@ -3178,6 +3249,7 @@ async function start() {
         roomLoading.hidden = true;
         roomScreen.hidden = false;
         renderRoom(snapshot.data());
+        tryStartStartupHostRoll();
     }, error => {
         console.error(error);
         roomLoading.innerHTML = "<h2>Could not load this room.</h2>";
