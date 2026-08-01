@@ -2,7 +2,7 @@
    PERYA DICE ADMIN VIEWER
 ================================== */
 
-import { authReady, db } from "./firebase.js";
+import { authReady, db, functions } from "./firebase.js";
 import { isEnabledAdmin } from "./permissions.js";
 
 import {
@@ -17,6 +17,14 @@ import {
     where
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
+
+
+import {
+    httpsCallable
+} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-functions.js";
+
+const getSecureRollQueue = httpsCallable(functions, "getSecureRollQueue");
+const setSecureRollQueue = httpsCallable(functions, "setSecureRollQueue");
 
 /* ==================================
    DICE DATA
@@ -668,16 +676,29 @@ async function findRoom(gameId) {
 }
 
 
+function secureRoomType(type) {
+    return type === "Guest Room" ? "guest" : "permanent";
+}
+
+async function loadSecureQueue(roomRef, type) {
+    const response = await getSecureRollQueue({
+        roomType: secureRoomType(type),
+        roomId: roomRef.id
+    });
+    return normalizeNextRolls(response.data?.rolls);
+}
+
 /* ==================================
    LIVE ROOM UPDATES
 ================================== */
 
 function startRoomListener(roomRef, type) {
     stopRoomListener();
+    let lastRollNumber = null;
 
     unsubscribeRoomListener = onSnapshot(
         roomRef,
-        snapshot => {
+        async snapshot => {
             if (!snapshot.exists()) {
                 gameStatus.textContent = "This room no longer exists.";
                 rollContainer.innerHTML = "";
@@ -688,58 +709,34 @@ function startRoomListener(roomRef, type) {
             loadedRoomRef = snapshot.ref;
             loadedRoomType = type;
             loadedRoomPath = snapshot.ref.path;
-
             gameStatus.textContent = "🟢 Room connected";
             roomType.textContent = type;
 
-            const incomingRolls = normalizeNextRolls(snapshot.data().nextRolls);
-            const queueAdvanced = didFutureQueueAdvance(
-                editableNextRolls,
-                incomingRolls
-            );
-            const incomingMatchesLocal = rollQueuesAreEqual(
-                editableNextRolls,
-                incomingRolls
-            );
-
-            /*
-             * Firestore may emit another room snapshot while an admin edit is
-             * still waiting for the auto-save timer. Do not replace the local
-             * editor with that older server value, or the selected color will
-             * appear to jump back immediately.
-             *
-             * A real queue advance must still be accepted because a completed
-             * roll consumes Next #1 and shifts every future roll forward.
-             */
-            if (isApplyingLocalChange && !queueAdvanced && !incomingMatchesLocal) {
+            const rollNumber = Number(snapshot.data()?.rollNumber || 0);
+            if (lastRollNumber === null) {
+                lastRollNumber = rollNumber;
                 return;
             }
+            if (rollNumber === lastRollNumber || isApplyingLocalChange) return;
+            lastRollNumber = rollNumber;
 
-            // After a roll is consumed, reset the Next #1 color controls so
-            // every color is available again. The newly shifted roll itself
-            // is not changed.
-            if (queueAdvanced) {
+            try {
+                editableNextRolls = await loadSecureQueue(snapshot.ref, type);
                 allowedNextOneColors = new Set(ALL_COLOR_INDEXES);
+                isApplyingLocalChange = false;
                 setSavingStatus("Color choices reset for the new Next #1.");
                 showToast("✓ New roll: all colors re-enabled");
+                renderRolls();
+            } catch (error) {
+                console.error("Could not refresh secure future rolls:", error);
             }
-
-            editableNextRolls = incomingRolls;
-
-            if (queueAdvanced || incomingMatchesLocal) {
-                isApplyingLocalChange = false;
-            }
-
-            renderRolls();
         },
         error => {
             console.error("Live admin room listener failed:", error);
-            gameStatus.textContent =
-                "Live updates stopped. Check Firestore rules and the browser console.";
+            gameStatus.textContent = "Live updates stopped. Check the browser console.";
         }
     );
 }
-
 
 /* ==================================
    AUTO LOAD ROOM
@@ -780,7 +777,7 @@ async function loadGame() {
         loadedRoomRef = room.ref;
         loadedRoomType = room.type;
         loadedRoomPath = room.ref.path;
-        editableNextRolls = normalizeNextRolls(room.data.nextRolls);
+        editableNextRolls = await loadSecureQueue(room.ref, room.type);
 
         gameStatus.textContent = "Room found.";
         roomType.textContent = room.type;
@@ -839,8 +836,10 @@ async function saveChanges() {
     setSavingStatus("Saving changes...");
 
     try {
-        await updateDoc(roomRefToSave, {
-            nextRolls: rollsToSave.map(encodeRoll)
+        await setSecureRollQueue({
+            roomType: secureRoomType(loadedRoomType),
+            roomId: roomRefToSave.id,
+            rolls: rollsToSave.map(encodeRoll)
         });
         if (loadedRoomPath === roomPathToSave &&
             rollQueuesAreEqual(editableNextRolls, rollsToSave)) {
@@ -851,7 +850,7 @@ async function saveChanges() {
         console.error("Could not save future rolls:", error);
         if (loadedRoomPath === roomPathToSave) {
             isApplyingLocalChange = true;
-            setSavingStatus("❌ Could not save. Make sure Firestore rules allow enabled admins to update nextRolls.", true);
+            setSavingStatus("❌ Could not save the secure future-roll queue.", true);
             if (saveChangesButton) saveChangesButton.disabled = false;
             showToast("Save failed.", true);
         }

@@ -187,6 +187,7 @@ async function renderUser(user) {
         <label class="check-row"><input type="checkbox" id="userRollingRestricted" ${user.rollingRestricted === true ? "checked" : ""} ${!mayManageTarget ? "disabled" : ""}> Prevent rolling</label>
         <label class="check-row"><input type="checkbox" id="userReviewsRestricted" ${user.reviewsRestricted === true ? "checked" : ""} ${!mayManageTarget ? "disabled" : ""}> Prevent reviews</label>
         <label class="check-row"><input type="checkbox" id="userAccountSuspended" ${user.accountSuspended === true ? "checked" : ""} ${!mayManageTarget ? "disabled" : ""}> Suspend account</label>
+        <label class="check-row full"><input type="checkbox" id="userImAMonkeyAccess" ${(Array.isArray(user.allowedPages) && user.allowedPages.includes("imamonkeyandilovemoney.html")) || user.imamonkeyandilovemoneyAccess === true ? "checked" : ""} ${!mayManageTarget ? "disabled" : ""}> Allow admin access</strong></label>
         <label class="full"><span>Reason</span><textarea class="pdo-input" id="userRestrictionReason" maxlength="300" placeholder="Reason for this action" ${!mayManageTarget ? "disabled" : ""}>${esc(user.restrictionReason || "")}</textarea></label>
       </div>
       <div class="result-actions"><a class="pdo-button secondary" href="profile.html?id=${encodeURIComponent(user.id)}">View profile</a><button class="pdo-button" id="saveUserControls" type="button" ${!mayManageTarget ? "disabled" : ""}>Save changes</button></div>
@@ -242,6 +243,15 @@ async function saveUserControls() {
   const reason = clean(document.getElementById("userRestrictionReason").value).slice(0, 300);
   const shouldHaveVip = ["VIP", "Moderator", "Administrator", "Head Administrator"].includes(nextRole);
   const alreadyHadVip = selectedUser.vip === true;
+  const privatePageName = "imamonkeyandilovemoney.html";
+  const privatePageAllowed = document.getElementById("userImAMonkeyAccess").checked;
+  const allowedPages = Array.isArray(selectedUser.allowedPages)
+    ? [...new Set(selectedUser.allowedPages.map(clean).filter(Boolean))]
+    : [];
+  const privatePageIndex = allowedPages.indexOf(privatePageName);
+
+  if (privatePageAllowed && privatePageIndex === -1) allowedPages.push(privatePageName);
+  if (!privatePageAllowed && privatePageIndex !== -1) allowedPages.splice(privatePageIndex, 1);
 
   const changes = {
     vip: shouldHaveVip,
@@ -253,6 +263,10 @@ async function saveUserControls() {
     rollingRestricted: document.getElementById("userRollingRestricted").checked,
     reviewsRestricted: document.getElementById("userReviewsRestricted").checked,
     accountSuspended: document.getElementById("userAccountSuspended").checked,
+    allowedPages,
+    imamonkeyandilovemoneyAccess: privatePageAllowed,
+    pageAccessUpdatedAt: serverTimestamp(),
+    pageAccessUpdatedBy: staffUser.uid,
     restrictionReason: reason,
     restrictionsUpdatedAt: serverTimestamp(),
     restrictionsUpdatedBy: staffUser.uid
@@ -322,6 +336,7 @@ async function saveUserControls() {
       logAction("user_control_updated", "user", selectedUser.id, {
         previousRole, role: nextRole, rollingRestricted: changes.rollingRestricted,
         reviewsRestricted: changes.reviewsRestricted, accountSuspended: changes.accountSuspended,
+        imamonkeyandilovemoneyAccess: privatePageAllowed, allowedPages: changes.allowedPages,
         restrictionReason: reason, vip: changes.vip
       }),
       notifyUser(selectedUser.id, notificationTitle, notificationMessage,

@@ -1,4 +1,4 @@
-import { authReady, db, realtimeDb } from "./firebase.js";
+import { authReady, db, realtimeDb, functions } from "./firebase.js";
 
 import {
     collection,
@@ -24,6 +24,14 @@ import {
     remove,
     set
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
+
+
+import {
+    httpsCallable
+} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-functions.js";
+
+const startSecureRoll = httpsCallable(functions, "startSecureRoll");
+const setSecureDiceCount = httpsCallable(functions, "setSecureDiceCount");
 
 const defaultDiceImages = [
     "images/red.png",
@@ -163,6 +171,7 @@ let currentRoom = null;
 let isHost = false;
 let animationTimer = null;
 let rollingLocally = false;
+let revealUnlockAt = 0;
 let hostControlsHidden = false;
 let creatingNextRolls = false;
 let currentReviews = [];
@@ -698,10 +707,6 @@ function generateDice(amount) {
     return Array.from({ length: amount }, () => Math.floor(Math.random() * diceImages.length));
 }
 
-function encodeRoll(values) {
-    return values.join(",");
-}
-
 function decodeStoredRoll(value) {
     if (Array.isArray(value)) {
         return value
@@ -715,26 +720,6 @@ function decodeStoredRoll(value) {
         .filter(number => Number.isInteger(number) && diceImages[number]);
 }
 
-function generateNextRolls(amount, total = 10) {
-    return Array.from(
-        { length: total },
-        () => encodeRoll(generateDice(amount))
-    );
-}
-
-function prepareNextRolls(storedRolls, amount) {
-    const validRolls = Array.isArray(storedRolls)
-        ? storedRolls
-            .map(roll => encodeRoll(decodeStoredRoll(roll)))
-            .filter(roll => decodeStoredRoll(roll).length === amount)
-        : [];
-
-    while (validRolls.length < 10) {
-        validRolls.push(encodeRoll(generateDice(amount)));
-    }
-
-    return validRolls.slice(0, 10);
-}
 
 function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -854,28 +839,6 @@ async function enforceAutoOffline(room) {
             liveEndedAt: Timestamp.now(),
             updatedAt: serverTimestamp()
         });
-    }
-}
-
-async function ensureNextRolls(room, amount) {
-    if (!isHost || creatingNextRolls || room.rolling) return;
-
-    const current = Array.isArray(room.nextRolls) ? room.nextRolls : [];
-    const needsUpdate =
-        current.length !== 10 ||
-        current.some(roll => decodeStoredRoll(roll).length !== amount);
-
-    if (!needsUpdate) return;
-
-    creatingNextRolls = true;
-
-    try {
-        await updateDoc(roomRef, {
-            nextRolls: prepareNextRolls(current, amount),
-            updatedAt: serverTimestamp()
-        });
-    } finally {
-        creatingNextRolls = false;
     }
 }
 
@@ -1845,8 +1808,6 @@ function renderRoom(room) {
     applyDiceSkin(room.diceSkinId);
     populatePermanentDiceSkinSelect();
 
-    ensureNextRolls(room, amount).catch(console.error);
-
     roomNameText.textContent = room.roomName || "Permanent Room";
     diceIdText.textContent = room.diceId || "";
     hostText.innerHTML = "";
@@ -1946,6 +1907,24 @@ function renderRoom(room) {
     if (diceCountDisplay) diceCountDisplay.disabled = diceControlsDisabled;
     if (decreaseDiceCountButton) decreaseDiceCountButton.disabled = diceControlsDisabled || amount <= 1;
     if (increaseDiceCountButton) increaseDiceCountButton.disabled = diceControlsDisabled || amount >= 15;
+
+    const revealIsLocked =
+        rollingLocally &&
+        performance.now() < revealUnlockAt;
+
+    if (revealIsLocked) {
+        rollStatus.textContent = "🎲 Rolling...";
+
+        if (animationTimer === null) {
+            startAnimation(amount);
+        }
+
+        // The Firestore snapshot may already contain latestResult and history.
+        // Keep both hidden until the exact three-second reveal point.
+        enforceAutoOffline(room).catch(console.error);
+        return;
+    }
+
     renderHistory(room);
 
     if (room.rolling) {
@@ -1986,12 +1965,13 @@ async function rollDice() {
 
     const restriction = accountRestrictionMessage("roll");
     if (restriction) {
-        await showPeryaAlert(
-            restriction,
-            { type: "warning", title: "Rolling Restricted" }
-        );
+        await showPeryaAlert(restriction, { type: "warning", title: "Rolling Restricted" });
         return;
     }
+
+    const rollClickedAt = performance.now();
+    const revealDurationMs = 1850; // compensates for the existing ~1s startup delay, for ~2.85s total
+    revealUnlockAt = rollClickedAt + revealDurationMs;
 
     rollingLocally = true;
     const amount = clampDiceCount(diceCountSelect.value);
@@ -1999,92 +1979,68 @@ async function rollDice() {
     let rollCompleted = false;
 
     try {
-        await runTransaction(db, async transaction => {
-            const userRef = doc(db, "users", currentUser.uid);
-            const [snapshot, userSnapshot] = await Promise.all([
-                transaction.get(roomRef),
-                transaction.get(userRef)
-            ]);
-            if (!snapshot.exists()) throw new Error("Room not found.");
-
-            const account = userSnapshot.exists() ? userSnapshot.data() : {};
-            if (account.accountSuspended === true) {
-                throw new Error(account.restrictionReason || "Your account has been suspended.");
-            }
-            if (account.rollingRestricted === true) {
-                throw new Error(account.restrictionReason || "You are not allowed to roll dice.");
-            }
-
-            const room = snapshot.data();
-            if (room.ownerUid !== currentUser.uid) throw new Error("Only the host can roll.");
-            if (room.rollingSuspended === true) throw new Error(room.rollingSuspensionReason || "Rolling has been suspended by staff.");
-            if (room.rolling) throw new Error("Dice are already rolling.");
-
-            const nextRolls = prepareNextRolls(room.nextRolls, amount);
-            selectedResult = decodeStoredRoll(nextRolls[0]);
-
-            const remainingRolls = nextRolls.slice(1);
-            remainingRolls.push(encodeRoll(generateDice(amount)));
-
-            transaction.update(roomRef, {
-                rolling: true,
-                pendingResult: selectedResult,
-                nextRolls: remainingRolls,
-                updatedAt: serverTimestamp()
-            });
-        });
-
         startAnimation(amount);
 
         try {
+            rollSound.pause();
+            rollSound.loop = false;
+            rollSound.playbackRate = 1;
             rollSound.currentTime = 0;
-            await rollSound.play();
+
+            const playPromise = rollSound.play();
+            if (playPromise && typeof playPromise.catch === "function") {
+                playPromise.catch(() => {});
+            }
         } catch {}
 
-        await wait(600);
-
-        await runTransaction(db, async transaction => {
-            const snapshot = await transaction.get(roomRef);
-            if (!snapshot.exists()) throw new Error("Room not found.");
-
-            const room = snapshot.data();
-            if (room.ownerUid !== currentUser.uid) throw new Error("Only the host can finish a roll.");
-
-            const completed =
-                Array.isArray(room.pendingResult) && room.pendingResult.length
-                    ? room.pendingResult
-                    : selectedResult;
-
-            const oldHistory = Array.isArray(room.history) ? room.history : [];
-
-            transaction.update(roomRef, {
-                rolling: false,
-                latestResult: completed,
-                pendingResult: [],
-                history: [...oldHistory, completed.join(",")].slice(-9),
-                rollNumber: Number(room.rollNumber || 0) + 1,
-                lastRollAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
-            });
+        const response = await startSecureRoll({
+            roomType: "permanent",
+            roomId: roomRef.id
         });
 
-        // Stop on the real result immediately. Without this, clearing the
-        // interval leaves the final random animation frame visible until the
-        // Firestore snapshot arrives.
+        const remainingRevealTime = Math.max(
+            0,
+            revealDurationMs - (performance.now() - rollClickedAt)
+        );
+
+        if (remainingRevealTime > 0) {
+            await wait(remainingRevealTime);
+        }
+
+        selectedResult = Array.isArray(response.data?.result)
+            ? response.data.result.map(Number)
+            : [];
+
+        if (selectedResult.length === 0) {
+            throw new Error("The server did not return a dice result.");
+        }
+
         rollCompleted = true;
         stopAnimation();
         showDice(results, selectedResult, "dice");
+
+        /*
+         * The Cloud Function has already completed the roll. Update the local
+         * state immediately so the Roll button is not left using an older
+         * rolling:true snapshot.
+         */
+        if (currentRoom) {
+            currentRoom = {
+                ...currentRoom,
+                rolling: false,
+                pendingResult: [],
+                latestResult: selectedResult
+            };
+        }
     } catch (error) {
         console.error(error);
         await showPeryaAlert(
-            error.message || "Roll failed.",
+            error?.message || "Roll failed.",
             { type: "error", title: "Roll Failed" }
         );
     } finally {
         rollingLocally = false;
 
-        // On success, the real result was already displayed above. On error,
-        // stop the animation and restore the latest confirmed room state.
         if (!rollCompleted) {
             stopAnimation();
 
@@ -2094,9 +2050,17 @@ async function rollDice() {
                 showWhiteDice(amount);
             }
         }
+
+        /*
+         * A Firestore snapshot can arrive while rollingLocally is still true.
+         * renderRoom() then disables the button. Re-render after clearing the
+         * local flag so the host can roll again immediately.
+         */
+        if (currentRoom) {
+            renderRoom(currentRoom);
+        }
     }
 }
-
 
 function renderFavoriteControls() {
     if (!favoriteRoomButton || !favoriteRoomMessage) return;
@@ -2771,12 +2735,10 @@ async function saveDiceCount(nextAmount) {
     if (decreaseDiceCountButton) decreaseDiceCountButton.disabled = amount <= 1;
     if (increaseDiceCountButton) increaseDiceCountButton.disabled = amount >= 15;
 
-    await updateDoc(roomRef, {
-        diceCount: amount,
-        latestResult: [],
-        pendingResult: [],
-        nextRolls: generateNextRolls(amount, 10),
-        updatedAt: serverTimestamp()
+    await setSecureDiceCount({
+        roomType: "permanent",
+        roomId: roomRef.id,
+        amount
     });
 }
 

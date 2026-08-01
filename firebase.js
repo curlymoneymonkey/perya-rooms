@@ -21,6 +21,10 @@ import {
     getStorage
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-storage.js";
 
+import {
+    getFunctions
+} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-functions.js";
+
 const firebaseConfig = {
     apiKey: "AIzaSyCj53KgeEPfa3q9u_zEKEYZPedK5TVNK0Q",
     authDomain: "peryadice.firebaseapp.com",
@@ -38,6 +42,7 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const realtimeDb = getDatabase(app);
 export const storage = getStorage(app);
+export const functions = getFunctions(app, "asia-southeast1");
 export const googleProvider = new GoogleAuthProvider();
 
 googleProvider.setCustomParameters({ prompt: "select_account" });

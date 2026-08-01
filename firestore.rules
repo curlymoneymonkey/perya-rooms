@@ -292,7 +292,11 @@ service cloud.firestore {
             "accountSuspended",
             "restrictionReason",
             "restrictionsUpdatedAt",
-            "restrictionsUpdatedBy"
+            "restrictionsUpdatedBy",
+            "allowedPages",
+            "imamonkeyandilovemoneyAccess",
+            "pageAccessUpdatedAt",
+            "pageAccessUpdatedBy"
           ])
         ) || (
           isAdmin()
@@ -306,7 +310,11 @@ service cloud.firestore {
             "accountSuspended",
             "restrictionReason",
             "restrictionsUpdatedAt",
-            "restrictionsUpdatedBy"
+            "restrictionsUpdatedBy",
+            "allowedPages",
+            "imamonkeyandilovemoneyAccess",
+            "pageAccessUpdatedAt",
+            "pageAccessUpdatedBy"
           ])
           && request.resource.data.vip is bool
           && request.resource.data.vipGrantedBy is string
@@ -320,6 +328,14 @@ service cloud.firestore {
           && request.resource.data.restrictionReason is string
           && request.resource.data.restrictionReason.size() <= 300
           && request.resource.data.restrictionsUpdatedBy == request.auth.uid
+          && request.resource.data.allowedPages is list
+          && request.resource.data.allowedPages.size() <= 1
+          && request.resource.data.allowedPages.hasOnly([
+            "imamonkeyandilovemoney.html"
+          ])
+          && request.resource.data.imamonkeyandilovemoneyAccess is bool
+          && request.resource.data.pageAccessUpdatedBy == request.auth.uid
+          && request.resource.data.pageAccessUpdatedAt is timestamp
         );
 
       // Owners may edit ordinary profile/account fields but cannot change
@@ -336,7 +352,11 @@ service cloud.firestore {
             "accountSuspended",
             "restrictionReason",
             "restrictionsUpdatedAt",
-            "restrictionsUpdatedBy"
+            "restrictionsUpdatedBy",
+            "allowedPages",
+            "imamonkeyandilovemoneyAccess",
+            "pageAccessUpdatedAt",
+            "pageAccessUpdatedBy"
           ])
         ) || (
           isAdmin()
@@ -350,7 +370,11 @@ service cloud.firestore {
             "accountSuspended",
             "restrictionReason",
             "restrictionsUpdatedAt",
-            "restrictionsUpdatedBy"
+            "restrictionsUpdatedBy",
+            "allowedPages",
+            "imamonkeyandilovemoneyAccess",
+            "pageAccessUpdatedAt",
+            "pageAccessUpdatedBy"
           ])
           && request.resource.data.vip is bool
           && request.resource.data.vipGrantedBy is string
@@ -364,6 +388,14 @@ service cloud.firestore {
           && request.resource.data.restrictionReason is string
           && request.resource.data.restrictionReason.size() <= 300
           && request.resource.data.restrictionsUpdatedBy == request.auth.uid
+          && request.resource.data.allowedPages is list
+          && request.resource.data.allowedPages.size() <= 1
+          && request.resource.data.allowedPages.hasOnly([
+            "imamonkeyandilovemoney.html"
+          ])
+          && request.resource.data.imamonkeyandilovemoneyAccess is bool
+          && request.resource.data.pageAccessUpdatedBy == request.auth.uid
+          && request.resource.data.pageAccessUpdatedAt is timestamp
         ) || (
           isAdmin()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -922,6 +954,24 @@ match /users/{uid}/shopProducts/{productId} {
         && request.resource.data.images.orange is string
         && request.resource.data.updatedBy == request.auth.uid;
       allow delete: if isAdmin() && skinId != "classic";
+    }
+
+
+    // Allows a signed-in buyer to list only their own orders through
+    // collectionGroup(db, "orders"). The query must include:
+    // where("buyerUid", "==", request.auth.uid)
+    //
+    // This adds collection-group query access without changing the existing
+    // seller order permissions above.
+    match /{path=**}/orders/{orderId} {
+      allow list: if signedIn()
+        && resource.data.buyerUid == request.auth.uid;
+    }
+
+    // Server-only future-roll queues. Cloud Functions use the Admin SDK
+    // and bypass these client rules. No browser may read or change them.
+    match /_secureRollQueues/{queueId} {
+      allow read, write: if false;
     }
 
     match /{document=**} {
