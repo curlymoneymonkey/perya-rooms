@@ -97,6 +97,7 @@ let keybinds = { ...DEFAULT_KEYBINDS };
 let keyboardShortcutsEnabled = true;
 let keybindBeingEdited = null;
 let toastTimer = null;
+let extraRollsVisible = false;
 
 
 /* ==================================
@@ -213,6 +214,7 @@ function clearLoadedRoom() {
     loadedRoomPath = "";
     editableNextRolls = [];
     allowedNextOneColors = new Set(ALL_COLOR_INDEXES);
+    extraRollsVisible = false;
 
     rollContainer.innerHTML = "";
     roomType.textContent = "";
@@ -589,8 +591,12 @@ function renderRolls() {
     const editor = document.createElement("div");
     editor.className = "futureRollEditor";
 
-    // This selector is shown once and affects only Next #1.
+    // This selector affects only the immediate next roll.
     editor.appendChild(createAllowedColorsPanel());
+
+    const extraRollsContainer = document.createElement("div");
+    extraRollsContainer.className = "extraFutureRolls";
+    extraRollsContainer.hidden = !extraRollsVisible;
 
     editableNextRolls.forEach((diceValues, rollIndex) => {
         const row = document.createElement("div");
@@ -598,7 +604,10 @@ function renderRolls() {
 
         const number = document.createElement("span");
         number.className = "futureRollNumber";
-        number.textContent = `Next #${rollIndex + 1}`;
+        number.textContent =
+            rollIndex === 0
+                ? "Next Roll"
+                : `Next #${rollIndex + 1}`;
         row.appendChild(number);
 
         diceValues.forEach((value, dieIndex) => {
@@ -625,8 +634,35 @@ function renderRolls() {
             row.appendChild(dieEditor);
         });
 
-        editor.appendChild(row);
+        if (rollIndex === 0) {
+            editor.appendChild(row);
+        } else {
+            extraRollsContainer.appendChild(row);
+        }
     });
+
+    if (editableNextRolls.length > 1) {
+        const toggleWrap = document.createElement("div");
+        toggleWrap.className = "moreRollsToggleWrap";
+
+        const toggleButton = document.createElement("button");
+        toggleButton.type = "button";
+        toggleButton.className = "moreRollsToggleButton";
+        toggleButton.textContent =
+            extraRollsVisible
+                ? "Hide More Rolls"
+                : "Show More Rolls";
+        toggleButton.setAttribute("aria-expanded", String(extraRollsVisible));
+
+        toggleButton.addEventListener("click", () => {
+            extraRollsVisible = !extraRollsVisible;
+            renderRolls();
+        });
+
+        toggleWrap.appendChild(toggleButton);
+        editor.appendChild(toggleWrap);
+        editor.appendChild(extraRollsContainer);
+    }
 
     rollContainer.appendChild(editor);
 }
