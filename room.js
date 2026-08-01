@@ -49,6 +49,10 @@ const whiteDiceImage = "images/white.png";
 const rollSound = new Audio("sounds/dice-roll.mp3");
 rollSound.volume = 0.6;
 
+
+function playRollSound(){
+  try{rollSound.pause();rollSound.currentTime=0;const p=rollSound.play();if(p&&p.catch)p.catch(()=>{});}catch(e){}
+}
 // Decode dice images early so the first roll does not pause while loading them.
 [...defaultDiceImages, whiteDiceImage].forEach(source => {
     const image = new Image();
@@ -173,6 +177,13 @@ let animationTimer = null;
 let rollingLocally = false;
 let revealUnlockAt = 0;
 let hostControlsHidden = false;
+
+// Viewer-only fallback for rolls where Firestore delivers the completed
+// snapshot before the brief rolling:true snapshot is observed.
+let viewerRevealTimer = null;
+let lastViewerRollMarker = null;
+let viewerObservedRolling = false;
+let viewerFallbackRollMarker = null;
 let creatingNextRolls = false;
 let currentReviews = [];
 let myReview = null;
@@ -1798,6 +1809,58 @@ function applyShopVisibility(shopHidden) {
     }
 }
 
+
+function permanentRollMarker(room) {
+    const rollNumber = Number(room?.rollNumber);
+    if (Number.isFinite(rollNumber) && rollNumber > 0) {
+        return `number:${rollNumber}`;
+    }
+
+    const lastRollMillis = room?.lastRollAt?.toMillis?.() || 0;
+    if (lastRollMillis > 0) {
+        return `time:${lastRollMillis}`;
+    }
+
+    const historyLength = Array.isArray(room?.history) ? room.history.length : 0;
+    const latestResult = Array.isArray(room?.latestResult)
+        ? room.latestResult.map(Number).join(",")
+        : "";
+
+    return `fallback:${historyLength}:${latestResult}`;
+}
+
+function revealPermanentViewerRollAfterFallback(marker, amount, finalResult) {
+    if (viewerRevealTimer !== null) {
+        window.clearTimeout(viewerRevealTimer);
+    }
+
+    viewerFallbackRollMarker = marker;
+    rollStatus.textContent = "🎲 Rolling...";
+
+    if (animationTimer === null) {
+        playRollSound();
+    startAnimation(amount);
+    }
+
+    viewerRevealTimer = window.setTimeout(() => {
+        viewerRevealTimer = null;
+
+        if (viewerFallbackRollMarker !== marker) {
+            return;
+        }
+
+        viewerFallbackRollMarker = null;
+        stopAnimation();
+        showDice(results, finalResult, "dice");
+
+        if (currentRoom) {
+            renderHistory(currentRoom);
+        }
+
+        rollStatus.textContent = "Waiting for the host to roll.";
+    }, 1850);
+}
+
 function renderRoom(room) {
     currentRoom = room;
     isHost = room.ownerUid === currentUser.uid;
@@ -1908,6 +1971,16 @@ function renderRoom(room) {
     if (decreaseDiceCountButton) decreaseDiceCountButton.disabled = diceControlsDisabled || amount <= 1;
     if (increaseDiceCountButton) increaseDiceCountButton.disabled = diceControlsDisabled || amount >= 15;
 
+    const currentRollMarker = permanentRollMarker(room);
+
+    if (!isHost && lastViewerRollMarker === null) {
+        lastViewerRollMarker = currentRollMarker;
+    }
+
+    if (!isHost && room.rolling === true) {
+        viewerObservedRolling = true;
+    }
+
     const revealIsLocked =
         rollingLocally &&
         performance.now() < revealUnlockAt;
@@ -1916,7 +1989,8 @@ function renderRoom(room) {
         rollStatus.textContent = "🎲 Rolling...";
 
         if (animationTimer === null) {
-            startAnimation(amount);
+            playRollSound();
+    startAnimation(amount);
         }
 
         // The Firestore snapshot may already contain latestResult and history.
@@ -1925,11 +1999,48 @@ function renderRoom(room) {
         return;
     }
 
+    if (!isHost && viewerFallbackRollMarker !== null) {
+        rollStatus.textContent = "🎲 Rolling...";
+
+        if (animationTimer === null) {
+            playRollSound();
+    startAnimation(amount);
+        }
+
+        enforceAutoOffline(room).catch(console.error);
+        return;
+    }
+
+    const viewerReceivedNewCompletedRoll =
+        !isHost &&
+        room.rolling !== true &&
+        lastViewerRollMarker !== null &&
+        currentRollMarker !== lastViewerRollMarker &&
+        Array.isArray(room.latestResult) &&
+        room.latestResult.length > 0;
+
+    if (viewerReceivedNewCompletedRoll) {
+        lastViewerRollMarker = currentRollMarker;
+
+        if (!viewerObservedRolling) {
+            revealPermanentViewerRollAfterFallback(
+                currentRollMarker,
+                amount,
+                room.latestResult.map(Number)
+            );
+            enforceAutoOffline(room).catch(console.error);
+            return;
+        }
+
+        viewerObservedRolling = false;
+    }
+
     renderHistory(room);
 
     if (room.rolling) {
         rollStatus.textContent = "🎲 Rolling...";
-        if (animationTimer === null) startAnimation(amount);
+        if (animationTimer === null) playRollSound();
+    startAnimation(amount);
     } else {
         stopAnimation();
         const accountMessage = accountRestrictionMessage("roll");
@@ -1979,7 +2090,8 @@ async function rollDice() {
     let rollCompleted = false;
 
     try {
-        startAnimation(amount);
+        playRollSound();
+    startAnimation(amount);
 
         try {
             rollSound.pause();

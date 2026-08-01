@@ -67,6 +67,10 @@ const rollSound = new Audio("sounds/dice-roll.mp3");
 rollSound.preload = "auto";
 rollSound.volume = 0.6;
 
+
+function playRollSound(){
+  try{rollSound.pause();rollSound.currentTime=0;const p=rollSound.play();if(p&&p.catch)p.catch(()=>{});}catch(e){}
+}
 // Decode dice images early so the first roll does not pause while loading them.
 [...defaultDiceImages, whiteDiceImage].forEach(source => {
     const image = new Image();
@@ -234,6 +238,13 @@ let unsubscribeRoom = null;
 let animationTimer = null;
 let startupRollNumber = null;
 let revealUnlockAt = 0;
+
+// Viewer-only fallback for rolls where Firestore delivers the completed
+// snapshot before the brief rolling:true snapshot is observed.
+let viewerRevealTimer = null;
+let lastViewerRollNumber = null;
+let viewerObservedRolling = false;
+let viewerFallbackRollNumber = null;
 
 let activePresenceRoomId = "";
 let unsubscribePresenceConnection = null;
@@ -1091,6 +1102,49 @@ function listenToRoom() {
 }
 
 
+function revealViewerRollAfterFallback(rollNumber, amount, finalResult) {
+    if (viewerRevealTimer !== null) {
+        window.clearTimeout(viewerRevealTimer);
+    }
+
+    viewerFallbackRollNumber = rollNumber;
+    roomStatus.textContent = "🎲 Rolling...";
+
+    if (currentResultPanel) {
+        currentResultPanel.hidden = true;
+    }
+
+    if (animationTimer === null) {
+        playRollSound();
+    startRollingAnimation(amount);
+    }
+
+    viewerRevealTimer = window.setTimeout(() => {
+        viewerRevealTimer = null;
+
+        if (viewerFallbackRollNumber !== rollNumber) {
+            return;
+        }
+
+        viewerFallbackRollNumber = null;
+        stopRollingAnimation();
+
+        showDice(results, finalResult, "dice");
+
+        if (currentResult && currentResultPanel) {
+            showDice(currentResult, finalResult, "currentResultDice");
+            currentResultPanel.hidden = false;
+        }
+
+        if (currentRoom) {
+            renderHistory(currentRoom);
+        }
+
+        roomStatus.textContent = "Waiting for the room creator to roll.";
+    }, 1850);
+}
+
+
 function updateScreen() {
 
     if (!currentRoom) {
@@ -1231,6 +1285,16 @@ function updateScreen() {
 
     syncGuestDiceCountDisplay();
 
+    const currentRollNumber = Number(currentRoom.rollNumber || 0);
+
+    if (!isHost && lastViewerRollNumber === null) {
+        lastViewerRollNumber = currentRollNumber;
+    }
+
+    if (!isHost && roomIsRolling) {
+        viewerObservedRolling = true;
+    }
+
     const revealIsLocked =
         isRollingLocally &&
         performance.now() < revealUnlockAt;
@@ -1243,12 +1307,50 @@ function updateScreen() {
         }
 
         if (animationTimer === null) {
-            startRollingAnimation(amount);
+            playRollSound();
+    startRollingAnimation(amount);
         }
 
         // Do not render the new Firestore history yet because it contains
         // the result that must stay hidden until the three-second mark.
         return;
+    }
+
+    if (!isHost && viewerFallbackRollNumber !== null) {
+        roomStatus.textContent = "🎲 Rolling...";
+
+        if (currentResultPanel) {
+            currentResultPanel.hidden = true;
+        }
+
+        if (animationTimer === null) {
+            playRollSound();
+    startRollingAnimation(amount);
+        }
+
+        return;
+    }
+
+    const viewerReceivedNewCompletedRoll =
+        !isHost &&
+        !roomIsRolling &&
+        lastViewerRollNumber !== null &&
+        currentRollNumber > lastViewerRollNumber &&
+        latestResult.length > 0;
+
+    if (viewerReceivedNewCompletedRoll) {
+        lastViewerRollNumber = currentRollNumber;
+
+        if (!viewerObservedRolling) {
+            revealViewerRollAfterFallback(
+                currentRollNumber,
+                amount,
+                [...latestResult]
+            );
+            return;
+        }
+
+        viewerObservedRolling = false;
     }
 
     renderHistory(currentRoom);
@@ -1261,7 +1363,8 @@ function updateScreen() {
         if (currentResultPanel) currentResultPanel.hidden = true;
 
         if (animationTimer === null) {
-            startRollingAnimation(amount);
+            playRollSound();
+    startRollingAnimation(amount);
         }
 
         return;
@@ -1280,9 +1383,6 @@ function updateScreen() {
             : (isHost
                 ? "Ready to roll."
                 : "Waiting for the room creator to roll.");
-
-    const currentRollNumber =
-        Number(currentRoom.rollNumber || 0);
 
     const hasNewRollSinceStartup =
         startupRollNumber !== null &&

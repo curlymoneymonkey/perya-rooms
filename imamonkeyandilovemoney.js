@@ -569,7 +569,7 @@ function normalizeNextRolls(nextRolls) {
         ? nextRolls
             .map(decodeRoll)
             .filter(values => values.length > 0)
-            .slice(0, 1)
+            .slice(0, 10)
         : [];
 }
 
@@ -591,7 +591,8 @@ function renderRolls() {
     // This selector is shown once and affects only Next #1.
     editor.appendChild(createAllowedColorsPanel());
 
-    editableNextRolls.forEach((diceValues, rollIndex) => {
+    // Keep all 10 rolls in memory for secure saving, but show only Next Roll.
+    editableNextRolls.slice(0, 1).forEach((diceValues, rollIndex) => {
         const row = document.createElement("div");
         row.className = "futureRollRow";
 
