@@ -52,6 +52,7 @@ import {
 
 const startSecureRoll = httpsCallable(functions, "startSecureRoll");
 const setSecureDiceCount = httpsCallable(functions, "setSecureDiceCount");
+const setSecureBallDropCount = httpsCallable(functions, "setSecureBallDropCount");
 
 
 const defaultDiceImages = [
@@ -178,12 +179,23 @@ const diceCountDisplay = document.getElementById("diceCountDisplay");
 
 const guestDiceBlurToolbar = document.getElementById("guestDiceBlurToolbar");
 const guestDiceBlurCheckbox = document.getElementById("guestDiceBlurCheckbox");
+const guestBlurModeLabel = document.getElementById("guestBlurModeLabel");
 const guestDiceSkinControl = document.getElementById("guestDiceSkinControl");
 const guestDiceSkinSelect = document.getElementById("guestDiceSkinSelect");
 const guestDiceSkinGallery = document.getElementById("guestDiceSkinGallery");
 const guestDiceSkinPickerButton = document.getElementById("guestDiceSkinPickerButton");
 const guestDiceSkinSelectedName = document.getElementById("guestDiceSkinSelectedName");
 const guestDiceSkinMessage = document.getElementById("guestDiceSkinMessage");
+const roomGameBrandSecondary = document.getElementById("roomGameBrandSecondary");
+const roomGameBrandDivider = document.getElementById("roomGameBrandDivider");
+const roomGameModeSelect = document.getElementById("roomGameModeSelect");
+const diceHistoryBox = document.getElementById("diceHistoryBox");
+const ballDropHistoryBox = document.getElementById("ballDropHistoryBox");
+const roomGameModeHint = document.getElementById("roomGameModeHint");
+const formalGameIcon = document.getElementById("formalGameIcon");
+const hostBallDropCountControl = document.getElementById("hostBallDropCountControl");
+const ballDropCountDisplay = document.getElementById("ballDropCountDisplay");
+
 
 let hostControlsHidden = false;
 
@@ -205,7 +217,7 @@ if (toggleHostControls) {
 
 diceCountSelect.innerHTML = "";
 
-for (let amount = 1; amount <= 15; amount++) {
+for (let amount = 1; amount <= 30; amount++) {
     const option = document.createElement("option");
 
     option.value = String(amount);
@@ -579,7 +591,7 @@ function wait(milliseconds) {
 
 
 function clampDiceCount(value) {
-    return Math.min(15, Math.max(1, Number(value) || 3));
+    return Math.min(30, Math.max(1, Number(value) || 3));
 }
 
 
@@ -838,27 +850,19 @@ function renderHistory(room) {
 
     history.innerHTML = "";
 
-    /*
-     * Show the newest roll first, including the current result.
-     * Duplicate prevention is handled by saving history only on the server.
-     */
     const roomHistory = Array.isArray(room?.history)
-        ? room.history.slice(-7).reverse()
+        ? room.history.slice(-10).reverse()
         : [];
 
     if (roomHistory.length === 0) {
-
         const empty = document.createElement("p");
-
         empty.className = "emptyHistory";
         empty.textContent = "No rolls yet.";
-
         history.appendChild(empty);
         return;
     }
 
-    roomHistory.forEach(roll => {
-
+    roomHistory.forEach((roll, index) => {
         const diceValues =
             typeof roll === "string"
                 ? roll
@@ -872,21 +876,25 @@ function renderHistory(room) {
                     ? roll.dice
                     : [];
 
-        if (diceValues.length === 0) {
-            return;
-        }
+        if (diceValues.length === 0) return;
+
+        const section = document.createElement("section");
+        section.className = "historyRollSection";
 
         const row = document.createElement("div");
-
         row.className = "historyRow";
 
-        showDice(
-            row,
-            diceValues,
-            "historyDice"
-        );
+        showDice(row, diceValues, "historyDice");
 
-        history.appendChild(row);
+        if (index === 0) {
+            const label = document.createElement("p");
+            label.className = "historyRollPosition";
+            label.textContent = "Current Result";
+            section.append(label);
+        }
+
+        section.appendChild(row);
+        history.appendChild(section);
     });
 }
 
@@ -1373,10 +1381,125 @@ function revealViewerRollAfterFallback(rollNumber, amount, finalResult, hadPrepa
 }
 
 
+
+function selectedRoomGameMode(room = currentRoom) {
+    return room?.gameMode === "ballDrop" ? "ballDrop" : "dice";
+}
+
+function clampBallDropCount(value) {
+    return Math.min(6, Math.max(1, Math.round(Number(value) || 3)));
+}
+
+async function setGuestRoomGameMode(nextMode) {
+    if (!isHost || !currentRoomId || currentRoom?.rolling || currentRoom?.ballDropRolling || isRollingLocally) return;
+    const gameMode = nextMode === "ballDrop" ? "ballDrop" : "dice";
+    await updateDoc(roomReference(currentRoomId), { gameMode, updatedAt: serverTimestamp() });
+}
+
+async function saveGuestBallDropCount(value) {
+    if (!isHost || !currentRoomId || currentRoom?.rolling || currentRoom?.ballDropRolling) return;
+    const amount = clampBallDropCount(value);
+    ballDropCountDisplay.disabled = true;
+    try {
+        await setSecureBallDropCount({ roomType: "guest", roomId: currentRoomId, amount });
+    } catch (error) {
+        console.error("Could not change Color Balls count:", error);
+        alert(error?.message || "Could not change the number of balls.");
+        ballDropCountDisplay.value = String(clampBallDropCount(currentRoom?.ballDropBallCount));
+    } finally {
+        ballDropCountDisplay.disabled = false;
+    }
+}
+
+window.PeryaRoomGameBridge = {
+    getState: () => ({ room: currentRoom, roomRef: currentRoomId ? roomReference(currentRoomId) : null, isHost, rollingLocally: isRollingLocally }),
+    setGameMode: setGuestRoomGameMode
+};
+
+window.addEventListener("perya-ball-drop-finished", () => {
+    if (currentRoom) {
+        currentRoom = { ...currentRoom, ballDropRolling: false, pendingBallDropResult: [] };
+        updateScreen();
+    }
+});
+
 function updateScreen() {
 
     if (!currentRoom) {
         return;
+    }
+
+    const gameMode = selectedRoomGameMode();
+    document.body.dataset.roomGameMode = gameMode;
+    if (roomGameModeSelect) {
+        roomGameModeSelect.value = gameMode;
+        roomGameModeSelect.disabled = !isHost || currentRoom.rolling === true || currentRoom.ballDropRolling === true || isRollingLocally;
+    }
+    if (hostBallDropCountControl) hostBallDropCountControl.hidden = !isHost || gameMode !== "ballDrop";
+    if (ballDropCountDisplay) {
+        ballDropCountDisplay.value = String(clampBallDropCount(currentRoom.ballDropBallCount));
+        ballDropCountDisplay.disabled = !isHost || gameMode !== "ballDrop" || currentRoom.ballDropRolling === true || currentRoom.rolling === true;
+    }
+    if (formalGameIcon) formalGameIcon.textContent = gameMode === "ballDrop" ? "⚪" : "🎲";
+    if (roomGameModeHint) roomGameModeHint.textContent = isHost ? "The host chooses the game for everyone in this room." : `The host selected ${gameMode === "ballDrop" ? "Color Balls" : "Color Dice"}.`;
+
+    const colorBallsSelected = gameMode === "ballDrop";
+
+    // Match room.html: Dice-only UI is completely removed in Color Balls mode.
+    if (hostDiceCountControl) hostDiceCountControl.hidden = !isHost || colorBallsSelected;
+    if (roomStatus) {
+        roomStatus.hidden = colorBallsSelected;
+        roomStatus.style.display = colorBallsSelected ? "none" : "";
+        roomStatus.setAttribute("aria-hidden", colorBallsSelected ? "true" : "false");
+    }
+    if (results) {
+        results.hidden = colorBallsSelected;
+        results.style.display = colorBallsSelected ? "none" : "";
+    }
+    if (guestDiceBlurToolbar) {
+        // The host can use Anti-Restriction Mode for either Color Dice
+        // or the complete Color Balls machine.
+        guestDiceBlurToolbar.hidden = !isHost;
+        if (isHost) {
+            guestDiceBlurToolbar.style.removeProperty("display");
+        } else {
+            guestDiceBlurToolbar.style.setProperty("display", "none", "important");
+        }
+    }
+
+    if (guestBlurModeLabel) {
+        guestBlurModeLabel.textContent = colorBallsSelected
+            ? "Blur Machine (Anti-Restriction Mode)"
+            : "Blur Dice (Anti-Restriction Mode)";
+    }
+    if (diceHistoryBox) {
+        diceHistoryBox.hidden = colorBallsSelected;
+        diceHistoryBox.style.display = colorBallsSelected ? "none" : "";
+    }
+    if (ballDropHistoryBox) {
+        ballDropHistoryBox.hidden = !colorBallsSelected;
+        ballDropHistoryBox.style.display = colorBallsSelected ? "" : "none";
+    }
+    if (guestDiceSkinControl) {
+        guestDiceSkinControl.hidden = colorBallsSelected || !isHost;
+        guestDiceSkinControl.style.setProperty(
+            "display",
+            colorBallsSelected || !isHost ? "none" : "",
+            colorBallsSelected || !isHost ? "important" : ""
+        );
+        if (!colorBallsSelected && isHost) {
+            guestDiceSkinControl.style.removeProperty("display");
+        }
+    }
+    if (roomGameBrandSecondary) {
+        roomGameBrandSecondary.hidden = !colorBallsSelected;
+        roomGameBrandSecondary.textContent = colorBallsSelected
+            ? "⚪ Color Balls"
+            : "";
+        roomGameBrandSecondary.style.display = colorBallsSelected ? "inline" : "none";
+    }
+    if (roomGameBrandDivider) {
+        roomGameBrandDivider.hidden = !isHost && !colorBallsSelected;
     }
 
     const amount =
@@ -1444,13 +1567,14 @@ function updateScreen() {
     }
 
     if (guestDiceSkinControl) {
-        guestDiceSkinControl.hidden = !isHost;
+        guestDiceSkinControl.hidden = !isHost || colorBallsSelected;
+        guestDiceSkinControl.style.display = colorBallsSelected ? "none" : "";
     }
 
     if (rollButton) {
-        rollButton.hidden = !isHost;
+        rollButton.hidden = !isHost || colorBallsSelected;
 
-        if (isHost) {
+        if (isHost && !colorBallsSelected) {
             rollButton.style.removeProperty("display");
         } else {
             rollButton.style.setProperty("display", "none", "important");
@@ -1458,9 +1582,9 @@ function updateScreen() {
     }
 
     if (waitingText) {
-        waitingText.hidden = isHost;
+        waitingText.hidden = isHost || colorBallsSelected;
 
-        if (isHost) {
+        if (isHost || colorBallsSelected) {
             waitingText.style.setProperty("display", "none", "important");
         } else {
             waitingText.style.removeProperty("display");
@@ -1490,6 +1614,7 @@ function updateScreen() {
 
     const rollingControlsDisabled =
         !isHost ||
+        gameMode !== "dice" ||
         roomIsRolling ||
         isRollingLocally ||
         rollingIsSuspended ||
@@ -1517,6 +1642,10 @@ function updateScreen() {
     }
 
     syncGuestDiceCountDisplay();
+
+    window.dispatchEvent(new CustomEvent("perya-room-render", {
+        detail: { room: currentRoom, isHost, rollingLocally: isRollingLocally, roomRef: roomReference(currentRoomId) }
+    }));
 
     const currentRollNumber = Number(currentRoom.rollNumber || 0);
 
@@ -1786,6 +1915,19 @@ async function updateDiceCount() {
             roomId: currentRoomId,
             amount
         });
+
+        // Immediately display the newly selected number of idle white dice.
+        // The Firestore update also clears latestResult, so this remains the
+        // authoritative idle state for the host and all connected viewers.
+        showWhiteDice(amount);
+
+        if (currentResult) {
+            currentResult.innerHTML = "";
+        }
+
+        if (currentResultPanel) {
+            currentResultPanel.hidden = true;
+        }
     } catch (error) {
         console.error("Could not change dice count:", error);
 
@@ -1805,6 +1947,22 @@ async function updateDiceCount() {
     }
 }
 
+
+
+roomGameModeSelect?.addEventListener("change", async event => {
+    const previous = selectedRoomGameMode();
+    try {
+        await setGuestRoomGameMode(event.target.value);
+    } catch (error) {
+        console.error("Could not change game mode:", error);
+        event.target.value = previous;
+        alert(error?.message || "Could not change the game mode.");
+    }
+});
+
+ballDropCountDisplay?.addEventListener("change", () => {
+    saveGuestBallDropCount(ballDropCountDisplay.value);
+});
 
 async function copyRoomLink() {
 

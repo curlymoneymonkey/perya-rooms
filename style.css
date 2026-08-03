@@ -4846,3 +4846,274 @@ body[data-room-game-mode="ballDrop"]
         row-gap: 7px !important;
     }
 }
+
+
+/* Index game header: match room.html exactly. */
+body[data-room-game-mode="ballDrop"] #guestDiceSkinControl {
+    display: none !important;
+}
+body:not([data-room-game-mode="ballDrop"]) #roomGameBrandSecondary {
+    display: none !important;
+}
+body[data-room-game-mode="ballDrop"] #roomGameBrandSecondary {
+    display: inline !important;
+}
+#roomGameBrandSecondary[hidden] {
+    display: none !important;
+}
+#roomGameBrandDivider {
+    display: inline-block;
+    margin: 0 2px;
+    color: rgba(255,255,255,.68);
+}
+
+/* Guest room header uses the same visible structure as room.html. */
+body[data-room-game-mode="ballDrop"] #guestDiceSkinControl {
+    display: none !important;
+}
+body:not([data-room-game-mode="ballDrop"]) #roomGameBrandSecondary {
+    display: none !important;
+}
+body[data-room-game-mode="ballDrop"] #roomGameBrandSecondary {
+    display: inline !important;
+}
+
+
+/* =========================================================
+   PERMANENT ROOM ACTIVE GAME HEADER — INDEX-MATCHED CENTERING
+   Centers the whole visible group, not each item separately.
+========================================================= */
+#permanentHostSettings {
+    width: 100% !important;
+}
+
+#permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    margin: 0 auto !important;
+    padding: 0 12px !important;
+    text-align: center !important;
+}
+
+#permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar #roomGameBrand,
+#permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar #permanentDiceSkinControl,
+#permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar #roomGameBrandSecondary {
+    position: static !important;
+    flex: 0 0 auto !important;
+    align-self: center !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+}
+
+#permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar #roomGameBrand {
+    order: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 0 10px 0 0 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.52) !important;
+}
+
+#permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar #permanentDiceSkinControl,
+#permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar #roomGameBrandSecondary {
+    order: 2 !important;
+}
+
+#permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar #permanentDiceSkinControl {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 0 !important;
+}
+
+#permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar
+#permanentDiceSkinControl .diceSkinPicker,
+#permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar
+#permanentDiceSkinControl .diceSkinPickerButton {
+    width: auto !important;
+}
+
+body[data-room-game-mode="ballDrop"]
+#permanentHostSettings #permanentDiceSkinControl {
+    display: none !important;
+}
+
+body:not([data-room-game-mode="ballDrop"])
+#permanentHostSettings #roomGameBrandSecondary {
+    display: none !important;
+}
+
+body[data-room-game-mode="ballDrop"]
+#permanentHostSettings #roomGameBrandSecondary {
+    display: inline !important;
+}
+
+@media (max-width: 520px) {
+    #permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar {
+        gap: 6px !important;
+        padding: 0 7px !important;
+    }
+
+    #permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar #roomGameBrand {
+        padding-right: 7px !important;
+    }
+
+    #permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar #roomGameBrand,
+    #permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar #roomGameBrandSecondary {
+        font-size: 11px !important;
+    }
+}
+
+@media (max-width: 390px) {
+    #permanentHostSettings > .hostWebsiteBrand.diceSkinHeaderBar {
+        flex-wrap: wrap !important;
+        row-gap: 7px !important;
+    }
+}
+
+/* Previous Rolls: 10 separate sections inside a fixed-height hidden scrollbar */
+#history,
+#permanentHistory {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 330px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 5px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.20) transparent;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+#history::-webkit-scrollbar,
+#permanentHistory::-webkit-scrollbar {
+    width: 5px;
+}
+
+#history::-webkit-scrollbar-track,
+#permanentHistory::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#history::-webkit-scrollbar-thumb,
+#permanentHistory::-webkit-scrollbar-thumb {
+    min-height: 34px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.20);
+}
+
+#history::-webkit-scrollbar-thumb:hover,
+#permanentHistory::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.34);
+}
+
+.historyRollSection {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: 9px 10px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.26);
+}
+
+.historyRollPosition {
+    margin: 0 0 7px;
+    color: #ffd95a;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: 0.25px;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.historyRollSection .historyRow {
+    min-height: 30px;
+}
+
+@media (max-width: 520px) {
+    #history,
+    #permanentHistory {
+        max-height: 300px;
+        gap: 8px;
+    }
+
+    .historyRollSection {
+        padding: 8px;
+    }
+
+    .historyRollPosition {
+        margin-bottom: 6px;
+        font-size: 11px;
+    }
+}
+
+/* =========================================================
+   FINAL PREVIOUS-ROLL LIST SCROLL FIX
+   The inner list—not the whole card—is the scroll viewport.
+========================================================= */
+#diceHistoryBox,
+.guestBottomPanels .historyBox,
+.bottomPanels .historyBox {
+    overflow: hidden;
+}
+
+#history,
+#permanentHistory {
+    flex: 1 1 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    min-height: 0 !important;
+    height: 310px !important;
+    max-height: 310px !important;
+    overflow-x: hidden !important;
+    overflow-y: scroll !important;
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.26) transparent;
+}
+
+#history::-webkit-scrollbar,
+#permanentHistory::-webkit-scrollbar {
+    display: block !important;
+    width: 6px !important;
+}
+
+#history::-webkit-scrollbar-track,
+#permanentHistory::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#history::-webkit-scrollbar-thumb,
+#permanentHistory::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.26);
+}
+
+#history::-webkit-scrollbar-thumb:hover,
+#permanentHistory::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.42);
+}
+
+#history > .historyRollSection,
+#permanentHistory > .historyRollSection {
+    flex: 0 0 auto !important;
+}
+
+@media (max-width: 760px) {
+    #history,
+    #permanentHistory {
+        height: 280px !important;
+        max-height: 280px !important;
+    }
+}

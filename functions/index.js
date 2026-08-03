@@ -525,7 +525,15 @@ exports.startSecureBallDrop = onCall(async request => {
             queueSnap.exists ? queueSnap.data()?.results : [],
             amount
         );
-        const selected = queue.shift() || randomBallDropResult(amount);
+        let selected;
+let resultSource;
+if(queue.length){
+  selected = queue.shift();
+  resultSource="server-generated-result";
+}else{
+  selected = randomBallDropResult(amount);
+  resultSource="random";
+}
         queue.push(randomBallDropResult(amount));
         const round = Number(room.ballDropRound || 0) + 1;
 
@@ -563,6 +571,7 @@ exports.startSecureBallDrop = onCall(async request => {
 
         return {
             selected,
+            resultSource,
             round,
             amount,
             animationSeed,
@@ -574,6 +583,7 @@ exports.startSecureBallDrop = onCall(async request => {
 
     return {
         result: output.selected,
+        source: output.resultSource,
         round: output.round,
         ballCount: output.amount,
         animationSeed: output.animationSeed,
@@ -688,6 +698,8 @@ exports.setSecureDiceCount = onCall(async request => {
 
         transaction.update(roomRef, {
             diceCount: amount,
+            rolling: false,
+            latestResult: [],
             pendingResult: [],
             updatedAt: FieldValue.serverTimestamp()
         });

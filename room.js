@@ -256,6 +256,7 @@ const roomGameModeCurrentLabel = null;
 const roomGameModeOptionButtons = [];
 const hostDiceBlurControl = document.getElementById("hostDiceBlurControl");
 const hostDiceBlurCheckbox = document.getElementById("hostDiceBlurCheckbox");
+const hostBlurModeLabel = document.getElementById("hostBlurModeLabel");
 const permanentDiceSkinControl = document.getElementById("permanentDiceSkinControl");
 const permanentDiceSkinSelect = document.getElementById("permanentDiceSkinSelect");
 const permanentDiceSkinGallery = document.getElementById("permanentDiceSkinGallery");
@@ -1080,7 +1081,10 @@ function renderHistory(room) {
     previousRenderedHistorySignature = historySignature;
 
     history.innerHTML = "";
-    const rows = Array.isArray(room.history) ? room.history.slice(-9).reverse() : [];
+    const rows = Array.isArray(room?.history)
+        ? room.history.slice(-10).reverse()
+        : [];
+
     if (!rows.length) {
         const empty = document.createElement("p");
         empty.className = "emptyHistory";
@@ -1088,12 +1092,31 @@ function renderHistory(room) {
         history.appendChild(empty);
         return;
     }
-    rows.forEach(encoded => {
-        const values = String(encoded).split(",").map(Number).filter(value => diceImages[value]);
+
+    rows.forEach((encoded, index) => {
+        const values = String(encoded)
+            .split(",")
+            .map(Number)
+            .filter(value => Number.isInteger(value) && diceImages[value]);
+
+        if (!values.length) return;
+
+        const section = document.createElement("section");
+        section.className = "historyRollSection";
+
         const row = document.createElement("div");
         row.className = "historyRow";
         showDice(row, values, "historyDice");
-        history.appendChild(row);
+
+        if (index === 0) {
+            const label = document.createElement("p");
+            label.className = "historyRollPosition";
+            label.textContent = "Current Result";
+            section.append(label);
+        }
+
+        section.appendChild(row);
+        history.appendChild(section);
     });
 }
 function timestampMillis(timestamp) {
@@ -2347,6 +2370,12 @@ function renderRoom(room) {
     renderRoomGameBrand(selectedGameMode);
 
     const colorBallsSelected = selectedGameMode === "ballDrop";
+
+    if (hostBlurModeLabel) {
+        hostBlurModeLabel.textContent = colorBallsSelected
+            ? "Blur Machine (Anti-Restriction Mode)"
+            : "Blur Dice (Anti-Restriction Mode)";
+    }
 
     // This is the actual Dice status text that shows “Ready to roll.”
     if (rollStatus) {

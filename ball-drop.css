@@ -365,8 +365,7 @@ body[data-room-game-mode="ballDrop"] #permanentDiceSkinControl,
 body[data-room-game-mode="ballDrop"] #permanentResults,
 body[data-room-game-mode="ballDrop"] #permanentRollButton,
 body[data-room-game-mode="ballDrop"] #permanentWaitingText,
-body[data-room-game-mode="ballDrop"] #diceHistoryBox,
-body[data-room-game-mode="ballDrop"] #hostDiceBlurControl {
+body[data-room-game-mode="ballDrop"] #diceHistoryBox {
   display: none !important;
 }
 
@@ -1481,4 +1480,25 @@ body[data-room-game-mode="ballDrop"] .ballDropButton:hover:not(:disabled) {
 body[data-room-game-mode="ballDrop"] .ballDropButton:active:not(:disabled) {
   background: #b9adb7;
   color: #110e0e;
+}
+
+/* =========================================================
+   COLOR BALLS ANTI-RESTRICTION MODE
+   Blurs the complete machine visually while keeping every
+   button, control, animation, and pointer interaction active.
+========================================================= */
+body[data-room-game-mode="ballDrop"].guestDiceBlurEnabled #ballDropGame,
+body[data-room-game-mode="ballDrop"].hostDiceBlurEnabled #ballDropGame {
+  filter: blur(10px);
+  transition: filter 160ms ease;
+  pointer-events: auto;
+  user-select: none;
+  transform: translateZ(0);
+}
+
+/* Do not unblur the machine when hovering; it remains blurred
+   until the host turns the checkbox off. */
+body[data-room-game-mode="ballDrop"].guestDiceBlurEnabled #ballDropGame:hover,
+body[data-room-game-mode="ballDrop"].hostDiceBlurEnabled #ballDropGame:hover {
+  filter: blur(10px);
 }

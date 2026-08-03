@@ -281,6 +281,13 @@
             cursor: pointer;
         }
 
+        .keybindHelp {
+            margin: 0 0 12px;
+            text-align: center;
+            opacity: 0.78;
+            font-size: 13px;
+        }
+
         .keybindSettingRow {
             display: flex;
             justify-content: space-between;
@@ -446,28 +453,68 @@
 
     
 
-/* Allow secure future-roll editing for rooms with up to 30 dice. */
+/* Compact future-roll editor. Dice wrap onto a new line instead of scrolling. */
 .futureRollRow {
   justify-content: flex-start;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  overflow: visible;
+  column-gap: 8px;
+  row-gap: 10px;
 }
 
 .futureRollNumber {
-  position: sticky;
-  left: 0;
-  z-index: 2;
+  position: static;
   flex: 0 0 88px;
+  align-self: center;
   padding: 7px 6px;
   border-radius: 8px;
   background: rgba(13, 17, 24, 0.96);
+  text-align: center;
 }
 
 .futureDieEditor {
   flex: 0 0 auto;
+  gap: 4px;
+}
+
+.futureDieEditor img,
+.ballDropAdminPreview {
+  width: 36px;
+  height: 36px;
+}
+
+.futureDieEditor select,
+.ballDropBallEditor select {
+  min-width: 72px;
+  width: 76px;
+  padding: 5px 4px;
+  font-size: 13px;
+}
+
+@media (max-width: 520px) {
+  .futureRollRow {
+    column-gap: 6px;
+    row-gap: 8px;
+  }
+
+  .futureRollNumber {
+    flex: 0 0 76px;
+    font-size: 13px;
+  }
+
+  .futureDieEditor img,
+  .ballDropAdminPreview {
+    width: 32px;
+    height: 32px;
+  }
+
+  .futureDieEditor select,
+  .ballDropBallEditor select {
+    min-width: 66px;
+    width: 70px;
+    font-size: 12px;
+  }
 }
 
 
@@ -552,6 +599,7 @@
                 <button id="closeKeybindSettingsButton" class="keybindCloseButton" type="button" aria-label="Close keybind settings">×</button>
             </div>
 
+            <p class="keybindHelp">Click a shortcut, then press a key or combination such as Alt + 1.</p>
             <div id="keybindRows"></div>
 
             <label class="keybindEnableRow">

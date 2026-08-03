@@ -11,6 +11,7 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="preload" as="image" href="images/PERYA.png">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="ball-drop.css">
 
     <style>
         .diceSkinControl {
@@ -284,6 +285,10 @@ text-align:center;
         }
     </style>
 
+
+<style>
+
+</style>
 </head>
 <body>
     <header class="siteHeader">
@@ -328,57 +333,142 @@ text-align:center;
         </section>
 
         <section id="gameScreen" hidden>
-            <div class="hostWebsiteBrand guestWebsiteBrand diceSkinHeaderBar" aria-label="Perya Rooms website">
-                <div class="diceSkinBrandText">
-                    <span aria-hidden="true">🌐</span>
-                    <strong>perya-rooms.com</strong>
-                </div>
-                <div id="guestDiceSkinControl" class="diceSkinControl">
-                    <label for="guestDiceSkinSelect">🎨 Dice Skin:</label>
-                    <select id="guestDiceSkinSelect" aria-label="Choose dice skin">
-                        <option value="default">Default</option>
-                    </select>
-                    <div class="diceSkinPicker">
-                        <button id="guestDiceSkinPickerButton" class="diceSkinPickerButton" type="button" aria-haspopup="listbox" aria-expanded="false">
-                            <span id="guestDiceSkinSelectedName" class="diceSkinSelectedName">Default</span>
-                            <span class="diceSkinArrow" aria-hidden="true">▼</span>
-                        </button>
-                        <div id="guestDiceSkinGallery" class="diceSkinOptions" role="listbox" hidden></div>
+            <section id="roomGameSelectorCard"
+                     class="formalGameSettingsCard"
+                     aria-labelledby="gameSettingsTitle">
+                <header class="formalGameSettingsHeader">
+                    <h2 id="gameSettingsTitle">Game Settings</h2>
+                    <p>Configure the current game.</p>
+                </header>
+
+                <div class="formalGameSettingsFields">
+                    <label class="formalSettingField" for="roomGameModeSelect">
+                        <span>Game</span>
+                        <span class="formalSelectShell">
+                            <span id="formalGameIcon"
+                                  class="formalSelectIcon"
+                                  aria-hidden="true">🎲</span>
+
+                            <select id="roomGameModeSelect"
+                                    aria-label="Select room game">
+                                <option value="dice">Color Dice</option>
+                                <option value="ballDrop">Color Balls</option>
+                            </select>
+
+                            <span class="formalSelectChevron"
+                                  aria-hidden="true">⌄</span>
+                        </span>
+                    </label>
+
+                    <div id="hostDiceCountControl"
+                         class="formalSettingField"
+                         hidden>
+                        <label for="diceCount">Number of Dice</label>
+
+                        <span class="formalSelectShell">
+                            <span class="formalSelectIcon formalQuantityIcon"
+                                  aria-hidden="true">#</span>
+
+                            <select id="diceCount" aria-label="Number of dice">
+                                <option value="1">1 Die</option>
+                                <option value="2">2 Dice</option>
+                                <option value="3" selected>3 Dice</option>
+                                <option value="4">4 Dice</option>
+                                <option value="5">5 Dice</option>
+                                <option value="6">6 Dice</option>
+                                <option value="7">7 Dice</option>
+                                <option value="8">8 Dice</option>
+                                <option value="9">9 Dice</option>
+                                <option value="10">10 Dice</option>
+                                <option value="11">11 Dice</option>
+                                <option value="12">12 Dice</option>
+                                <option value="13">13 Dice</option>
+                                <option value="14">14 Dice</option>
+                                <option value="15">15 Dice</option>
+                                <option value="16">16 Dice</option>
+                                <option value="17">17 Dice</option>
+                                <option value="18">18 Dice</option>
+                                <option value="19">19 Dice</option>
+                                <option value="20">20 Dice</option>
+                                <option value="21">21 Dice</option>
+                                <option value="22">22 Dice</option>
+                                <option value="23">23 Dice</option>
+                                <option value="24">24 Dice</option>
+                                <option value="25">25 Dice</option>
+                                <option value="26">26 Dice</option>
+                                <option value="27">27 Dice</option>
+                                <option value="28">28 Dice</option>
+                                <option value="29">29 Dice</option>
+                                <option value="30">30 Dice</option>
+                            </select>
+
+                            <span class="formalSelectChevron" aria-hidden="true">⌄</span>
+                        </span>
                     </div>
-                    <p id="guestDiceSkinMessage" class="joinMessage"></p>
+
+                    <div id="hostBallDropCountControl"
+                         class="formalSettingField"
+                         hidden>
+                        <label for="ballDropCountDisplay">Number of Balls</label>
+
+                        <span class="formalSelectShell">
+                            <span class="formalSelectIcon formalQuantityIcon"
+                                  aria-hidden="true">#</span>
+
+                            <select id="ballDropCountDisplay"
+                                    aria-label="Number of Ball Drop balls">
+                                <option value="1">1 Ball</option>
+                                <option value="2">2 Balls</option>
+                                <option value="3" selected>3 Balls</option>
+                                <option value="4">4 Balls</option>
+                                <option value="5">5 Balls</option>
+                                <option value="6">6 Balls</option>
+                            </select>
+
+                            <span class="formalSelectChevron"
+                                  aria-hidden="true">⌄</span>
+                        </span>
+                    </div>
+                </div>
+
+                <p id="roomGameModeHint"
+                   class="formalGameSettingsHint">
+                    The host chooses the game for everyone in this room.
+                </p>
+            </section>
+
+            <div id="hostSettings" class="hostSettings" hidden>
+                <div class="hostWebsiteBrand diceSkinHeaderBar" aria-label="Perya Rooms website">
+                    <div id="roomGameBrand"
+                         class="diceSkinBrandText"
+                         aria-live="polite">
+                        <strong id="roomGameBrandPrimary">🌐 perya-rooms.com</strong>
+                    </div>
+
+                    <strong id="roomGameBrandSecondary"
+                            class="roomGameBrandSecondary"
+                            hidden>⚪ Color Balls</strong>
+
+                    <div id="guestDiceSkinControl" class="diceSkinControl" hidden>
+                        <label for="guestDiceSkinSelect">🎨 Dice Skin:</label>
+                        <select id="guestDiceSkinSelect" aria-label="Choose dice skin">
+                            <option value="default">Default</option>
+                        </select>
+                        <div class="diceSkinPicker">
+                            <button id="guestDiceSkinPickerButton" class="diceSkinPickerButton" type="button" aria-haspopup="listbox" aria-expanded="false">
+                                <span id="guestDiceSkinSelectedName" class="diceSkinSelectedName">Default</span>
+                                <span class="diceSkinArrow" aria-hidden="true">▼</span>
+                            </button>
+                            <div id="guestDiceSkinGallery" class="diceSkinOptions" role="listbox" hidden></div>
+                        </div>
+                        <p id="guestDiceSkinMessage" class="joinMessage"></p>
+                    </div>
                 </div>
             </div>
 
             <section class="card roomCard guestRoomCard">
-                <div id="hostSettings" class="hostSettings guestHostSettings" hidden>
-                    <div id="hostDiceCountControl" class="hostDiceCountControl">
-                        <div class="hostDiceCountHeading">🎲 Number of Dice</div>
-
-                        <div class="hostDiceCountStepper" role="group" aria-label="Choose number of dice">
-                            <button id="decreaseDiceCount" class="diceCountStepButton" type="button" aria-label="Use one fewer die">−</button>
-
-                            <input
-                                id="diceCountDisplay"
-                                class="diceCountDisplay"
-                                type="text"
-                                value="3"
-                                inputmode="numeric"
-                                pattern="[0-9]*"
-                                maxlength="2"
-                                autocomplete="off"
-                                aria-label="Number of dice"
-                            >
-
-                            <button id="increaseDiceCount" class="diceCountStepButton" type="button" aria-label="Use one more die">+</button>
-                        </div>
-
-                        <select id="diceCount" class="visuallyHiddenDiceSelect" aria-label="Number of dice"></select>
-                    </div>
-
-                </div>
-
                 <p id="roleText" class="roleText"></p>
-                <p id="roomStatus" class="roomStatus"></p>
+                <p id="roomStatus" class="roomStatus" aria-live="polite"></p>
 
                 <div id="results" class="results"></div>
 
@@ -391,21 +481,44 @@ text-align:center;
                 <button id="rollButton" class="rollButton" type="button" hidden>🎲 Roll Dice</button>
 
                 <p id="waitingText" class="waitingText" hidden>Only the room creator can roll.</p>
+
+                <section id="ballDropGame" class="ballDropGame" hidden aria-label="Color Balls game">
+                    <div class="ballDropTopline"><span>Color Balls</span><strong id="ballDropStatus" aria-live="polite">Ready</strong></div>
+                    <div id="ballDropMixer" class="ballDropMixer" aria-label="Ball mixer">
+                        <span class="ballDropHolderBall" data-holder-ball="0"></span><span class="ballDropHolderBall" data-holder-ball="1"></span><span class="ballDropHolderBall" data-holder-ball="2"></span>
+                    </div>
+                    <div id="ballDropBoard" class="ballDropBoard">
+                        <div class="ballDropSlotBacks" aria-hidden="true"><span class="purple"></span><span class="yellow"></span><span class="red"></span><span class="green"></span><span class="orange"></span><span class="blue"></span></div>
+                        <canvas id="ballDropCanvas" aria-label="Color Balls peg board"></canvas>
+                        <div class="ballDropSlotFronts" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                        <div class="ballDropSlotNames" aria-hidden="true"><span>Purple</span><span>Yellow</span><span>Red</span><span>Green</span><span>Orange</span><span>Blue</span></div>
+                    </div>
+                    <button id="ballDropButton" class="rollButton ballDropButton" type="button" hidden>⚪ ROLL &amp; RELEASE BALLS</button>
+                    <p id="ballDropWaitingText" class="waitingText" hidden>Only the room creator can drop the balls.</p>
+                    <div class="ballDropResultsWrap"><h2>Results</h2><div id="ballDropResults" class="ballDropResults"><span class="waiting">?</span><span class="waiting">?</span><span class="waiting">?</span></div></div>
+                </section>
+
             </section>
 
             <div id="guestDiceBlurToolbar" class="hostHistoryToolbar guestDiceBlurToolbar" hidden>
                 <div id="guestDiceBlurControl" class="hostDiceBlurControl">
                     <label for="guestDiceBlurCheckbox">
                         <input id="guestDiceBlurCheckbox" type="checkbox">
-                        Blur Dice (Anti-Restriction Mode)
+                        <span id="guestBlurModeLabel">Blur Dice (Anti-Restriction Mode)</span>
                     </label>
                 </div>
             </div>
             <script type="module" src="presence.js"></script>
             <div class="bottomPanels guestBottomPanels">
-                <section class="card historyBox">
+                <section id="diceHistoryBox" class="card historyBox">
                     <h2>Previous Rolls</h2>
                     <div id="history"></div>
+                </section>
+
+
+                <section id="ballDropHistoryBox" class="card historyBox ballDropHistoryBox" hidden>
+                    <h2>Previous Drops</h2>
+                    <div id="ballDropHistory" class="ballDropHistory"><p>No drops yet.</p></div>
                 </section>
 
                 <section class="card joinBox guestJoinBox">
@@ -459,5 +572,6 @@ text-align:center;
     </main>
 
     <script type="module" src="script.js"></script>
+    <script type="module" src="ball-drop.js"></script>
 </body>
 </html>

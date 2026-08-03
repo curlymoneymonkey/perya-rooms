@@ -63,6 +63,12 @@ const DEFAULT_KEYBINDS = Object.freeze({
     enableAll: "r",
     toggleAll: "a",
     randomize: "g",
+    favor0: "Alt+1",
+    favor1: "Alt+2",
+    favor2: "Alt+3",
+    favor3: "Alt+4",
+    favor4: "Alt+5",
+    favor5: "Alt+6",
     saveChanges: "Tab"
 });
 
@@ -76,6 +82,12 @@ const KEYBIND_LABELS = {
     enableAll: "Enable All Colors",
     toggleAll: "Toggle All Colors",
     randomize: "Randomize Next Roll",
+    favor0: "Favor Red",
+    favor1: "Favor Blue",
+    favor2: "Favor Green",
+    favor3: "Favor Yellow",
+    favor4: "Favor Purple",
+    favor5: "Favor Orange",
     saveChanges: "Save Changes"
 };
 
@@ -420,6 +432,37 @@ function randomizeNextRoll() {
     );
 }
 
+/*
+ * Alt+1 through Alt+6 create a weighted random next result.
+ * The selected color receives five entries in the random pool while every
+ * other color receives one. With all six colors available, the selected color
+ * therefore has a 50% chance per die/ball. For a 30-dice room that averages
+ * about 15 selected-color dice, but the exact amount remains random.
+ */
+function randomizeNextRollWithFavoredColor(favoredColorIndex) {
+    if (!editableNextRolls[0]?.length) {
+        showToast("No next roll is loaded.", true);
+        return;
+    }
+
+    if (!ALL_COLOR_INDEXES.includes(favoredColorIndex)) return;
+
+    // Make every color possible again, then give the chosen color extra weight.
+    allowedNextOneColors = new Set(ALL_COLOR_INDEXES);
+
+    const weightedPool = ALL_COLOR_INDEXES.flatMap(colorIndex =>
+        Array(colorIndex === favoredColorIndex ? 5 : 1).fill(colorIndex)
+    );
+
+    editableNextRolls[0] = editableNextRolls[0].map(() =>
+        weightedPool[Math.floor(Math.random() * weightedPool.length)]
+    );
+
+    markUnsaved();
+    renderRolls();
+    showToast(`🎯 Next result favors ${activeColorName(favoredColorIndex)}`);
+}
+
 
 /* ==================================
    KEYBOARD SHORTCUTS
@@ -431,10 +474,28 @@ function normalizeKeyName(key) {
     return key.length === 1 ? key.toLowerCase() : key;
 }
 
-function displayKeyName(key) {
-    if (key === "Escape") return "Esc";
-    if (key === "Space") return "Space";
-    return key.length === 1 ? key.toUpperCase() : key;
+function eventToKeybind(event) {
+    const key = normalizeKeyName(event.key);
+    if (["Control", "Shift", "Alt", "Meta"].includes(key)) return null;
+
+    const parts = [];
+    if (event.ctrlKey) parts.push("Ctrl");
+    if (event.altKey) parts.push("Alt");
+    if (event.shiftKey) parts.push("Shift");
+    if (event.metaKey) parts.push("Meta");
+    parts.push(key);
+    return parts.join("+");
+}
+
+function displayKeyName(keybind) {
+    return String(keybind || "")
+        .split("+")
+        .map(part => {
+            if (part === "Escape") return "Esc";
+            if (part === "Space") return "Space";
+            return part.length === 1 ? part.toUpperCase() : part;
+        })
+        .join(" + ");
 }
 
 function loadKeybindPreferences() {
@@ -445,7 +506,7 @@ function loadKeybindPreferences() {
         if (saved.keybinds && typeof saved.keybinds === "object") {
             Object.keys(DEFAULT_KEYBINDS).forEach(action => {
                 if (typeof saved.keybinds[action] === "string" && saved.keybinds[action]) {
-                    keybinds[action] = normalizeKeyName(saved.keybinds[action]);
+                    keybinds[action] = String(saved.keybinds[action]);
                 }
             });
         }
@@ -562,6 +623,11 @@ function runKeybindAction(action) {
         randomizeNextRoll();
         return;
     }
+    if (action.startsWith("favor")) {
+        const colorIndex = Number(action.replace("favor", ""));
+        randomizeNextRollWithFavoredColor(colorIndex);
+        return;
+    }
     if (action === "saveChanges") saveChanges();
 }
 
@@ -576,6 +642,9 @@ function renderKeybindSettings() {
         if (action.startsWith("color")) {
             const colorIndex = Number(action.replace("color", ""));
             label.textContent = `Toggle ${activeColorName(colorIndex)}`;
+        } else if (action.startsWith("favor")) {
+            const colorIndex = Number(action.replace("favor", ""));
+            label.textContent = `Favor ${activeColorName(colorIndex)}`;
         } else if (action === "randomize") {
             label.textContent = loadedGameMode === "ballDrop"
                 ? "Randomize Next Drop"
@@ -637,7 +706,12 @@ function handleKeybindRecording(event) {
         return true;
     }
 
-    const newKey = normalizeKeyName(event.key);
+    const newKey = eventToKeybind(event);
+    if (!newKey) {
+        keybindMessage.textContent = "Press a key together with any modifiers you want.";
+        return true;
+    }
+
     const conflictAction = Object.keys(keybinds).find(action =>
         action !== keybindBeingEdited && keybinds[action] === newKey
     );
@@ -1172,8 +1246,9 @@ document.addEventListener("keydown", event => {
 
     if (!keyboardIsActive() || event.repeat) return;
 
-    const normalizedKey = normalizeKeyName(event.key);
-    const action = findActionForKey(normalizedKey);
+    const pressedKeybind = eventToKeybind(event);
+    if (!pressedKeybind) return;
+    const action = findActionForKey(pressedKeybind);
     if (!action) return;
 
     event.preventDefault();
