@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Dice Skin Management | PERYA DICE</title>
+  <link rel="icon" href="favicon.png">
+  <link rel="stylesheet" href="staff.css">
+  <link rel="stylesheet" href="pdo_dice_skins.css">
+</head>
+<body class="pdo-page">
+<div class="pdo-app">
+  <aside class="pdo-sidebar" aria-label="Staff navigation">
+    <a class="pdo-brand" href="pdo_hub.html"><img class="pdo-brand-logo" src="favicon.png" alt=""><span class="pdo-brand-copy"><strong>PERYA DICE</strong><span>Private Staff Portal</span></span></a>
+    <nav class="pdo-nav">
+      <p class="pdo-nav-section">OVERVIEW</p>
+      <a class="pdo-nav-link" href="pdo_hub.html"><span class="pdo-nav-icon">⌂</span>Control Hub</a>
+      <a class="pdo-nav-link" href="pdo_control.html"><span class="pdo-nav-icon">⚙</span>User & Room Control</a>
+      <a class="pdo-nav-link active" href="pdo_dice_skins.html"><span class="pdo-nav-icon">🎨</span>Dice Skin Management</a>
+      <p class="pdo-nav-section">MODERATION</p>
+      <a class="pdo-nav-link" href="pdo_workspace.html"><span class="pdo-nav-icon">🛡</span>Workspace</a>
+      <a class="pdo-nav-link" href="review_queue.html"><span class="pdo-nav-icon">💬</span>Review Queue</a>
+      <a class="pdo-nav-link" href="pdo_console.html"><span class="pdo-nav-icon">▤</span>Activity Console</a>
+      <p class="pdo-nav-section">ACCOUNT</p>
+      <a class="pdo-nav-link" href="dashboard.html"><span class="pdo-nav-icon">↩</span>Back to Dashboard</a>
+    </nav>
+    <div class="pdo-sidebar-footer"><span class="pdo-role-chip"><span class="pdo-role-dot"></span><span data-staff-role>Checking access…</span></span></div>
+  </aside>
+  <div class="pdo-backdrop" data-close-menu></div>
+  <main class="pdo-main">
+    <header class="pdo-topbar">
+      <div class="skin-heading"><button class="pdo-mobile-menu" type="button" data-open-menu aria-label="Open navigation">☰</button><div class="pdo-title-wrap"><p class="pdo-eyebrow">PRIVATE ADMIN PORTAL</p><h1 class="pdo-title">Dice Skin Management</h1><p class="pdo-subtitle">Create and manage the dice designs available in guest and permanent rooms.</p></div></div>
+      <div class="pdo-top-actions"><a class="pdo-button secondary" href="pdo_hub.html">Control Hub</a><div class="pdo-user-pill"><span class="pdo-avatar">P</span><span><strong>Staff Account</strong><span data-staff-role>Verifying…</span></span></div></div>
+    </header>
+
+    <section class="pdo-card pdo-hero"><div class="pdo-hero-copy"><h2>Six images create one complete skin</h2><p>Upload square PNG or WebP images for red, blue, green, yellow, purple, and orange. PNG files are automatically optimized to WebP.</p></div><span class="pdo-badge">Administrator only</span></section>
+
+    <section class="skin-layout">
+      <section class="pdo-card pdo-panel skin-editor">
+        <div class="pdo-panel-head"><div><h2 id="skinFormTitle">Create Dice Skin</h2><p id="skinFormSubtitle">Add a new selectable dice design.</p></div><button id="cancelEditButton" class="pdo-button secondary" type="button" hidden>Cancel Edit</button></div>
+        <form id="skinForm">
+          <div class="skin-fields">
+            <label><span>Skin Name</span><input class="pdo-input" id="skinName" maxlength="50" required placeholder="Example: Golden Dice"></label>
+            <fieldset class="skin-access-fieldset">
+              <legend>Who can access this skin?</legend>
+              <p class="skin-access-help">Select one or more groups.</p>
+              <label class="skin-access-option"><input id="skinAccessEveryone" name="skinAccess" type="checkbox" value="everyone"><span>🌍 Everyone / Guests</span></label>
+              <label class="skin-access-option"><input id="skinAccessUsers" name="skinAccess" type="checkbox" value="users"><span>👤 Logged-in users</span></label>
+              <label class="skin-access-option"><input id="skinAccessVip" name="skinAccess" type="checkbox" value="vip"><span>👑 VIP users</span></label>
+            </fieldset>
+            <label class="skin-enabled"><input id="skinEnabled" type="checkbox" checked><span>Enabled and selectable</span></label>
+          </div>
+          <div class="upload-grid" id="uploadGrid"></div>
+          <p class="skin-help">PNG or WebP, maximum 5 MB each. Images must be square. PNG uploads are automatically converted to transparent WebP for faster loading.</p>
+          <div class="preview-section"><h3>Live Preview</h3><div class="dice-preview" id="dicePreview"></div></div>
+          <p class="skin-message" id="skinMessage" aria-live="polite"></p>
+          <div class="skin-actions"><button class="pdo-button" id="saveSkinButton" type="submit">Create Skin</button><button class="pdo-button secondary" id="resetSkinButton" type="button">Reset</button></div>
+        </form>
+      </section>
+
+      <section class="pdo-card pdo-panel skin-list-panel">
+        <div class="pdo-panel-head"><div><h2>Existing Skins</h2><p>Changes appear in room selectors after the page reloads.</p></div><button class="pdo-button secondary" id="refreshSkinsButton" type="button">Refresh</button></div>
+        <div id="skinList" class="skin-list"><div class="pdo-empty">Loading dice skins…</div></div>
+      </section>
+    </section>
+  </main>
+</div>
+<script type="module" src="pdo_permissions.js"></script>
+<script type="module" src="pdo_dice_skins.js"></script>
+<script type="module" src="presence.js"></script>
+</body>
+</html>

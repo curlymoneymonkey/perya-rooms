@@ -1,0 +1,39 @@
+/* Review Queue keeps its existing JavaScript IDs while adopting the staff portal theme. */
+body.reviewQueuePage { padding: 28px; }
+.reviewQueueShell { width:min(1180px,100%); margin:0 auto; }
+.reviewQueueHeader { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; padding:25px; background:#fff; border:1px solid var(--pdo-border); border-radius:var(--pdo-radius); box-shadow:var(--pdo-shadow); }
+.reviewQueueEyebrow,.decisionEyebrow { margin:0 0 7px; color:var(--pdo-primary); font-size:11px; font-weight:800; letter-spacing:.13em; }
+.reviewQueueHeading h1 { margin:0; font-size:clamp(25px,4vw,36px); letter-spacing:-.035em; }
+.reviewQueueIntro { max-width:720px; margin:9px 0 0; color:var(--pdo-muted); line-height:1.6; }
+.secondaryButton,.dangerButton,.queueTab { min-height:42px; padding:10px 15px; border-radius:11px; font-weight:700; cursor:pointer; text-decoration:none; transition:.18s ease; }
+.secondaryButton { border:1px solid var(--pdo-border); color:var(--pdo-text); background:#fff; }
+.secondaryButton:hover { background:#f4f6fa; transform:translateY(-1px); }
+.dangerButton { border:0; color:#fff; background:var(--pdo-danger); }
+.reviewQueueNotice { margin-top:18px; padding:22px; border:1px solid var(--pdo-border); border-radius:15px; background:#fff; box-shadow:var(--pdo-shadow); }
+.queueAccessDenied { border-color:#f6c5c0; background:#fff7f6; }
+.queueSpinner { display:inline-block; width:17px; height:17px; margin-right:9px; border:2px solid #d5dcf0; border-top-color:var(--pdo-primary); border-radius:50%; vertical-align:-3px; animation:pdoSpin .8s linear infinite; }
+@keyframes pdoSpin { to { transform:rotate(360deg); } }
+.queueStats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-top:18px; }
+.queueStatCard { padding:19px; border:1px solid var(--pdo-border); border-radius:15px; background:#fff; box-shadow:0 8px 24px rgba(23,40,75,.06); }
+.queueStatLabel { display:block; color:var(--pdo-muted); font-size:12px; font-weight:700; }
+.queueStatCard strong { display:block; margin-top:8px; font-size:28px; }
+.reviewQueueWorkspace { margin-top:18px; padding:22px; border:1px solid var(--pdo-border); border-radius:var(--pdo-radius); background:#fff; box-shadow:var(--pdo-shadow); }
+.reviewQueueToolbar,.queueStatusRow { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.reviewQueueTabs { display:flex; gap:8px; padding:5px; border-radius:13px; background:#f1f4f9; }
+.queueTab { border:0; color:var(--pdo-muted); background:transparent; }
+.queueTab.active { color:#fff; background:var(--pdo-primary); box-shadow:0 7px 18px rgba(49,94,251,.2); }
+.queueStatusRow { margin:16px 0; }
+.queueSummary,.joinMessage { margin:0; color:var(--pdo-muted); font-size:13px; }
+.removalRequestList { display:grid; gap:13px; }
+.removalRequestCard,.requestCard { padding:18px; border:1px solid var(--pdo-border); border-radius:15px; background:#fff; }
+.reviewModal { position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:18px; }
+.reviewModalBackdrop { position:absolute; inset:0; background:rgba(7,14,29,.62); backdrop-filter:blur(4px); }
+.reviewModalDialog { position:relative; z-index:1; width:min(650px,100%); max-height:90vh; overflow:auto; padding:25px; border-radius:20px; background:#fff; box-shadow:0 24px 80px rgba(0,0,0,.25); }
+.modalCloseButton { position:absolute; right:15px; top:14px; width:36px; height:36px; border:0; border-radius:10px; background:#f1f4f8; font-size:22px; cursor:pointer; }
+.formGroup { margin-top:18px; }
+.formGroup label { display:block; margin-bottom:8px; font-size:13px; font-weight:700; }
+.formGroup textarea { width:100%; min-height:120px; resize:vertical; padding:12px; border:1px solid var(--pdo-border); border-radius:12px; outline:none; }
+.formGroup textarea:focus { border-color:#87a0ff; box-shadow:0 0 0 4px rgba(49,94,251,.10); }
+.reviewCharacterCount,.mutedText { color:var(--pdo-muted); font-size:12px; }
+.decisionButtons { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+@media (max-width:760px){ body.reviewQueuePage{padding:16px}.reviewQueueHeader{flex-direction:column}.queueStats{grid-template-columns:repeat(2,1fr)}.reviewQueueToolbar,.queueStatusRow{align-items:stretch;flex-direction:column}.reviewQueueTabs{width:100%}.queueTab{flex:1}.decisionButtons{flex-direction:column-reverse}.decisionButtons button{width:100%} }

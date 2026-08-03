@@ -1,0 +1,24 @@
+/* Page-specific staff refinements. Shared layout is in staff.css. */
+.pdo-heading-row{display:flex;gap:12px;align-items:flex-start}.pdo-message{min-height:20px;margin:12px 0 0;color:var(--pdo-success);font-size:13px}.pdo-message.error{color:var(--pdo-danger)}.control-result{margin-top:16px;padding:18px;border:1px solid var(--pdo-border);border-radius:15px;background:var(--pdo-surface-soft)}.result-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.result-head h3{margin:0 0 5px;font-size:18px}.result-head p{margin:0;color:var(--pdo-muted);font-size:13px}.result-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}.result-details div{padding:11px;border:1px solid var(--pdo-border);border-radius:11px;background:#fff}.result-details dt{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--pdo-muted)}.result-details dd{margin:5px 0 0;overflow-wrap:anywhere;font-size:13px}.control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.control-grid label span{display:block;margin-bottom:6px;font-size:12px;font-weight:700}.control-grid .full{grid-column:1/-1}.check-row{display:flex!important;align-items:center;gap:9px;min-height:44px;padding:10px 12px;border:1px solid var(--pdo-border);border-radius:11px;background:#fff;font-size:13px;font-weight:700}.check-row input{width:17px;height:17px}.control-grid textarea{min-height:88px;resize:vertical}.result-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:15px}.danger-badge{background:#ffebe9;color:var(--pdo-danger)}@media(max-width:620px){.result-details,.control-grid{grid-template-columns:1fr}.result-actions{flex-direction:column}.result-actions>*{width:100%}}
+
+.user-result-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.user-result-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+
+/* Account directory */
+.directory-head{align-items:center}.directory-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:16px 0}.directory-stat{appearance:none;border:1px solid var(--pdo-border);border-radius:13px;background:#fff;padding:13px 10px;cursor:pointer;text-align:left;color:inherit}.directory-stat strong{display:block;font-size:20px}.directory-stat span{display:block;margin-top:3px;color:var(--pdo-muted);font-size:12px;font-weight:700}.directory-stat.active{outline:2px solid currentColor;outline-offset:-2px}.directory-tools{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:10px}.directory-table-wrap{overflow:auto;border:1px solid var(--pdo-border);border-radius:13px;background:#fff}.directory-table{width:100%;border-collapse:collapse;min-width:680px}.directory-table th,.directory-table td{padding:12px 14px;border-bottom:1px solid var(--pdo-border);text-align:left;vertical-align:middle}.directory-table th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--pdo-muted);background:var(--pdo-surface-soft)}.directory-table tbody tr:last-child td{border-bottom:0}.directory-account{display:flex;align-items:center;gap:10px;min-width:0}.directory-avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;background:var(--pdo-surface-soft);flex:0 0 auto}.directory-account strong,.directory-account span{display:block;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.directory-account span{margin-top:2px;color:var(--pdo-muted);font-size:12px}.directory-role{display:inline-flex;padding:5px 9px;border-radius:999px;background:var(--pdo-surface-soft);font-size:11px;font-weight:800}.directory-empty{text-align:center!important;color:var(--pdo-muted);padding:28px!important}.directory-open{white-space:nowrap}
+@media(max-width:760px){.directory-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.directory-tools{grid-template-columns:1fr}.directory-head{align-items:flex-start;flex-direction:column}.directory-head .pdo-button{width:100%}}

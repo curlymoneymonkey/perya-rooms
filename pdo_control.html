@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>User & Room Control | PERYA DICE</title>
+  <link rel="icon" href="favicon.png">
+  <link rel="stylesheet" href="staff.css">
+  <link rel="stylesheet" href="pdo_control.css">
+</head>
+<body class="pdo-page">
+<div class="pdo-app">
+  <aside class="pdo-sidebar" aria-label="Staff navigation">
+    <a class="pdo-brand" href="pdo_workspace.html"><img class="pdo-brand-logo" src="favicon.png" alt=""><span class="pdo-brand-copy"><strong>PERYA DICE</strong><span>Private Staff Portal</span></span></a>
+    <nav class="pdo-nav">
+      <p class="pdo-nav-section">OVERVIEW</p>
+      <a class="pdo-nav-link" href="pdo_hub.html" data-admin-only><span class="pdo-nav-icon">⌂</span>Control Hub</a>
+      <a class="pdo-nav-link active" href="pdo_control.html"><span class="pdo-nav-icon">⚙</span>User & Room Control</a>
+      <a class="pdo-nav-link" href="pdo_dice_skins.html" data-admin-only><span class="pdo-nav-icon">🎨</span>Dice Skin Management</a>
+      <p class="pdo-nav-section">MODERATION</p>
+      <a class="pdo-nav-link" href="pdo_workspace.html"><span class="pdo-nav-icon">🛡</span>Workspace</a>
+      <a class="pdo-nav-link" href="review_queue.html"><span class="pdo-nav-icon">💬</span>Review Queue</a>
+      <a class="pdo-nav-link" href="pdo_console.html" data-admin-only><span class="pdo-nav-icon">▤</span>Activity Console</a>
+      <p class="pdo-nav-section">ACCOUNT</p>
+      <a class="pdo-nav-link" href="dashboard.html"><span class="pdo-nav-icon">↩</span>Back to Dashboard</a>
+    </nav>
+    <div class="pdo-sidebar-footer"><span class="pdo-role-chip"><span class="pdo-role-dot"></span><span data-staff-role>Checking access…</span></span></div>
+  </aside>
+  <div class="pdo-backdrop" data-close-menu></div>
+  <main class="pdo-main">
+    <header class="pdo-topbar">
+      <div class="pdo-heading-row"><button class="pdo-mobile-menu" type="button" data-open-menu aria-label="Open navigation">☰</button><div class="pdo-title-wrap"><p class="pdo-eyebrow">PRIVATE ADMIN PORTAL</p><h1 class="pdo-title">User & Room Control</h1><p class="pdo-subtitle">Search accounts and rooms, manage roles, restrictions, and special permissions.</p></div></div>
+      <div class="pdo-top-actions"><a class="pdo-button secondary" href="dashboard.html">Dashboard</a><div class="pdo-user-pill"><span class="pdo-avatar">P</span><span><strong>Staff Account</strong><span data-staff-role>Verifying…</span></span></div></div>
+    </header>
+
+    <section class="pdo-card pdo-hero"><div class="pdo-hero-copy"><h2>Live Firestore controls</h2><p>Changes here are saved immediately and logged. Administrators can also grant or revoke hidden Room Access.</p></div><span class="pdo-badge">Moderator & Admin</span></section>
+
+    <section class="pdo-grid">
+
+      <section class="pdo-card pdo-panel pdo-span-12" data-admin-only>
+        <div class="pdo-panel-head directory-head"><div><h2>📋 Account Directory</h2><p>Browse and search users by role. Select an account to open it in User Management.</p></div><button class="pdo-button secondary" id="pdoDirectoryRefresh" type="button">Refresh list</button></div>
+        <div class="directory-stats" id="pdoDirectoryStats" aria-live="polite">
+          <button class="directory-stat active" type="button" data-directory-role="all"><strong id="directoryAllCount">—</strong><span>All</span></button>
+          <button class="directory-stat" type="button" data-directory-role="user"><strong id="directoryUserCount">—</strong><span>Users</span></button>
+          <button class="directory-stat" type="button" data-directory-role="vip"><strong id="directoryVipCount">—</strong><span>VIP</span></button>
+          <button class="directory-stat" type="button" data-directory-role="moderator"><strong id="directoryModeratorCount">—</strong><span>Moderators</span></button>
+          <button class="directory-stat" type="button" data-directory-role="admin"><strong id="directoryAdminCount">—</strong><span>Admins</span></button>
+        </div>
+        <div class="directory-tools">
+          <input class="pdo-input" id="pdoDirectorySearch" type="search" placeholder="Search username, email, or UID" autocomplete="off">
+          <select class="pdo-input" id="pdoDirectorySort" aria-label="Sort accounts"><option value="username">Username A–Z</option><option value="role">Role</option><option value="newest">Newest first</option></select>
+        </div>
+        <p class="pdo-message" id="pdoDirectoryMessage" aria-live="polite"></p>
+        <div class="directory-table-wrap">
+          <table class="directory-table"><thead><tr><th>Account</th><th>Role</th><th>UID</th><th>Action</th></tr></thead><tbody id="pdoDirectoryBody"><tr><td colspan="4" class="directory-empty">Loading accounts…</td></tr></tbody></table>
+        </div>
+      </section>
+      <section class="pdo-card pdo-panel pdo-span-6" data-admin-only>
+        <div class="pdo-panel-head"><div><h2>👥 User Management</h2><p>Search by username, UID, or email. Administrators can manage roles, restrictions, Room Access, and private-page permissions.</p></div></div>
+        <form class="pdo-search" id="pdoUserSearchForm"><input class="pdo-input" id="pdoUserSearch" placeholder="Username, UID, or email" autocomplete="off"><button class="pdo-button" id="pdoUserSearchButton" type="submit">Search</button></form>
+        <p class="pdo-message" id="pdoUserMessage" aria-live="polite"></p>
+        <div id="pdoUserResult" hidden></div>
+      </section>
+
+      <section class="pdo-card pdo-panel pdo-span-6">
+        <div class="pdo-panel-head"><div><h2>🏠 Room Management</h2><p>Search permanent rooms by Room ID, Dice ID, or owner username. Administrators can also search guest rooms by Dice ID, host UID, or Middleman name.</p></div></div>
+        <form class="pdo-search" id="pdoRoomSearchForm"><input class="pdo-input" id="pdoRoomSearch" placeholder="Permanent/guest Dice ID, UID, or username" autocomplete="off"><button class="pdo-button" id="pdoRoomSearchButton" type="submit">Search</button></form>
+        <p class="pdo-message" id="pdoRoomMessage" aria-live="polite"></p>
+        <div id="pdoRoomResult" hidden></div>
+      </section>
+    </section>
+  </main>
+</div>
+<script type="module" src="pdo_permissions.js"></script>
+<script type="module" src="presence.js"></script>
+<script type="module" src="pdo_control.js"></script>
+<script type="module" src="presence.js"></script>
+</body>
+</html>

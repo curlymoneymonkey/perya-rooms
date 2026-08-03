@@ -1,0 +1,235 @@
+.roomAccessBox {
+    width: min(760px, calc(100% - 24px));
+    margin: 0 auto;
+}
+
+.roomAccessHeader,
+.roomSummary,
+#saveStatus {
+    text-align: center;
+}
+
+.roomAccessHeader h2 {
+    margin-bottom: 6px;
+}
+
+.roomAccessHeader p {
+    margin: 0 0 18px;
+    opacity: 0.82;
+}
+
+#roomStatus {
+    min-height: 24px;
+    margin: 10px 0 3px;
+}
+
+#roomIdentity {
+    min-height: 20px;
+    margin: 0 0 12px;
+    opacity: 0.82;
+    overflow-wrap: anywhere;
+}
+
+#saveStatus {
+    min-height: 24px;
+    margin: 12px 0 0;
+    font-weight: 800;
+}
+
+.futureRollEditor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.allowedColorsPanel {
+    padding: 13px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.28);
+}
+
+.allowedColorsTitle {
+    margin: 0 0 10px;
+    text-align: center;
+    color: #ffd95a;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.4px;
+}
+
+.allowedColorsRow {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 9px;
+}
+
+.allowedColorButton {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    padding: 5px;
+    border: 2px solid rgba(255, 255, 255, 0.72);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.09);
+    cursor: pointer;
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 150ms ease, transform 150ms ease,
+        border-color 150ms ease, filter 150ms ease;
+}
+
+.allowedColorButton:hover {
+    transform: translateY(-2px);
+}
+
+.allowedColorButton:focus-visible {
+    outline: 3px solid #ffd95a;
+    outline-offset: 2px;
+}
+
+.allowedColorButton.isDisabled {
+    opacity: 0.24;
+    filter: grayscale(0.85);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.allowedColorButton img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+.futureRollRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 9px;
+    padding: 12px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 13px;
+    background: rgba(0, 0, 0, 0.24);
+}
+
+.futureRollNumber {
+    min-width: 76px;
+    font-weight: 900;
+    color: #ffd95a;
+}
+
+.futureDieEditor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.futureDieEditor img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+}
+
+.futureDieEditor select {
+    min-width: 88px;
+    padding: 6px 7px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.roomAccessError {
+    margin: 18px auto;
+    max-width: 620px;
+    text-align: center;
+}
+
+@media (max-width: 520px) {
+    .roomAccessBox {
+        width: min(100%, calc(100% - 14px));
+    }
+
+    .allowedColorsRow {
+        gap: 6px;
+    }
+
+    .allowedColorButton {
+        width: 42px;
+        height: 42px;
+        padding: 4px;
+    }
+
+    .allowedColorButton img {
+        width: 32px;
+        height: 32px;
+    }
+
+    .futureRollRow {
+        padding: 10px 7px;
+        gap: 7px;
+    }
+
+    .futureRollNumber {
+        width: 100%;
+    }
+
+    .futureDieEditor img {
+        width: 42px;
+        height: 42px;
+    }
+
+    .futureDieEditor select {
+        min-width: 78px;
+        font-size: 12px;
+    }
+}
+
+
+/* Allow secure future-roll editing for rooms with up to 30 dice. */
+.futureRollRow {
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.futureRollNumber {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  flex: 0 0 88px;
+  padding: 7px 6px;
+  border-radius: 8px;
+  background: rgba(13, 17, 24, 0.96);
+}
+
+.futureDieEditor {
+  flex: 0 0 auto;
+}
+
+
+/* Color Balls version of ALL POSSIBLE COLORS */
+.allowedColorButton .allowedBallColorPreview {
+    width: 36px;
+    height: 36px;
+    border-width: 2px;
+    pointer-events: none;
+}
+
+.allowedColorButton.isDisabled .allowedBallColorPreview {
+    box-shadow: none;
+}
+
+@media (max-width: 520px) {
+    .allowedColorButton .allowedBallColorPreview {
+        width: 32px;
+        height: 32px;
+    }
+}

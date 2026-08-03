@@ -1,0 +1,15 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "presenceSessions": {
+      "$uid": {
+        ".read": "auth != null && (auth.token.admin == true || auth.token.moderator == true)",
+        "$sessionId": {
+          ".write": "auth != null && auth.uid == $uid",
+          ".validate": "newData.val() == null || (newData.hasChildren(['uid','sessionId','username','role','page','device','online','lastSeen']) && newData.child('uid').val() == auth.uid && newData.child('sessionId').val() == $sessionId)"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+UPDATES ADDED
+
+1. Existing dice roller layout and rolling logic were kept.
+2. IGN now appears directly under Platform inside the live dice room.
+3. Room owners can edit IGN from Host Controls.
+4. Firestore onSnapshot makes IGN updates visible to current joiners immediately.
+5. Dashboard Your Room section now shows IGN and has an Edit Room button.
+6. Room owners can edit room name, description, game, platform, visibility, and IGN. Dice ID remains locked.
+7. Private staff pages use the pdo_ prefix.
+8. pdo_workspace.html contains a Review Queue button leading to review_queue.html.
+9. Staff pages run role checks before allowing access.

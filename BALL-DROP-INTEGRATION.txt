@@ -1,0 +1,14 @@
+PROJECT A + PROJECT B INTEGRATION
+
+Added only to room.html / room.js plus isolated ball-drop.css and ball-drop.js.
+Backups:
+- room.html.project-b-backup
+- room.js.project-b-backup
+- style.css.project-b-backup
+
+Behavior:
+- Color Dice remains the default game.
+- Host can select Color Dice or Ball Drop from one dropdown.
+- Selection is stored in permanentRooms.gameMode and mirrors to viewers.
+- Existing dice logic, Firebase callable rolls, shop, orders, profiles and other pages were not replaced.
+- Ball Drop uses Matter.js and stores its own latestBallDropResult and ballDropHistory fields.

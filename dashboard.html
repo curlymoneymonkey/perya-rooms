@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | PERYA DICE</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preload" as="image" href="images/PERYA.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="favorites.css">
+    <link rel="stylesheet" href="notifications.css">
+</head>
+<body>
+    <header class="siteHeader">
+        <img class="logo" src="images/PERYA.png" alt="PERYA DICE" decoding="async" fetchpriority="high" width="700" height="220">
+
+        <div id="notificationRoot" class="notificationRoot" hidden>
+            <button
+                id="notificationButton"
+                class="notificationButton"
+                type="button"
+                aria-label="Open notifications"
+                aria-expanded="false"
+                aria-controls="notificationPanel"
+            >
+                <span class="notificationBell" aria-hidden="true">🔔</span>
+                <span id="notificationBadge" class="notificationBadge" hidden>0</span>
+            </button>
+
+            <section id="notificationPanel" class="notificationPanel" aria-label="Notifications" hidden>
+                <div class="notificationPanelHeader">
+                    <div>
+                        <h2>Notifications</h2>
+                        <p id="notificationSummary">No unread notifications</p>
+                    </div>
+                    <button id="closeNotificationsButton" class="notificationIconButton" type="button" aria-label="Close notifications">×</button>
+                </div>
+
+                <div class="notificationToolbar">
+                    <button id="markAllNotificationsReadButton" class="notificationToolbarButton" type="button">✓ Mark all read</button>
+                    <button id="clearNotificationsButton" class="notificationToolbarButton dangerNotificationAction" type="button">🗑 Clear all</button>
+                </div>
+
+                <p id="notificationMessage" class="notificationMessage"></p>
+                <div id="notificationList" class="notificationList" aria-live="polite"></div>
+            </section>
+        </div>
+
+        <div id="staffMenuRoot" class="accountMenu" hidden>
+            <button
+                id="staffMenuButton"
+                class="accountMenuButton"
+                type="button"
+                aria-label="Open staff panel"
+                aria-expanded="false"
+                aria-controls="staffMenuDropdown"
+                title="Staff Panel"
+            >
+                <span aria-hidden="true" style="font-size:1.25rem;line-height:1">🛡</span>
+            </button>
+            <div id="staffMenuDropdown" class="accountDropdown" hidden>
+                <p class="accountMenuName">🛡 Staff Panel</p>
+                <a href="pdo_hub.html" data-staff-admin-only>⌂ Control Hub</a>
+                <a href="pdo_control.html" data-staff-control>⚙ User &amp; Room Control</a>
+                <a href="pdo_workspace.html">🛡 Workspace</a>
+                <a href="review_queue.html">💬 Review Queue</a>
+                <a href="pdo_console.html" data-staff-admin-only>▤ Activity Console</a>
+            </div>
+        </div>
+
+        <div id="accountMenuRoot" class="accountMenu" hidden>
+            <button class="accountMenuButton" type="button" data-account-button aria-label="Open account menu" aria-expanded="false">
+                <img class="accountAvatar" data-account-avatar src="favicon.png" alt="Profile picture">
+            </button>
+            <div class="accountDropdown" data-account-dropdown hidden>
+                <p class="accountMenuName" data-account-username>@user</p>
+                <a data-my-profile href="#">👤 My Profile</a>
+                <a href="my-orders.html">🧾 My Orders</a>
+                <a href="profile_search.html">🔍 Find Profiles</a>
+                <a data-admin-link href="pdo_hub.html" hidden>🛠 Admin Panel</a>
+                <button type="button" data-account-signout>🚪 Sign Out</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="card">
+            <h1 class="pageTitle">Rooms Dashboard</h1>
+            <p>Welcome, <strong id="dashboardUsername">Creator</strong>.</p>
+
+            <br><br>
+
+            <div class="buttonRow">
+                <button id="homeButton" type="button">Guest Room</button>
+                <button id="myProfileButton" class="secondaryButton" type="button">👤 My Profile</button>
+                <button id="signOutButton" class="secondaryButton" type="button">Sign Out</button>
+            </div>
+
+            <p id="dashboardMessage" class="joinMessage"></p>
+        </section>
+
+        <section class="card">
+            <h2>Your Room</h2><br>
+
+            <div id="noRoomPanel" hidden>
+                <p>You have not created your permanent room yet.</p><br>
+                <button id="showCreateRoomButton" type="button">Create Your Room</button>
+            </div>
+
+            <div id="roomPanel" class="roomSummary" hidden>
+                <h3 id="roomNameText"></h3>
+                <p><strong>Room ID:</strong> <span id="roomDiceIdText"></span></p>
+                <p><strong>Status:</strong> <span id="roomLiveText"></span></p>
+                <p><strong>Game:</strong> <span id="roomGameText"></span></p>
+                <p><strong>Platform:</strong> <span id="roomPlatformText"></span></p>
+                <p><strong>IGN:</strong> <span id="roomIgnText">Not set</span></p>
+
+                <div class="buttonRow">
+                    <button id="openRoomButton" type="button">Open Room</button>
+                    <button id="editRoomButton" class="secondaryButton" type="button">Edit Room</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="createRoomPanel" class="card formCard" hidden>
+            <h2 id="roomFormTitle">Create Your Permanent Room</h2>
+
+            <form id="createRoomForm">
+                <div class="formGroup">
+                    <label for="diceIdInput">Room ID</label>
+                    <input id="diceIdInput" type="text" minlength="4" maxlength="10" placeholder="Create your own Room ID (Cannot be edited)" required>
+                </div>
+
+                <div class="formGroup">
+                    <label for="roomNameInput">Room Name</label>
+                    <input id="roomNameInput" type="text" maxlength="50" placeholder="Dice Room Name" required>
+                </div>
+
+                <div class="formGroup">
+                    <label for="descriptionInput">Room Description</label>
+                    <textarea id="descriptionInput" maxlength="300"></textarea>
+                </div>
+
+                <div class="formGroup">
+                    <label for="gameSelect">Main Game</label>
+                    <select id="gameSelect">
+                        <option>Roblox</option>
+                        <option>Minecraft</option>
+                        <option>Mobile Legends</option>
+                        <option>Call of Duty</option>
+                        <option>Fortnite</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+
+                <div id="robloxGameGroup" class="formGroup">
+                    <label for="robloxGameSelect">Roblox Game</label>
+                    <select id="robloxGameSelect">
+                        <option value="Steal a Brainrot">Steal a Brainrot</option>
+                        <option value="Grow a Garden 1">Grow a Garden 1</option>
+                        <option value="Pet Simulator 99">Pet Simulator 99</option>
+                        <option value="Pet Simulator X">Pet Simulator X</option>
+                        <option value="Grow a Garden 2">Grow a Garden 2</option>
+                    </select>
+                </div>
+
+                <div class="formGroup">
+                    <label for="platformSelect">Livestream Platform</label>
+                    <select id="platformSelect">
+                        <option value="TikTok">TikTok</option>
+                        <option value="YouTube">YouTube</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="Twitch">Twitch</option>
+                        <option value="Kick">Kick</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="formGroup">
+                    <label for="ignInput">In-Game Name (IGN)</label>
+                    <input id="ignInput" type="text" maxlength="30" placeholder="Example: Your In Game Username" autocomplete="off">
+                </div>
+
+                <div class="formGroup">
+                    <label for="visibilitySelect">Visibility</label>
+                    <select id="visibilitySelect">
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                    </select>
+                </div>
+
+                <div class="buttonRow">
+                    <button id="createRoomButton" type="submit">Create Room</button>
+                    <button id="cancelCreateRoomButton" class="secondaryButton" type="button">Cancel</button>
+                </div>
+            </form>
+
+            <p id="createRoomMessage" class="joinMessage"></p>
+        </section> <br><br>
+
+        <div class="dashboardSearchGrid">
+        <section class="card searchDiceCard">
+            <h2>🔍 Search for a Room</h2>
+            <p class="mutedText">Find a permanent creator room using its Room ID.</p>
+
+            <form id="searchDiceForm" class="searchDiceForm">
+                <input
+                    id="searchDiceInput"
+                    type="text"
+                    minlength="4"
+                    maxlength="10"
+                    autocomplete="off"
+                    placeholder="Enter Room ID"
+                    aria-label="Enter Room ID"
+                    required
+                >
+                <button id="searchDiceButton" type="submit">Search</button>
+            </form>
+
+            <p id="searchDiceMessage" class="joinMessage"></p>
+        </section>
+
+        <section class="card searchDiceCard">
+            <h2>👤 Search Profile</h2>
+            <p class="mutedText">Find someone using their exact username.</p>
+
+            <form id="searchProfileForm" class="searchDiceForm">
+                <input
+                    id="searchProfileInput"
+                    type="text"
+                    maxlength="30"
+                    autocomplete="off"
+                    placeholder="Enter Username"
+                    style="text-align:center"
+                    required
+                >
+                <button id="searchProfileButton" type="submit">Search</button>
+            </form>
+
+            <p id="searchProfileMessage" class="joinMessage"></p>
+        </section>
+        </div>
+
+    
+
+        <section class="card liveRoomsCard">
+            <div class="liveRoomsHeader">
+                <div>
+                    <h2>🎲 Live Directory</h2>
+                    <p class="mutedText">Discover public creator rooms by category, game, and platform.</p>
+                </div>
+                <span id="liveRoomsCount" class="liveRoomsCount">0 rooms</span>
+            </div>
+
+            <nav class="directoryTabs" aria-label="Room directory sections">
+                <button class="directoryTab active" type="button" data-directory-section="trending">🔥 Trending</button>
+                <button class="directoryTab" type="button" data-directory-section="live">🔴 Live</button>
+                <button class="directoryTab" type="button" data-directory-section="rated">⭐ Top Rated</button>
+                <button class="directoryTab" type="button" data-directory-section="new">🆕 New Hosts</button>
+            </nav>
+
+            <div class="directoryFilters">
+                <div class="directoryFilter directorySearchFilter">
+                    <label for="directorySearchInput">Search</label>
+                    <input id="directorySearchInput" type="search" placeholder="Search room or host" autocomplete="off">
+                </div>
+
+                <div class="directoryFilter">
+                    <label for="directoryGameFilter">Game</label>
+                    <select id="directoryGameFilter">
+                        <option value="all">All Games</option>
+                    </select>
+                </div>
+
+                <div id="directoryRobloxGameGroup" class="directoryFilter" hidden>
+                    <label for="directoryRobloxGameFilter">Roblox Game</label>
+                    <select id="directoryRobloxGameFilter">
+                        <option value="all">All Roblox Games</option>
+                        <option value="Steal a Brainrot">Steal a Brainrot</option>
+                        <option value="Grow a Garden 1">Grow a Garden 1</option>
+                        <option value="Pet Simulator 99">Pet Simulator 99</option>
+                        <option value="Pet Simulator X">Pet Simulator X</option>
+                        <option value="Grow a Garden 2">Grow a Garden 2</option>
+                    </select>
+                </div>
+
+                <div class="directoryFilter">
+                    <label for="directoryPlatformFilter">Platform</label>
+                    <select id="directoryPlatformFilter">
+                        <option value="all">All Platforms</option>
+                        <option value="TikTok">TikTok</option>
+                        <option value="YouTube">YouTube</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="Twitch">Twitch</option>
+                        <option value="Kick">Kick</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <section id="favoriteRoomsSection" class="directoryRoomSection" hidden>
+                <div class="directorySectionHeading">
+                    <div>
+                        <h3>⭐ Favorite Rooms</h3>
+                        <p class="mutedText">Live rooms you saved appear here first.</p>
+                    </div>
+                    <span id="favoriteRoomsCount" class="liveRoomsCount">0 rooms</span>
+                </div>
+                <p id="favoriteRoomsMessage" class="joinMessage"></p>
+                <div id="favoriteRoomsList" class="liveRoomsGrid fourColumnRoomGrid" aria-live="polite"></div>
+            </section>
+
+            <section class="directoryRoomSection">
+                <div class="directorySectionHeading">
+                    <div>
+                        <h3>🔴 All Live Rooms</h3>
+                        <p class="mutedText">Browse every public room that is live now.</p>
+                    </div>
+                </div>
+                <p id="liveRoomsMessage" class="joinMessage">Loading creator rooms...</p>
+                <div id="liveRoomsList" class="liveRoomsGrid fourColumnRoomGrid" aria-live="polite"></div>
+            </section>
+        </section>
+    </main>
+
+    <div id="roomSearchModal" class="roomSearchModal" hidden>
+        <div class="roomSearchBackdrop" data-close-search-modal></div>
+
+        <section class="roomSearchDialog" role="dialog" aria-modal="true" aria-labelledby="roomSearchTitle">
+            <button id="closeRoomSearchModal" class="modalCloseButton" type="button" aria-label="Close room result">×</button>
+            <h2 id="roomSearchTitle">🎲 Room Found</h2>
+
+            <div class="roomSearchDetails">
+                <p><strong>Room Name:</strong> <span id="foundRoomName"></span></p>
+                <p><strong>Host:</strong> <span id="foundRoomHost"></span></p>
+                <p><strong>Game:</strong> <span id="foundRoomGame"></span></p>
+                <p><strong>Platform:</strong> <span id="foundRoomPlatform"></span></p>
+                <p><strong>Status:</strong> <span id="foundRoomStatus"></span></p>
+
+                <div class="foundDescriptionBox">
+                    <strong>Description</strong>
+                    <p id="foundRoomDescription"></p>
+                </div>
+            </div>
+
+            <div class="buttonRow">
+                <button id="joinFoundRoomButton" type="button">🎲 Join Room</button>
+                <button id="cancelRoomSearchButton" class="secondaryButton" type="button">Cancel</button>
+            </div>
+        </section>
+    </div>
+
+    <script type="module" src="dashboard.js"></script>
+    <script type="module" src="notifications.js"></script>
+    <script type="module" src="account-menu.js"></script>
+</body>
+</html>

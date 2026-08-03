@@ -1,0 +1,67 @@
+/* PERYA DICE — Favorites and four-column Live Directory */
+.directoryRoomSection {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+.directorySectionHeading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+    text-align: left;
+}
+.directorySectionHeading h3 { margin: 0 0 4px; font-size: 22px; }
+.fourColumnRoomGrid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+.directoryRoomCard {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.directoryRoomCard .liveRoomMeta { display: grid; gap: 6px; }
+.directoryRoomCard .liveRoomJoinButton { width: 100%; margin-top: auto; }
+.favoriteSavedBadge {
+    width: fit-content;
+    margin: 8px 0;
+    padding: 5px 9px;
+    border: 1px solid rgba(255, 212, 90, .35);
+    border-radius: 999px;
+    color: #ffe791;
+    background: rgba(255, 212, 90, .1);
+    font-size: 12px;
+    font-weight: 900;
+}
+.roomFavoritePanel {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    margin: 18px 0;
+    padding: 15px;
+    border: 1px solid rgba(255, 212, 90, .25);
+    border-radius: 15px;
+    background: rgba(255, 212, 90, .07);
+    text-align: left;
+}
+.roomFavoritePanel > div { display: grid; gap: 3px; }
+.roomFavoriteLabel { color: #ffe791; font-size: 13px; font-weight: 900; }
+.roomFavoriteCount { color: #fff; font-size: 25px; line-height: 1; }
+.favoriteRoomButton { margin-left: auto; }
+.favoriteRoomButton.isFavorite {
+    border-color: #ffe28a;
+    color: #2a1400;
+    background: linear-gradient(180deg, #ffe993, #e6ad2d);
+}
+.roomFavoritePanel .mutedText { flex-basis: 100%; margin: 0; }
+@media (max-width: 1050px) { .fourColumnRoomGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) {
+    .fourColumnRoomGrid { grid-template-columns: 1fr; }
+    .directorySectionHeading { align-items: flex-start; flex-direction: column; }
+    .favoriteRoomButton { width: 100%; margin-left: 0; }
+}

@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://asia-southeast1-peryadice.cloudfunctions.net" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="dns-prefetch" href="//asia-southeast1-peryadice.cloudfunctions.net">
+    <title>Permanent Room | PERYA DICE</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preload" as="image" href="images/PERYA.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="favorites.css">
+
+<style>
+/* Pending-order username + copy button */
+.pendingCustomerOrderBuyerRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 5px;
+}
+
+.pendingCustomerOrderBuyerRow .pendingCustomerOrderBuyer {
+    margin: 0;
+}
+
+.copyCustomerUsernameButton {
+    width: auto;
+    min-width: 0;
+    padding: 4px 8px;
+    border-radius: 7px;
+    background: rgba(52, 152, 219, 0.22);
+    border: 1px solid rgba(108, 190, 255, 0.45);
+    color: #bfe6ff;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.copyCustomerUsernameButton:hover:not(:disabled) {
+    background: rgba(52, 152, 219, 0.38);
+    transform: none;
+}
+
+.copyCustomerUsernameButton.copied {
+    border-color: rgba(76, 220, 130, 0.55);
+    background: rgba(39, 174, 96, 0.22);
+    color: #a9f3c1;
+}
+
+@media (max-width: 520px) {
+    .copyCustomerUsernameButton {
+        padding: 4px 7px;
+        font-size: 10px;
+    }
+}
+
+/* =========================================================
+   PERYA CUSTOM POPUP
+========================================================= */
+.container {
+    background: rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+}
+
+.peryaPopupOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.peryaPopupOverlay[hidden] {
+    display: none !important;
+}
+
+.peryaPopupCard {
+    width: min(430px, 100%);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    background: linear-gradient(180deg, #202638, #141824);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.58);
+    color: #ffffff;
+    animation: peryaPopupOpen 0.18s ease-out;
+}
+
+@keyframes peryaPopupOpen {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.peryaPopupHeader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 22px 10px;
+}
+
+.peryaPopupIcon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(78, 156, 255, 0.16);
+    font-size: 22px;
+}
+
+.peryaPopupTitle {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.peryaPopupMessage {
+    margin: 0;
+    padding: 8px 22px 18px;
+    color: #d9deeb;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.peryaPopupInput {
+    display: block;
+    width: calc(100% - 44px);
+    min-height: 44px;
+    margin: 0 22px 18px;
+    padding: 11px 13px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    outline: none;
+    background: rgba(0, 0, 0, 0.25);
+    color: #ffffff;
+    font: inherit;
+}
+
+.peryaPopupInput:focus {
+    border-color: #6fb2ff;
+    box-shadow: 0 0 0 3px rgba(75, 151, 255, 0.15);
+}
+
+.peryaPopupActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 22px 22px;
+}
+
+.peryaPopupButton {
+    width: auto;
+    min-width: 92px;
+    margin: 0;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 9px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.peryaPopupCancelButton {
+    background: #3d4352;
+    color: #ffffff;
+}
+
+.peryaPopupConfirmButton {
+    background: #2f80ed;
+    color: #ffffff;
+}
+
+.peryaPopupOverlay[data-type="success"] .peryaPopupIcon {
+    background: rgba(45, 205, 112, 0.17);
+}
+
+.peryaPopupOverlay[data-type="warning"] .peryaPopupIcon {
+    background: rgba(255, 190, 55, 0.17);
+}
+
+.peryaPopupOverlay[data-type="error"] .peryaPopupIcon {
+    background: rgba(255, 80, 96, 0.17);
+}
+
+.peryaPopupOverlay[data-type="error"] .peryaPopupConfirmButton {
+    background: #d94b5b;
+}
+
+.peryaPopupOverlay[data-type="warning"] .peryaPopupConfirmButton {
+    background: #d28a16;
+}
+
+body.peryaPopupOpen {
+    overflow: hidden;
+}
+
+@media (max-width: 520px) {
+    .peryaPopupActions {
+        flex-direction: column-reverse;
+    }
+
+    .peryaPopupButton {
+        width: 100%;
+    }
+}
+
+
+/* =========================================================
+   SHOP SELLING STATUS
+========================================================= */
+.sellingStatusMessage {
+    margin: 12px 0 16px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.sellingStatusMessage.shopOpen {
+    border: 1px solid rgba(46, 204, 113, 0.45);
+    background: rgba(46, 204, 113, 0.14);
+    color: #b9f6ce;
+}
+
+.sellingStatusMessage.shopClosed {
+    border: 1px solid rgba(231, 76, 60, 0.5);
+    background: rgba(231, 76, 60, 0.15);
+    color: #ffd0cb;
+}
+
+.sellingToggleButton.isSelling {
+    border-color: rgba(231, 76, 60, 0.45);
+}
+
+.sellingToggleButton.isStopped {
+    border-color: rgba(46, 204, 113, 0.5);
+}
+
+
+/* =========================================================
+   PUBLIC HOST INFORMATION
+========================================================= */
+.publicHostInformation {
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.publicHostInformation p {
+    margin: 6px 0;
+}
+
+.publicHostInformation .platformStreamDetails {
+    margin-top: 8px;
+}
+
+
+/* =========================================================
+   ORDER TRACKING
+========================================================= */
+.customerOrderStatusRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 4px;
+}
+
+.customerOrderStatusBadge {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.customerOrderStatusBadge.statusPending {
+    background: rgba(241, 196, 15, 0.18);
+    border: 1px solid rgba(241, 196, 15, 0.45);
+    color: #ffe59a;
+}
+
+.customerOrderStatusBadge.statusCompleted {
+    background: rgba(46, 204, 113, 0.16);
+    border: 1px solid rgba(46, 204, 113, 0.45);
+    color: #b9f6ce;
+}
+
+.customerOrderStatusBadge.statusRejected {
+    background: rgba(231, 76, 60, 0.16);
+    border: 1px solid rgba(231, 76, 60, 0.45);
+    color: #ffd0cb;
+}
+
+.customerOrderTrackingNote,
+.customerOrderRejectionReason {
+    margin: 4px 0 0;
+    font-size: 12px;
+    opacity: 0.88;
+}
+
+</style>
+
+
+<style>
+        .diceSkinControl {
+            width: min(520px, 100%);
+            margin: 8px auto 12px;
+            position: relative;
+        }
+        .diceSkinControl > label {
+            display: block;
+            margin: 0 0 5px;
+            font-size: 12px;
+            font-weight: 800;
+            opacity: .9;
+        }
+        .diceSkinControl > select { display: none; }
+        .diceSkinControl .joinMessage {
+            min-height: 0;
+            margin: 4px 0 0;
+            font-size: 11px;
+        }
+        .diceSkinPicker { position: relative; width: 100%; }
+        .diceSkinPickerButton,
+        .diceSkinOption {
+            width: 100%;
+            min-height: 36px;
+            padding: 6px 9px;
+            border: 1px solid rgba(255,255,255,.18);
+            border-radius: 8px;
+            background: rgba(8,12,20,.82);
+            color: #fff;
+            font: inherit;
+        }
+        .diceSkinPickerButton {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            text-align: left;
+            cursor: pointer;
+        }
+        .diceSkinPickerButton:hover { border-color: rgba(111,178,255,.75); }
+        .diceSkinSelectedName {
+            flex: 0 1 120px;
+            min-width: 72px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 13px;
+            font-weight: 800;
+        }
+        .diceSkinMiniPreview {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .diceSkinMiniPreview img {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 18px;
+            object-fit: contain;
+        }
+        .diceSkinArrow { margin-left: auto; font-size: 10px; opacity: .8; }
+        .diceSkinOptions {
+            position: absolute;
+            z-index: 50;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            max-height: 230px;
+            overflow-y: auto;
+            padding: 4px;
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 9px;
+            background: #111722;
+            box-shadow: 0 14px 35px rgba(0,0,0,.45);
+        }
+        .diceSkinOptions[hidden] { display: none !important; }
+        .diceSkinOption {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 34px;
+            margin: 0 0 3px;
+            text-align: left;
+            cursor: pointer;
+            border-color: transparent;
+            background: transparent;
+        }
+        .diceSkinOption:last-child { margin-bottom: 0; }
+        .diceSkinOption:hover:not(:disabled) { background: rgba(111,178,255,.13); }
+        .diceSkinOption.isSelected {
+            background: rgba(111,178,255,.18);
+            border-color: rgba(111,178,255,.4);
+        }
+        .diceSkinOption:disabled { cursor: not-allowed; opacity: .45; }
+        .diceSkinOptionName {
+            flex: 0 1 120px;
+            min-width: 72px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
+            font-weight: 800;
+        }
+        .diceSkinOptionStatus {
+            margin-left: auto;
+            flex: 0 0 auto;
+            font-size: 9px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+        .diceSkinOptionStatus.unavailable { color: #ffb4ad; }
+        @media (max-width: 520px) {
+            .diceSkinControl { width: 100%; }
+            .diceSkinSelectedName,
+            .diceSkinOptionName { flex-basis: 82px; min-width: 58px; }
+            .diceSkinMiniPreview { gap: 2px; }
+            .diceSkinMiniPreview img { width: 16px; height: 16px; flex-basis: 16px; }
+            .diceSkinOptionStatus { font-size: 8px; }
+        }
+
+        /* Compact inline dice-skin selector placed below Roll Dice */
+        .roomCard .diceSkinControl {
+            width: min(520px, 100%);
+            margin: 10px auto 4px;
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: center;
+            gap: 6px 8px;
+        }
+        .roomCard .diceSkinControl > label {
+            display: block;
+            margin: 0;
+            white-space: nowrap;
+            font-size: 12px;
+        }
+        .roomCard .diceSkinControl .diceSkinPicker { min-width: 0; }
+        .roomCard .diceSkinControl .joinMessage {
+            grid-column: 1 / -1;
+            margin-top: 0;
+        }
+        .roomCard .diceSkinPickerButton { min-height: 34px; padding: 5px 8px; }
+        @media (max-width: 420px) {
+            .roomCard .diceSkinControl { gap: 5px; }
+            .roomCard .diceSkinControl > label { font-size: 11px; }
+            .roomCard .diceSkinSelectedName { flex-basis: 68px; min-width: 52px; font-size: 11px; }
+            .roomCard .diceSkinMiniPreview img { width: 14px; height: 14px; flex-basis: 14px; }
+        }
+
+        /* Clean header dice-skin selector */
+        .diceSkinHeaderBar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+        }
+        .diceSkinBrandText {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            min-width: 0;
+            white-space: nowrap;
+        }
+        .diceSkinHeaderBar .diceSkinControl {
+            width: auto;
+            margin: 0 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .diceSkinHeaderBar .diceSkinControl > label {
+            display: block;
+            margin: 0;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        .diceSkinHeaderBar .diceSkinPicker { width: auto; min-width: 0; }
+        .diceSkinHeaderBar .diceSkinPickerButton {
+            width: auto;
+            min-width: 102px;
+            min-height: 30px;
+            padding: 4px 8px;
+            gap: 8px;
+        }
+        .diceSkinHeaderBar .diceSkinSelectedName {
+            flex: 1 1 auto;
+            min-width: 58px;
+            max-width: 120px;
+            font-size: 11px;
+        }
+        .diceSkinHeaderBar .diceSkinOptions {
+            left: auto;
+            right: 0;
+            width: 190px;
+        }
+        .diceSkinHeaderBar .diceSkinOption {
+            min-height: 31px;
+            padding: 5px 8px;
+        }
+        .diceSkinHeaderBar .diceSkinOptionName {
+            flex: 1 1 auto;
+            min-width: 0;
+            font-size: 11px;
+        }
+        .diceSkinHeaderBar .joinMessage {
+            display: none;
+        }
+        @media (max-width: 520px) {
+            .diceSkinHeaderBar { gap: 7px; }
+            .diceSkinBrandText strong { font-size: 11px; }
+            .diceSkinHeaderBar .diceSkinControl > label { font-size: 0; }
+            .diceSkinHeaderBar .diceSkinControl > label::after {
+                content: "🎨";
+                font-size: 12px;
+            }
+            .diceSkinHeaderBar .diceSkinPickerButton {
+                min-width: 88px;
+                max-width: 120px;
+            }
+            .diceSkinHeaderBar .diceSkinOptions { width: 170px; }
+        }
+
+</style>
+
+<style>
+/* =========================================================
+   ROOM SHOP — MATCHED CUSTOMER ORDER CARDS
+========================================================= */
+.roomCustomerOrderCard {
+    position: relative;
+    overflow: hidden;
+}
+
+.pendingCustomerOrderItems {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+}
+
+.pendingCustomerOrderItemRow {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    align-items: stretch;
+    gap: 16px;
+    padding: 14px;
+    border: 1px solid rgba(255, 212, 90, 0.28);
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(255, 212, 90, 0.1), rgba(255, 255, 255, 0.045));
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.06), 0 8px 20px rgba(0, 0, 0, 0.16);
+}
+
+.pendingCustomerOrderItemImageWrap {
+    width: 92px;
+    min-height: 92px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    align-self: center;
+    border: 1px solid rgba(255, 212, 90, 0.38);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.pendingCustomerOrderItemImage {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 92px;
+    object-fit: cover;
+}
+
+.pendingCustomerOrderItemImagePlaceholder {
+    padding: 8px;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 11px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.pendingCustomerOrderItemInfo {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+}
+
+.pendingCustomerOrderProductName {
+    display: block;
+    color: #fff8dc;
+    font-size: 20px;
+    font-weight: 950;
+    line-height: 1.2;
+    letter-spacing: 0.015em;
+    overflow-wrap: anywhere;
+}
+
+.pendingCustomerOrderItemMeta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 20px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.pendingCustomerOrderQuantity,
+.pendingCustomerOrderAmount {
+    min-width: 0;
+    color: #eee3e7;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.3;
+}
+
+.pendingCustomerOrderQuantity strong {
+    color: #fff;
+    font-size: 17px;
+    font-weight: 950;
+}
+
+.pendingCustomerOrderAmount {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.pendingCustomerOrderAmount strong {
+    color: #ffe27a;
+    font-size: 19px;
+    font-weight: 950;
+}
+
+.pendingCustomerOrderPrivateDetails p {
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.pendingCustomerOrderPrivateDetails strong,
+.pendingCustomerOrderBuyer {
+    color: #fff;
+    font-weight: 950;
+}
+
+.customerProofToggle {
+    width: calc(100% - 24px);
+    min-height: 40px;
+    margin: 0 12px 12px;
+    padding: 8px 12px;
+    border: 1px solid rgba(103, 183, 247, 0.32);
+    border-radius: 10px;
+    color: #dff3ff;
+    background: rgba(69, 169, 232, 0.12);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.customerProofToggle:hover:not(:disabled) {
+    background: rgba(69, 169, 232, 0.2);
+}
+
+.customerProofToggle:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.pendingCustomerOrderFooter[hidden] {
+    display: none !important;
+}
+
+.pendingCustomerOrderFooter {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(165px, 1fr);
+    align-items: stretch;
+    gap: 10px;
+    padding: 0 12px 12px;
+}
+
+.pendingCustomerOrderProofPanel,
+.pendingCustomerOrderTotal {
+    min-height: 84px;
+}
+
+.pendingCustomerOrderProofPanel {
+    overflow: hidden;
+    border: 1px solid rgba(103, 183, 247, 0.28);
+    border-radius: 11px;
+    background: rgba(103, 183, 247, 0.08);
+}
+
+.customerProofThumbnailButton {
+    width: 100%;
+    height: 100%;
+    min-height: 84px;
+    display: block;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    background: rgba(0, 0, 0, 0.24);
+    cursor: zoom-in;
+}
+
+.customerProofThumbnailButton img {
+    display: block;
+    width: 100%;
+    height: 84px;
+    object-fit: cover;
+}
+
+.customerProofMissing {
+    min-height: 84px;
+    display: grid;
+    place-items: center;
+    padding: 10px;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 11px;
+    text-align: center;
+}
+
+.pendingCustomerOrderTotal {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 11px 14px;
+    border: 1px solid rgba(255, 212, 90, 0.34);
+    border-radius: 11px;
+    background: rgba(255, 212, 90, 0.1);
+    text-align: right;
+}
+
+.pendingCustomerOrderTotal span,
+.pendingCustomerOrderTotal strong {
+    display: block;
+}
+
+.pendingCustomerOrderTotal span {
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.pendingCustomerOrderTotal strong {
+    margin-top: 4px;
+    color: #ffe58b;
+    font-size: 21px;
+    font-weight: 950;
+}
+
+.customerProofModal[hidden] {
+    display: none !important;
+}
+
+.customerProofModal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+}
+
+.customerProofModalBackdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgba(3, 7, 14, 0.88);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+
+.customerProofModalDialog {
+    position: relative;
+    width: min(760px, 100%);
+    max-height: calc(100vh - 36px);
+    overflow: auto;
+    padding: 22px;
+    border: 1px solid rgba(255, 212, 90, 0.3);
+    border-radius: 18px;
+    color: #fff;
+    background: linear-gradient(155deg, rgba(57, 17, 40, 0.99), rgba(20, 6, 14, 0.99));
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65);
+}
+
+.customerProofModalDialog h2 {
+    margin: 0 0 14px;
+    font-size: 23px;
+}
+
+.customerProofModalDialog img {
+    display: block;
+    width: 100%;
+    max-height: 72vh;
+    object-fit: contain;
+    border-radius: 12px;
+    background: #080d18;
+}
+
+.customerProofModalClose {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 50%;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.customerProofOpenOriginal {
+    width: 100%;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 14px;
+    border-radius: 10px;
+    color: #fff;
+    background: #2f80ed;
+    font-weight: 900;
+    text-decoration: none;
+}
+
+body.customerProofModalOpen {
+    overflow: hidden;
+}
+
+@media (max-width: 520px) {
+    .pendingCustomerOrderItemRow {
+        grid-template-columns: 76px minmax(0, 1fr);
+        gap: 11px;
+        padding: 11px;
+    }
+
+    .pendingCustomerOrderItemImageWrap {
+        width: 76px;
+        min-height: 76px;
+    }
+
+    .pendingCustomerOrderItemImage {
+        min-height: 76px;
+    }
+
+    .pendingCustomerOrderItemInfo {
+        gap: 11px;
+    }
+
+    .pendingCustomerOrderProductName {
+        font-size: 17px;
+    }
+
+    .pendingCustomerOrderItemMeta {
+        grid-template-columns: 1fr;
+        gap: 7px;
+        padding-top: 9px;
+    }
+
+    .pendingCustomerOrderQuantity,
+    .pendingCustomerOrderAmount {
+        font-size: 14px;
+    }
+
+    .pendingCustomerOrderAmount {
+        text-align: left;
+    }
+
+    .pendingCustomerOrderAmount strong {
+        font-size: 17px;
+    }
+
+    .pendingCustomerOrderFooter {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .customerProofModalDialog {
+        padding: 18px;
+    }
+}
+</style>
+
+
+    <style>
+        /* Lightweight white-to-result reveal. Uses only transform and opacity. */
+        .dice.diceResultReveal {
+            animation: diceResultReveal 180ms ease-out both;
+            will-change: transform, opacity;
+        }
+
+        @keyframes diceResultReveal {
+            from {
+                opacity: 0.35;
+                transform: scale(0.86);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .dice.diceResultReveal {
+                animation: none;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+    <header class="siteHeader"><img class="logo" src="images/PERYA.png" alt="PERYA DICE" decoding="async" fetchpriority="high">
+        <div id="accountMenuRoot" class="accountMenu" hidden>
+            <button class="accountMenuButton" type="button" data-account-button aria-label="Open account menu" aria-expanded="false">
+                <img class="accountAvatar" data-account-avatar src="favicon.png" alt="Profile picture" decoding="async">
+            </button>
+            <div class="accountDropdown" data-account-dropdown hidden>
+                <p class="accountMenuName" data-account-username>@user</p>
+                <a data-my-profile href="#">👤 My Profile</a>
+                <a href="profile_search.html">🔍 Find Profiles</a>
+                <a data-admin-link href="pdo_hub.html" hidden>🛠 Admin Panel</a>
+                <button type="button" data-account-signout>🚪 Sign Out</button>
+            </div>
+        </div>
+    
+    </header>
+    <main>
+
+        <button id="togglePermanentHostControls" class="smallButton" type="button" hidden>
+            Hide
+        </button> <br>
+
+        <section id="hostControlPanel" class="card formCard" hidden>
+                <h2>Host Controls</h2> <br>
+                        <div class="buttonRow">
+                    <button id="liveToggleButton" class="liveToggleButton" type="button">🟢 Go Live</button> Enabling this will display your room in the Live Directory.
+
+                </div>
+        <br>
+<div class="formGroup">
+                    <label for="streamLinkInput">Current Stream Link</label>
+                    <input id="streamLinkInput" type="url" placeholder="https://...">
+                </div>
+                <button id="saveStreamButton" type="button">Save Stream Link</button>
+                <div class="formGroup">
+                    <label for="ignInput">In-Game Name (IGN)</label>
+                    <input id="ignInput" type="text" maxlength="30" placeholder="Example: User" autocomplete="off">
+                </div>
+                <button id="saveIgnButton" type="button">Save IGN</button> <br>
+                <div class="buttonRow shopVisibilityControlRow">
+                    <button id="toggleShopVisibilityButton" class="secondaryButton" type="button">
+                        Hide Shop
+                    </button>
+                </div>
+                <p id="hostControlMessage" class="joinMessage"></p> <br>
+                                <p class="mutedText">The room automatically goes offline after one hour without a completed dice roll.</p>
+            </section>
+            
+
+
+
+        <section id="roomLoading" class="card"><h2>Loading room...</h2></section>
+        <section id="permanentRoom" hidden>
+            <section id="roomStatusCard" class="card roomStatusCard">
+                <h1 id="permanentRoomName" hidden></h1>
+                                <p id="permanentLiveStatus" class="roomStatus"></p>
+            
+                <div class="roomReviewQuickActions">
+                    <div class="roomTrustFavoriteRow">
+                        <div id="topTrustSummarySlot" class="topTrustSummarySlot">
+                            <p id="reviewTrustSummary" class="reviewTrustSummary">
+                                No vouches yet.
+                            </p>
+                        </div>
+
+                        <div class="compactFavoriteControl" aria-label="Room favorites">
+                            <button
+                                id="favoriteRoomButton"
+                                class="favoriteRoomButton"
+                                type="button"
+                                hidden
+                            >
+                                ⭐ Favorite
+                            </button>
+                        
+
+                            <span id="favoriteCountDisplay" class="favoriteCountDisplay">
+                                ⭐ Favorites
+                                <strong id="roomFavoriteCount" class="roomFavoriteCount">0</strong>
+                            </span>
+                        </div>
+                    </div>
+
+                    <p id="favoriteRoomMessage" class="mutedText favoriteRoomMessage">
+                        Save this room for quick access when it goes live.
+                    </p>
+
+                    <button
+                        id="openReviewModalButton"
+                        class="reviewButton"
+                        type="button"
+                        hidden
+                    >
+                        👍 Leave a Vouch
+                    </button>
+
+                    <p id="reviewEligibilityMessage" class="mutedText"></p>
+                </div>
+                </section>
+            </section>
+
+        <div id="permanentHostSettings" class="hostSettings" hidden>
+            <div class="hostWebsiteBrand diceSkinHeaderBar" aria-label="Perya Rooms website">
+                <div class="diceSkinBrandText">
+                    <span aria-hidden="true">🌐 <strong>perya-rooms.com</strong></span>
+                    <strong><Perya-Rooms class="com"></Perya-Rooms></strong>
+                </div>
+                <div id="permanentDiceSkinControl" class="diceSkinControl" hidden>
+                    <label for="permanentDiceSkinSelect">🎨 Dice Skin:</label>
+                    <select id="permanentDiceSkinSelect" aria-label="Choose dice skin">
+                        <option value="default">Default</option>
+                    </select>
+                    <div class="diceSkinPicker">
+                        <button id="permanentDiceSkinPickerButton" class="diceSkinPickerButton" type="button" aria-haspopup="listbox" aria-expanded="false">
+                            <span id="permanentDiceSkinSelectedName" class="diceSkinSelectedName">Default</span>
+                            <span class="diceSkinArrow" aria-hidden="true">▼</span>
+                        </button>
+                        <div id="permanentDiceSkinGallery" class="diceSkinOptions" role="listbox" hidden></div>
+                    </div>
+                    <p id="permanentDiceSkinMessage" class="joinMessage"></p>
+                </div>
+            </div>
+        </div>
+
+            <section id="permanentRoomCard" class="card roomCard">
+
+                <div class="publicHostInformation">
+                    <p id="permanentDescription" hidden></p>
+
+                    <div id="hostDiceCountControl" class="hostDiceCountControl" hidden>
+                        <div class="hostDiceCountHeading">🎲 Number of Dice</div>
+                        <div class="hostDiceCountStepper" role="group" aria-label="Choose number of dice">
+                            <button id="decreaseDiceCount" class="diceCountStepButton" type="button" aria-label="Use one fewer die">−</button>
+                            <input
+                                id="diceCountDisplay"
+                                class="diceCountDisplay"
+                                type="text"
+                                value="3"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                maxlength="2"
+                                autocomplete="off"
+                                aria-label="Number of dice"
+                            >
+                            <button id="increaseDiceCount" class="diceCountStepButton" type="button" aria-label="Use one more die">+</button>
+                        </div>
+                        <select id="permanentDiceCount" class="visuallyHiddenDiceSelect" aria-label="Number of dice"></select>
+                    </div>
+
+
+                    <div id="viewerRoomInformation" class="viewerRoomInformation">
+                        <p><strong>Hosted by:</strong> <span id="permanentHost"></span></p>
+                        <p><strong>Game:</strong> <span id="permanentGame"></span></p>
+                        <p><strong>Platform:</strong> <span id="permanentPlatform"></span></p>
+                    </div>
+
+                    <section id="viewerStreamSection" class="viewerStreamSection" hidden aria-label="Livestream player">
+                        <div class="viewerStreamHeader">
+                            <strong id="viewerStreamHeading">🔴 Live Stream</strong>
+                        </div>
+
+                        <div id="viewerStreamFrame" class="viewerStreamFrame" hidden>
+                            <iframe
+                                id="viewerStreamPlayer"
+                                title="Host livestream preview"
+                                loading="lazy"
+                                referrerpolicy="strict-origin-when-cross-origin"
+                                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                                allowfullscreen>
+                            </iframe>
+                            <a
+                                id="viewerStreamFrameLink"
+                                class="viewerStreamFrameLink"
+                                href="#"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="Open YouTube livestream in a new tab">
+                                <span>▶ Open YouTube Livestream</span>
+                            </a>
+                        </div>
+
+                        <a
+                            id="viewerTikTokCard"
+                            class="viewerTikTokCard"
+                            href="#"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Open TikTok livestream in a new tab"
+                            hidden>
+                            <span class="viewerTikTokLiveBadge">LIVE</span>
+                            <span class="viewerTikTokIcon" aria-hidden="true">♪</span>
+                            <span class="viewerTikTokTitle">Watch this livestream on TikTok</span>
+                            <span id="viewerTikTokUsername" class="viewerTikTokUsername"></span>
+                            <span class="viewerStreamCardHint">Click anywhere to open</span>
+                        </a>
+
+                        <p id="viewerStreamFallback" class="viewerStreamFallback" hidden></p>
+
+                        <a
+                            id="viewerStreamOpenButton"
+                            class="viewerStreamOpenButton"
+                            href="#"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            hidden>
+                            Open Livestream
+                        </a>
+                    </section>
+
+                </div>
+
+                <p id="permanentIgnRow" class="ignRow" hidden>
+    <span class="ignText">
+        🎮 <strong>In-Game Name: </strong>
+        <span id="permanentIgn"></span>
+    </span>
+
+    <button id="copyIgnButton" class="copyIgnButton" type="button">
+        📋
+    </button>
+</p>
+ <p id="permanentRollStatus" class="roomStatus"></p>
+<div id="permanentResults" class="results"></div>
+                <p><strong>Room ID:</strong> <span id="permanentDiceId"></span></p>
+                <p id="publicRoomViewerRow">
+                    <strong>Room Viewers:</strong>
+                    <span class="roomViewerCountValue">0</span>
+                </p>
+                <button id="permanentRollButton" class="rollButton" type="button" hidden>🎲 ROLL</button>
+                <p id="permanentWaitingText" class="waitingText" hidden>Only the host can roll.</p>
+                            
+            </section>
+
+            <div class="bottomPanels">
+                <div id="hostHistoryToolbar" class="hostHistoryToolbar" hidden>
+                    <p id="hostRoomViewerRow" class="hostRoomViewerRow">
+                        👥 Room Viewers:
+                        <strong class="roomViewerCountValue">0</strong>
+                    </p>
+
+                    <div id="hostDiceBlurControl" class="hostDiceBlurControl">
+                        <label for="hostDiceBlurCheckbox">
+                            <input id="hostDiceBlurCheckbox" type="checkbox">
+                            Blur dice (Anti-Restriction Mode)
+                        </label>
+                    </div>
+                </div>
+
+                <section class="card historyBox">
+                    <h2>Previous Rolls</h2>
+                    <div id="permanentHistory"></div>
+                </section>
+                <section id="customerOrdersBox" class="card customerOrdersBox">
+                    <div class="customerOrdersHeader">
+                        <div>
+                            <h2 id="customerOrdersTitle">Customer Orders</h2>
+                            <p id="customerOrdersSummary" class="customerOrdersSummary">Loading orders...</p>
+                        </div>
+                    </div>
+
+                    <label id="customerOrderSearchWrap" class="customerOrderSearchWrap" hidden>
+                        <span>Search by IGN or item</span>
+                        <input
+                            id="customerOrderSearch"
+                            type="search"
+                            placeholder="Search by IGN or item..."
+                            autocomplete="off"
+                        >
+                    </label>
+
+                    <div
+                        id="customerOrdersList"
+                        class="customerOrdersScroller"
+                        aria-live="polite"
+                    >
+                        <p class="emptyOrders">Loading orders...</p>
+                    </div>
+                </section>
+            </div>
+
+
+            <section id="profileShopSection" class="card profileShopSection roomShopSection" aria-labelledby="shopTitle">
+                <div class="profileShopHeader">
+                    <div>
+                        <h2 id="shopTitle">Products for Sale</h2>
+                        <p id="shopMessage" class="shopMessage">Loading shop…</p>
+                    </div>
+                </div>
+
+                <div id="buyerCartControls" class="buyerCartControls" hidden>
+                    <button id="openCartButton" class="profileButton profileButtonPrimary" type="button">🛒 View Cart (<span id="cartCount">0</span>)</button>
+                </div>
+
+                <div id="sellerControls" class="sellerControls" hidden>
+                    <button id="sellingToggleButton" class="profileButton profileButtonSecondary sellingToggleButton" type="button">
+                        ⏸ Stop Selling
+                    </button>
+                    <button id="paymentInfoButton" class="profileButton profileButtonSecondary paymentInfoButton" type="button">
+                        💳 Edit Payment Information
+                    </button>
+                    <a id="sellerOrdersButton" class="profileButton profileButtonSecondary" href="orders.html">
+                        📦 Customer Orders
+                    </a>
+                    <button id="addProductButton" class="profileButton profileButtonPrimary" type="button">
+                        ➕ Add Product
+                    </button>
+                </div>
+
+                <p id="sellingStatusMessage" class="sellingStatusMessage" hidden aria-live="polite"></p>
+
+                <div id="productList" class="profileProductGrid" aria-live="polite">
+                    <p>Loading products…</p>
+                </div>
+            </section>
+
+            <section id="vouchersBox" class="card reviewsCard">
+                <div class="reviewsHeader">
+                    <div class="voucherHeaderContent">
+                        <div class="voucherTitleRow">
+                            <h2>Vouchers</h2>
+                            <div id="hostVoucherFavoriteSlot" class="hostVoucherFavoriteSlot" hidden></div>
+                        </div>
+                        <div id="hostVoucherTrustSlot" class="hostVoucherTrustSlot" hidden></div>
+                        <p id="reviewBreakdown" class="mutedText">No vouches yet.</p>
+                    </div>
+                </div>
+                <div id="reviewsList" class="reviewsList">
+                    <p class="emptyReviews">No vouches yet. Be the first to vouch for this host.</p>
+                </div>
+            </section>
+
+              <div class="buttonRow">
+                    <button id="backDashboardButton" type="button">Back to Dashboard</button>
+             <button id="backHomeButton" class="secondaryButton" type="button">Roll as Guest</button>
+            
+                             </div>
+        </section>
+
+    
+
+    </main>
+
+    <div id="reviewModal" class="reviewModal" hidden>
+        <div class="reviewModalBackdrop" data-close-review-modal></div>
+        <section class="reviewModalDialog" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
+            <button id="closeReviewModalButton" class="modalCloseButton" type="button" aria-label="Close vouch form">&times;</button>
+            <h2 id="reviewModalTitle">Leave a Vouch</h2>
+            <p class="mutedText">Do you vouch for this host?</p>
+
+            <div class="reviewChoiceRow" role="group" aria-label="Vouch choice">
+                <button id="vouchButton" class="reviewChoiceButton" type="button" data-vouch="true">👍 I Vouch</button>
+                <button id="notVouchButton" class="reviewChoiceButton" type="button" data-vouch="false">👎 I Don't Vouch</button>
+            </div>
+
+            <div class="formGroup">
+                <label for="reviewTextInput">Tell others why <span class="mutedText">(optional)</span></label>
+                <textarea id="reviewTextInput" maxlength="200" placeholder="Share your experience with this host..."></textarea>
+                <p id="reviewCharacterCount" class="reviewCharacterCount">0 / 200</p>
+            </div>
+
+            <p id="reviewFormMessage" class="joinMessage"></p>
+            <div class="buttonRow">
+                <button id="cancelReviewButton" class="secondaryButton" type="button">Cancel</button>
+                <button id="submitReviewButton" type="button">Submit Vouch</button>
+            </div>
+        </section>
+    </div>
+
+
+    <div id="removalRequestModal" class="reviewModal" hidden>
+        <div class="reviewModalBackdrop" data-close-removal-modal></div>
+        <section class="reviewModalDialog" role="dialog" aria-modal="true" aria-labelledby="removalRequestModalTitle">
+            <button id="closeRemovalRequestModalButton" class="modalCloseButton" type="button" aria-label="Close removal request">&times;</button>
+            <h2 id="removalRequestModalTitle">Request Vouch Removal</h2>
+            <p class="mutedText">The vouch will remain visible until a moderator reviews your request.</p>
+
+            <div class="formGroup">
+                <label for="removalReasonSelect">Reason</label>
+                <select id="removalReasonSelect">
+                    <option value="">Select a reason</option>
+                    <option value="false_information">False information</option>
+                    <option value="harassment">Harassment or abusive language</option>
+                    <option value="spam">Spam or promotional content</option>
+                    <option value="impersonation">Impersonation</option>
+                    <option value="personal_information">Personal information</option>
+                    <option value="other">Other policy violation</option>
+                </select>
+            </div>
+
+            <div class="formGroup">
+                <label for="removalDetailsInput">Additional details <span class="mutedText">(optional)</span></label>
+                <textarea id="removalDetailsInput" maxlength="300" placeholder="Explain why this vouch should be reviewed..."></textarea>
+                <p id="removalDetailsCount" class="reviewCharacterCount">0 / 300</p>
+            </div>
+
+            <p id="removalRequestMessage" class="joinMessage"></p>
+            <div class="buttonRow">
+                <button id="cancelRemovalRequestButton" class="secondaryButton" type="button">Cancel</button>
+                <button id="submitRemovalRequestButton" type="button">Submit Request</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Integrated shop dialogs -->
+<!-- Add/Edit Product -->
+<div id="productModal" class="modalOverlay" hidden>
+    <section class="modalCard" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
+        <h2 id="productModalTitle">Add Product</h2>
+
+        <label class="fieldLabel">
+            Product Image
+            <input id="productImage" type="file" accept="image/png,image/jpeg,image/webp">
+            <small>PNG, JPG, or WebP. Maximum 1 MB.</small>
+        </label>
+
+        <div class="imagePreviewBox">
+            <img id="productImagePreview" alt="Product preview" decoding="async">
+        </div>
+
+        <label class="fieldLabel">
+            Product Name
+            <input id="productName" type="text" maxlength="100">
+        </label>
+
+        <label class="fieldLabel">
+            Price
+            <input
+                id="productPrice"
+                type="text"
+                inputmode="decimal"
+                pattern="[0-9]*[.]?[0-9]*"
+                maxlength="12"
+                placeholder="Example: 100"
+                autocomplete="off"
+            >
+        </label>
+
+        <label class="fieldLabel">
+            Stock
+            <input
+                id="productStock"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="9"
+                placeholder="Example: 50"
+                autocomplete="off"
+            >
+        </label>
+
+        <label class="fieldLabel">
+            Minimum Purchase
+            <input
+                id="productMinimum"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="9"
+                placeholder="Example: 1"
+                autocomplete="off"
+            >
+        </label>
+
+        <label class="fieldLabel">
+            Delivery Time
+            <select id="productDelivery">
+                <option value="">Select delivery time</option>
+                <option value="Instant">Instant</option>
+                <option value="20 minutes">20 minutes</option>
+                <option value="1 hour">1 hour</option>
+                <option value="12 hours">12 hours</option>
+                <option value="1 day">1 day</option>
+                <option value="1 week">1 week</option>
+            </select>
+        </label>
+
+        <label class="fieldLabel">
+            Description
+            <textarea id="productDescription" maxlength="1000"></textarea>
+        </label>
+
+        <div class="modalActions">
+            <button id="cancelProductButton" class="secondaryButton" type="button">Cancel</button>
+            <button id="saveProductButton" type="button">Save Product</button>
+        </div>
+    </section>
+</div>
+
+<!-- Edit Payment Information -->
+<div id="paymentInfoModal" class="modalOverlay" hidden>
+    <section class="modalCard paymentSettingsCard" role="dialog" aria-modal="true" aria-labelledby="paymentInfoTitle">
+        <h2 id="paymentInfoTitle">EDIT PAYMENT INFORMATION</h2>
+
+        <div id="paymentSetupStep1" class="paymentSetupStep">
+            <p class="paymentSettingsIntro">Choose which payment options buyers can use.</p>
+
+            <label class="guestOrderTopCard">
+                <input id="allowGuestOrders" type="checkbox">
+                <span class="guestOrderText">
+                    <strong>Allow Guest Orders</strong>
+                    <small>Guests may order without creating an account.</small>
+                </span>
+            </label>
+
+            <div class="paymentSetupDivider"></div>
+            <h3 class="paymentSetupHeading">SELECT PAYMENT METHODS</h3>
+
+            <div class="paymentMethodSelectionGrid">
+                <label class="paymentMethodSelectCard paymentGcashCard">
+                    <input id="enableGcash" type="checkbox">
+                    <span><strong>GCash</strong><small>Mobile wallet</small></span>
+                </label>
+                <label class="paymentMethodSelectCard paymentMayaCard">
+                    <input id="enableMaya" type="checkbox">
+                    <span><strong>Maya</strong><small>Mobile wallet</small></span>
+                </label>
+                <label class="paymentMethodSelectCard paymentPaypalCard">
+                    <input id="enablePaypal" type="checkbox">
+                    <span><strong>PayPal</strong><small>Email or QR</small></span>
+                </label>
+            </div>
+
+            <p id="paymentMethodSelectionError" class="paymentSetupError" hidden>Select at least one payment method.</p>
+
+            <div class="modalActions">
+                <button id="cancelPaymentInfoButton" class="secondaryButton" type="button">Cancel</button>
+                <button id="continuePaymentSetupButton" type="button">Continue</button>
+            </div>
+        </div>
+
+        <div id="paymentSetupStep2" class="paymentSetupStep" hidden>
+            <p class="paymentSettingsIntro">Enter information only for the payment methods you selected.</p>
+
+            <div id="gcashSettingsSection" class="paymentDetailAccordion paymentGcashCard" hidden>
+                <button class="paymentAccordionHeader" type="button" data-payment-accordion="gcash" aria-expanded="true">
+                    <span>GCash</span><span class="paymentAccordionArrow">▼</span>
+                </button>
+                <div class="paymentAccordionBody">
+                    <label class="fieldLabel">Account Name<input id="gcashName" type="text" maxlength="100"></label>
+                    <label class="fieldLabel">GCash Number<input id="gcashNumber" type="tel" maxlength="20" placeholder="09XXXXXXXXX"></label>
+                    <label class="fieldLabel">GCash QR Code<input id="gcashQrInput" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG, or WebP. Maximum 2 MB.</small></label>
+                    <div class="qrPreviewBox"><img id="gcashQrPreview" alt="GCash QR preview" decoding="async"></div>
+                </div>
+            </div>
+
+            <div id="mayaSettingsSection" class="paymentDetailAccordion paymentMayaCard" hidden>
+                <button class="paymentAccordionHeader" type="button" data-payment-accordion="maya" aria-expanded="true">
+                    <span>Maya</span><span class="paymentAccordionArrow">▼</span>
+                </button>
+                <div class="paymentAccordionBody">
+                    <label class="fieldLabel">Account Name<input id="mayaName" type="text" maxlength="100"></label>
+                    <label class="fieldLabel">Maya Number<input id="mayaNumber" type="tel" maxlength="20" placeholder="09XXXXXXXXX"></label>
+                    <label class="fieldLabel">Maya QR Code<input id="mayaQrInput" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG, or WebP. Maximum 2 MB.</small></label>
+                    <div class="qrPreviewBox"><img id="mayaQrPreview" alt="Maya QR preview" decoding="async"></div>
+                </div>
+            </div>
+
+            <div id="paypalSettingsSection" class="paymentDetailAccordion paymentPaypalCard" hidden>
+                <button class="paymentAccordionHeader" type="button" data-payment-accordion="paypal" aria-expanded="true">
+                    <span>PayPal</span><span class="paymentAccordionArrow">▼</span>
+                </button>
+                <div class="paymentAccordionBody">
+                    <label class="fieldLabel">PayPal Email<input id="paypalEmail" type="email" maxlength="150" placeholder="seller@example.com"></label>
+                    <label class="fieldLabel">PayPal QR Code<input id="paypalQrInput" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG, or WebP. Maximum 2 MB.</small></label>
+                    <div class="qrPreviewBox"><img id="paypalQrPreview" alt="PayPal QR preview" decoding="async"></div>
+                </div>
+            </div>
+
+            <div class="modalActions">
+                <button id="backPaymentSetupButton" class="secondaryButton" type="button">Back</button>
+                <button id="savePaymentInfoButton" type="button">Save Information</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Shopping Cart -->
+<div id="cartModal" class="modalOverlay" hidden>
+    <section class="modalCard cartCard" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
+        <h2 id="cartTitle">🛒 YOUR CART</h2>
+        <div id="cartItems" class="cartItems"></div>
+        <div class="totalRow cartGrandTotal">
+            <span>Cart Total</span>
+            <strong id="cartTotal">₱0</strong>
+        </div>
+        <div class="modalActions">
+            <button id="closeCartButton" class="secondaryButton" type="button">Continue Shopping</button>
+            <button id="checkoutCartButton" type="button">Proceed to Payment</button>
+        </div>
+    </section>
+</div>
+
+<!-- Payment -->
+<div id="paymentModal" class="modalOverlay" hidden>
+    <section class="modalCard paymentCard" role="dialog" aria-modal="true" aria-labelledby="paymentTitle">
+        <h2 id="paymentTitle">PAYMENT</h2>
+
+        <p class="paymentWarning">⚠️ Don't forget to screenshot or take a photo of your receipt after sending your payment.</p>
+
+        <div class="paymentCartSummary">
+            <h3>Order Summary</h3>
+            <div id="paymentCartItems" class="paymentCartItems"></div>
+        </div>
+
+        <section class="paymentInstructionCard">
+            <h3 id="buyerPaymentMethodTitle">Choose Payment Method</h3>
+            <div id="paymentMethodChoices" class="paymentMethodChoices"></div>
+
+            <div id="selectedPaymentDetails" hidden>
+            <p class="sendPaymentLabel">Send payment to:</p>
+            <div class="paymentRecipientCard">
+                <strong id="buyerAccountName"></strong>
+                <div class="copyPaymentRow">
+                    <span id="buyerPaymentDestination">—</span>
+                    <button id="copyPaymentDestinationButton" class="secondaryButton copyPaymentButton" type="button">Copy</button>
+                </div>
+            </div>
+
+            <div class="paymentOrDivider"><span>OR</span></div>
+            <p class="scanQrLabel">Scan this QR Code</p>
+            <div class="buyerQrBox"><img id="buyerQrImage" alt="Seller payment QR code" decoding="async"></div>
+            </div>
+        </section>
+
+        <div id="paymentFillUpForm" hidden>
+        <div class="totalRow">
+            <span>Amount</span>
+            <strong id="paymentAmount">₱0</strong>
+        </div>
+
+        <section class="afterPaymentSection">
+            <div class="sectionDividerTitle"><span>After Payment</span></div>
+
+            <div class="paymentDateTimeGrid">
+                <label class="fieldLabel">Date of Payment *
+                    <input id="paymentDate" type="date">
+                </label>
+                <label class="fieldLabel">Time of Payment *
+                    <input id="paymentTime" type="time">
+                </label>
+            </div>
+
+            <label class="fieldLabel"><span id="paymentReferenceLabel">Reference Number *</span>
+                <input id="paymentReference" type="text" maxlength="100">
+            </label>
+
+            <label class="fieldLabel proofUploadField">Upload Payment Proof *
+                <input id="paymentProof" type="file" accept="image/png,image/jpeg,image/webp">
+                <span class="proofUploadHint">Choose a screenshot or photo of your receipt.</span>
+            </label>
+
+            <div class="proofPreviewBox"><img id="paymentProofPreview" alt="Payment proof preview" decoding="async"></div>
+            <p class="noProofWarning">No payment proof = no item delivery.</p>
+
+            <label class="fieldLabel">Username (IGN) *
+                <input id="buyerUsername" type="text" maxlength="100">
+            </label>
+
+            <label class="fieldLabel">Notes to Seller <span class="optionalText">(Optional)</span>
+                <textarea id="buyerNotes" maxlength="500" placeholder="Add anything the seller should know about this payment or order."></textarea>
+            </label>
+        </section>
+
+        <div class="modalActions">
+            <button id="backToCartButton" class="secondaryButton" type="button">Back to Cart</button>
+            <button id="submitOrderButton" type="button">Submit Order</button>
+        </div>
+        </div>
+    </section>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const priceInput = document.getElementById("productPrice");
+    const stockInput = document.getElementById("productStock");
+    const minimumInput = document.getElementById("productMinimum");
+
+    function cleanPrice(value) {
+        const cleaned = String(value || "")
+            .replace(/[^\d.]/g, "")
+            .replace(/^(\d*\.\d*).*$/, "$1");
+
+        const parts = cleaned.split(".");
+        const whole = (parts[0] || "").slice(0, 9);
+        const decimal = (parts[1] || "").slice(0, 2);
+
+        return cleaned.includes(".")
+            ? `${whole}.${decimal}`
+            : whole;
+    }
+
+    function cleanWholeNumber(value) {
+        return String(value || "")
+            .replace(/\D/g, "")
+            .slice(0, 9);
+    }
+
+    priceInput?.addEventListener("input", () => {
+        priceInput.value = cleanPrice(priceInput.value);
+    });
+
+    stockInput?.addEventListener("input", () => {
+        stockInput.value = cleanWholeNumber(stockInput.value);
+    });
+
+    minimumInput?.addEventListener("input", () => {
+        minimumInput.value = cleanWholeNumber(minimumInput.value);
+    });
+
+    priceInput?.addEventListener("paste", event => {
+        event.preventDefault();
+        priceInput.value = cleanPrice(
+            event.clipboardData?.getData("text") || ""
+        );
+        priceInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    [stockInput, minimumInput].forEach(input => {
+        input?.addEventListener("paste", event => {
+            event.preventDefault();
+            input.value = cleanWholeNumber(
+                event.clipboardData?.getData("text") || ""
+            );
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+    });
+});
+</script>
+
+
+
+<!-- Buyer payment proof viewer -->
+<div id="customerProofModal" class="customerProofModal" hidden>
+    <button class="customerProofModalBackdrop" type="button" data-close-customer-proof aria-label="Close payment proof"></button>
+    <section class="customerProofModalDialog" role="dialog" aria-modal="true" aria-labelledby="customerProofModalTitle">
+        <button id="closeCustomerProofButton" class="customerProofModalClose" type="button" aria-label="Close">&times;</button>
+        <h2 id="customerProofModalTitle">Buyer Payment Proof</h2>
+        <img id="customerProofModalImage" src="" alt="Buyer payment proof">
+        <a id="customerProofOpenOriginal" class="customerProofOpenOriginal" href="#" target="_blank" rel="noopener noreferrer">Open Original Image</a>
+    </section>
+</div>
+
+<!-- PERYA custom alert / confirm / prompt popup -->
+<div
+    id="peryaPopupOverlay"
+    class="peryaPopupOverlay"
+    data-type="info"
+    role="presentation"
+    hidden
+>
+    <section
+        class="peryaPopupCard"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="peryaPopupTitle"
+        aria-describedby="peryaPopupMessage"
+    >
+        <div class="peryaPopupHeader">
+            <span id="peryaPopupIcon" class="peryaPopupIcon" aria-hidden="true">ℹ️</span>
+            <h2 id="peryaPopupTitle" class="peryaPopupTitle">Notice</h2>
+        </div>
+
+        <p id="peryaPopupMessage" class="peryaPopupMessage"></p>
+
+        <input
+            id="peryaPopupInput"
+            class="peryaPopupInput"
+            type="text"
+            maxlength="300"
+            autocomplete="off"
+            hidden
+        >
+
+        <div class="peryaPopupActions">
+            <button
+                id="peryaPopupCancelButton"
+                class="peryaPopupButton peryaPopupCancelButton"
+                type="button"
+                hidden
+            >
+                Cancel
+            </button>
+
+            <button
+                id="peryaPopupConfirmButton"
+                class="peryaPopupButton peryaPopupConfirmButton"
+                type="button"
+            >
+                OK
+            </button>
+        </div>
+    </section>
+</div>
+
+    <script type="module" src="room.js"></script>
+    <script type="module" src="room-shop.js"></script>
+    <script type="module" src="account-menu.js"></script>
+    <script type="module" src="presence.js"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Username | PERYA DICE</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="stylesheet" href="notifications.css"></head>
+<body>
+    <header class="siteHeader">
+        <img class="logo" src="images/PERYA.png" alt="PERYA DICE">
+
+        <div id="notificationRoot" class="notificationRoot" hidden>
+            <button
+                id="notificationButton"
+                class="notificationButton"
+                type="button"
+                aria-label="Open notifications"
+                aria-expanded="false"
+                aria-controls="notificationPanel"
+            >
+                <span class="notificationBell" aria-hidden="true">🔔</span>
+                <span id="notificationBadge" class="notificationBadge" hidden>0</span>
+            </button>
+
+            <section id="notificationPanel" class="notificationPanel" aria-label="Notifications" hidden>
+                <div class="notificationPanelHeader">
+                    <div>
+                        <h2>Notifications</h2>
+                        <p id="notificationSummary">No unread notifications</p>
+                    </div>
+                    <button id="closeNotificationsButton" class="notificationIconButton" type="button" aria-label="Close notifications">×</button>
+                </div>
+
+                <div class="notificationToolbar">
+                    <button id="markAllNotificationsReadButton" class="notificationToolbarButton" type="button">✓ Mark all read</button>
+                    <button id="clearNotificationsButton" class="notificationToolbarButton dangerNotificationAction" type="button">🗑 Clear all</button>
+                </div>
+
+                <p id="notificationMessage" class="notificationMessage"></p>
+                <div id="notificationList" class="notificationList" aria-live="polite"></div>
+            </section>
+        </div>
+
+        <div id="accountMenuRoot" class="accountMenu" hidden>
+            <button class="accountMenuButton" type="button" data-account-button aria-label="Open account menu" aria-expanded="false">
+                <img class="accountAvatar" data-account-avatar src="favicon.png" alt="Profile picture">
+            </button>
+            <div class="accountDropdown" data-account-dropdown hidden>
+                <p class="accountMenuName" data-account-username>@user</p>
+                <a data-my-profile href="#">👤 My Profile</a>
+                <a href="profile_search.html">🔍 Find Profiles</a>
+                <a data-admin-link href="pdo_hub.html" hidden>🛠 Admin Panel</a>
+                <button type="button" data-account-signout>🚪 Sign Out</button>
+            </div>
+        </div>
+    </header>
+    <main>
+        <section class="card formCard">
+            <h1 class="pageTitle">Choose Your Username</h1>
+            <p class="mutedText">This will be your public host name.</p>
+
+            <form id="usernameForm">
+                <div class="formGroup">
+                    <label for="usernameInput">Username</label>
+                    <input id="usernameInput" type="text" minlength="3" maxlength="20" autocomplete="off" placeholder="What should we call you?" required>
+                </div>
+                <p class="mutedText">3–20 characters. Letters, numbers, and underscores only.</p>
+                <button id="saveUsernameButton" type="submit">Save Username</button>
+            </form>
+
+            <p id="usernameMessage" class="joinMessage"></p>
+            <button id="cancelUsernameButton" class="secondaryButton" type="button">Sign Out</button>
+        </section>
+    </main>
+    <script type="module" src="username.js"></script>
+    <script type="module" src="notifications.js"></script>
+    <script type="module" src="account-menu.js"></script>
+    <script type="module" src="presence.js"></script>
+</body>
+</html>

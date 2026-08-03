@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <title>Perya Dice Admin</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .adminBox {
+            width: min(760px, calc(100% - 24px));
+            margin: 0 auto;
+        }
+
+        .adminSearchWrap {
+            max-width: 460px;
+            margin: 0 auto 14px;
+        }
+
+        .adminSearchControls {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        #gameIdInput {
+            flex: 1;
+            min-width: 0;
+            box-sizing: border-box;
+            text-transform: uppercase;
+        }
+
+        #searchRoomButton {
+            flex: 0 0 auto;
+            padding: 10px 14px;
+            border: 0;
+            border-radius: 10px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        #searchRoomButton:disabled {
+            cursor: wait;
+            opacity: 0.65;
+        }
+
+        #gameStatus,
+        #roomType,
+        #saveStatus {
+            text-align: center;
+        }
+
+        #gameStatus {
+            min-height: 24px;
+            margin: 10px 0 3px;
+        }
+
+        #roomType {
+            min-height: 20px;
+            margin: 0 0 12px;
+            opacity: 0.82;
+        }
+
+        #saveStatus {
+            min-height: 24px;
+            margin: 12px 0 0;
+            font-weight: 800;
+        }
+
+        .saveChangesWrap {
+            display: flex;
+            justify-content: center;
+            margin-top: 14px;
+        }
+
+        #saveChangesButton {
+            padding: 11px 18px;
+            border: 0;
+            border-radius: 11px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        #saveChangesButton:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .futureRollEditor {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .allowedColorsPanel {
+            padding: 13px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 14px;
+            background: rgba(0, 0, 0, 0.28);
+        }
+
+        .allowedColorsTitle {
+            margin: 0 0 10px;
+            text-align: center;
+            color: #ffd95a;
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: 0.4px;
+        }
+
+        .allowedColorsRow {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 9px;
+        }
+
+        .allowedColorButton {
+            display: grid;
+            place-items: center;
+            width: 48px;
+            height: 48px;
+            padding: 5px;
+            border: 2px solid rgba(255, 255, 255, 0.72);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.09);
+            cursor: pointer;
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 150ms ease, transform 150ms ease,
+                border-color 150ms ease, filter 150ms ease;
+        }
+
+        .allowedColorButton:hover {
+            transform: translateY(-2px);
+        }
+
+        .allowedColorButton:focus-visible {
+            outline: 3px solid #ffd95a;
+            outline-offset: 2px;
+        }
+
+        .allowedColorButton.isDisabled {
+            opacity: 0.24;
+            filter: grayscale(0.85);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .allowedColorButton img {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .futureRollRow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 9px;
+            padding: 12px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 13px;
+            background: rgba(0, 0, 0, 0.24);
+        }
+
+        .futureRollNumber {
+            min-width: 76px;
+            font-weight: 900;
+            color: #ffd95a;
+        }
+
+        .futureDieEditor {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .futureDieEditor img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+        }
+
+        .futureDieEditor select {
+            min-width: 88px;
+            padding: 6px 7px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .keyboardTools {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin: 8px 0 12px;
+        }
+
+        #keyboardStatus {
+            padding: 8px 11px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        #keyboardStatus.isOn {
+            background: rgba(65, 200, 110, 0.18);
+            color: #7dffa7;
+            border: 1px solid rgba(125, 255, 167, 0.45);
+        }
+
+        #keyboardStatus.isOff {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        #openKeybindSettingsButton,
+        .keybindActionButton {
+            padding: 9px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: inherit;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .keybindModal {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: grid;
+            place-items: center;
+            padding: 18px;
+            background: rgba(0, 0, 0, 0.76);
+        }
+
+        .keybindModal[hidden] {
+            display: none;
+        }
+
+        .keybindModalCard {
+            width: min(480px, 100%);
+            max-height: min(760px, calc(100vh - 36px));
+            overflow: auto;
+            padding: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            border-radius: 18px;
+            background: #171717;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+        }
+
+        .keybindModalHeader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .keybindModalHeader h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .keybindCloseButton {
+            width: 38px;
+            height: 38px;
+            border: 0;
+            border-radius: 10px;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .keybindSettingRow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .keybindCaptureButton {
+            min-width: 116px;
+            padding: 8px 10px;
+            border: 1px solid rgba(255, 217, 90, 0.6);
+            border-radius: 9px;
+            background: rgba(255, 217, 90, 0.12);
+            color: #ffd95a;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .keybindEnableRow {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin: 15px 0;
+            font-weight: 800;
+        }
+
+        #keybindMessage {
+            min-height: 22px;
+            margin: 10px 0;
+            color: #ffd95a;
+            text-align: center;
+            font-weight: 800;
+        }
+
+        .keybindModalActions {
+            display: flex;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 9px;
+        }
+
+        .adminToast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 11000;
+            max-width: min(340px, calc(100% - 36px));
+            padding: 11px 14px;
+            border-radius: 11px;
+            background: rgba(20, 20, 20, 0.96);
+            border: 1px solid rgba(125, 255, 167, 0.5);
+            color: #9dffba;
+            font-weight: 900;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: opacity 160ms ease, transform 160ms ease;
+        }
+
+        .adminToast.isVisible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .adminToast.isError {
+            color: #ff9a9a;
+            border-color: rgba(255, 133, 133, 0.55);
+        }
+
+        @media (max-width: 520px) {
+            .adminBox {
+                width: min(100%, calc(100% - 14px));
+            }
+
+            .adminSearchControls {
+                flex-direction: column;
+            }
+
+            #searchRoomButton {
+                width: 100%;
+            }
+
+            .allowedColorsRow {
+                gap: 6px;
+            }
+
+            .allowedColorButton {
+                width: 42px;
+                height: 42px;
+                padding: 4px;
+            }
+
+            .allowedColorButton img {
+                width: 32px;
+                height: 32px;
+            }
+
+            .futureRollRow {
+                padding: 10px 7px;
+                gap: 7px;
+            }
+
+            .futureRollNumber {
+                width: 100%;
+            }
+
+            .futureDieEditor img {
+                width: 42px;
+                height: 42px;
+            }
+
+            .futureDieEditor select {
+                min-width: 78px;
+                font-size: 12px;
+            }
+        }
+
+        .extraFutureRolls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .extraFutureRolls[hidden] {
+            display: none;
+        }
+
+        .moreRollsToggleWrap {
+            display: flex;
+            justify-content: center;
+            margin: 2px 0;
+        }
+
+        .moreRollsToggleButton {
+            padding: 10px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: inherit;
+            font-weight: 900;
+            cursor: pointer;
+        }
+    
+        /* Ball Drop future-result editor */
+        .ballDropAdminPreview {
+            width: 42px;
+            height: 42px;
+            display: block;
+            border: 2px solid rgba(255,255,255,.72);
+            border-radius: 50%;
+            box-shadow: inset -6px -7px 10px rgba(0,0,0,.2);
+        }
+        .ballDropAdminPreview.purple { background: #8e44ad; }
+        .ballDropAdminPreview.yellow { background: #f1c40f; }
+        .ballDropAdminPreview.red { background: #e74c3c; }
+        .ballDropAdminPreview.green { background: #2ecc71; }
+        .ballDropAdminPreview.orange { background: #e67e22; }
+        .ballDropAdminPreview.blue { background: #3498db; }
+        .ballDropFutureRow { align-items: flex-end; }
+        .ballDropBallEditor select { min-width: 92px; }
+
+    
+
+/* Allow secure future-roll editing for rooms with up to 30 dice. */
+.futureRollRow {
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.futureRollNumber {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  flex: 0 0 88px;
+  padding: 7px 6px;
+  border-radius: 8px;
+  background: rgba(13, 17, 24, 0.96);
+}
+
+.futureDieEditor {
+  flex: 0 0 auto;
+}
+
+
+        /* Color Balls version of ALL POSSIBLE COLORS */
+        .allowedColorButton .allowedBallColorPreview {
+            width: 36px;
+            height: 36px;
+            border-width: 2px;
+            pointer-events: none;
+        }
+
+        .allowedColorButton.isDisabled .allowedBallColorPreview {
+            box-shadow: none;
+        }
+
+        @media (max-width: 520px) {
+            .allowedColorButton .allowedBallColorPreview {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
+    
+        .inlineSaveChangesWrap {
+            margin-top: 2px;
+            margin-bottom: 2px;
+        }
+
+        .ballDropExtraFutureRolls[hidden] {
+            display: none !important;
+        }
+
+        .moreRollsToggleButton {
+            min-width: 190px;
+        }
+
+    </style>
+</head>
+<body>
+    <main id="adminAccessChecking" class="reviewQueueNotice">
+        
+    </main>
+
+    <main id="adminPanel" style="display:none;">
+        <h1>🎲</h1>
+
+        <div class="adminBox">
+            <div class="adminSearchWrap">
+                <div class="adminSearchControls">
+                    <input
+                        id="gameIdInput"
+                        type="text"
+                        minlength="4"
+                        maxlength="20"
+                        autocomplete="off"
+                        autocapitalize="characters"
+                        spellcheck="false"
+                        placeholder="Enter Dice ID"
+                        aria-label="Dice ID"
+                    >
+                    <button id="searchRoomButton" type="button">Search Room</button>
+                </div>
+            </div>
+
+            <h3 id="gameStatus"></h3>
+            <p id="roomType"></p>
+
+            <div class="keyboardTools">
+                <span id="keyboardStatus" class="isOff">⌨ Keyboard: OFF</span>
+                <button id="openKeybindSettingsButton" type="button">⌨ Keybind Settings</button>
+            </div>
+            <p id="saveStatus" aria-live="polite"></p>
+            <div id="rollContainer"></div>
+
+        </div>
+    </main>
+
+    <div id="keybindModal" class="keybindModal" hidden>
+        <section id="keybindModalCard" class="keybindModalCard" role="dialog" aria-modal="true" aria-labelledby="keybindModalTitle">
+            <div class="keybindModalHeader">
+                <h2 id="keybindModalTitle">⌨ Keybind Settings</h2>
+                <button id="closeKeybindSettingsButton" class="keybindCloseButton" type="button" aria-label="Close keybind settings">×</button>
+            </div>
+
+            <div id="keybindRows"></div>
+
+            <label class="keybindEnableRow">
+                <input id="keyboardEnabledCheckbox" type="checkbox">
+                Enable keyboard shortcuts
+            </label>
+
+            <p id="keybindMessage" aria-live="polite"></p>
+
+            <div class="keybindModalActions">
+                <button id="restoreDefaultKeybindsButton" class="keybindActionButton" type="button">Restore Defaults</button>
+                <button class="keybindActionButton" type="button" onclick="document.getElementById('closeKeybindSettingsButton').click()">Close</button>
+            </div>
+        </section>
+    </div>
+
+    <div id="adminToast" class="adminToast" aria-live="polite"></div>
+
+    <script type="module" src="irothemfkingdogadmin.js"></script>
+    <script type="module" src="presence.js"></script>
+</body>
+</html>

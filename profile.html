@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#16070b">
+    <title>User Profile | PERYA DICE</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="profile.css">
+    <link rel="stylesheet" href="perya-popup.css">
+
+    <link rel="stylesheet" href="notifications.css">
+<style>
+.profileCustomerOrdersBox {
+    margin: 18px 0;
+    padding: 18px;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 16px;
+    background: rgba(0,0,0,.22);
+}
+.profileCustomerOrdersBox .customerOrdersScroller {
+    max-height: 520px;
+    overflow-y: auto;
+}
+</style>
+</head>
+<body class="profilePage">
+    <header class="siteHeader accountOnlyHeader profileTopBar">
+        <a class="profileBrand" href="dashboard.html" aria-label="Perya Rooms dashboard">
+            <img src="images/PERYA.png" alt="Perya Rooms Online" onerror="this.src='favicon.png'">
+        </a>
+
+        <div id="notificationRoot" class="notificationRoot" hidden>
+            <button
+                id="notificationButton"
+                class="notificationButton"
+                type="button"
+                aria-label="Open notifications"
+                aria-expanded="false"
+                aria-controls="notificationPanel"
+            >
+                <span class="notificationBell" aria-hidden="true">🔔</span>
+                <span id="notificationBadge" class="notificationBadge" hidden>0</span>
+            </button>
+
+            <section id="notificationPanel" class="notificationPanel" aria-label="Notifications" hidden>
+                <div class="notificationPanelHeader">
+                    <div>
+                        <h2>Notifications</h2>
+                        <p id="notificationSummary">No unread notifications</p>
+                    </div>
+                    <button id="closeNotificationsButton" class="notificationIconButton" type="button" aria-label="Close notifications">×</button>
+                </div>
+
+                <div class="notificationToolbar">
+                    <button id="markAllNotificationsReadButton" class="notificationToolbarButton" type="button">✓ Mark all read</button>
+                    <button id="clearNotificationsButton" class="notificationToolbarButton dangerNotificationAction" type="button">🗑 Clear all</button>
+                </div>
+
+                <p id="notificationMessage" class="notificationMessage"></p>
+                <div id="notificationList" class="notificationList" aria-live="polite"></div>
+            </section>
+        </div>
+
+        <div id="accountMenuRoot" class="accountMenu" hidden>
+            <button class="accountMenuButton" type="button" data-account-button aria-label="Open account menu" aria-expanded="false">
+                <img class="accountAvatar" data-account-avatar src="" alt="Profile picture">
+            </button>
+            <div class="accountDropdown" data-account-dropdown hidden>
+                <p class="accountMenuName" data-account-username>@user</p>
+                <a data-my-profile href="#">👤 My Profile</a>
+<a href="my-orders.html">🧾 My Orders</a>
+                <a href="profile_search.html">🔍 Find Profiles</a>
+                <a data-admin-link href="pdo_hub.html" hidden>🛠 Admin Panel</a>
+                <button type="button" data-account-signout>🚪 Sign Out</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="profileShell">
+        <nav class="profilePageNav" aria-label="Profile navigation">
+            <a class="profileBackButton" href="dashboard.html">← Dashboard</a>
+            <span class="profilePageLabel">Player Profile</span>
+        </nav>
+
+        <section id="profileLoading" class="profileNotice">Loading profile…</section>
+        <section id="profileError" class="profileNotice profileNoticeError" hidden></section>
+
+        <article id="profileCard" class="publicProfileCard" hidden>
+            <div class="profileCardGlow" aria-hidden="true"></div>
+
+            <header class="profileIdentity">
+                <div class="profilePhotoFrame">
+                    <img id="profilePhoto" class="profilePhoto" src="" alt="Profile picture">
+                    <span class="profileDiceMark" aria-hidden="true">🎲</span>
+                </div>
+
+                <p class="profilePhotoNote">Profile picture is managed through your Google account.</p>
+                <div class="profileNameRow">
+                    <h1 id="profileUsername">@username</h1>
+                    <span id="profileVipBadge" class="profileVipBadge" hidden>👑 VIP</span>
+                </div>
+                <p id="profileTrust" class="profileTrust">🛡️ No community trust score yet</p>
+                <p id="profileBio" class="profileBio">No bio added.</p>
+                <p id="profileMemberSince" class="profileMemberSince"></p>
+                <a id="editOwnProfileButton" class="profileButton profileButtonSecondary" href="edit_profile.html" hidden>✏️ Edit Profile</a>
+            </header>
+
+            <div class="profileContentGrid">
+                <section class="profilePanel profileRoomSection">
+                    <div class="profileSectionHeading">
+                        <span class="profileSectionIcon">🎲</span>
+                        <div>
+                            <p class="profileSectionEyebrow">Permanent room</p>
+                            <h2>Dice Room</h2>
+                        </div>
+                    </div>
+
+                    <div class="profileRoomBody">
+                        <h3 id="profileRoomName">No room yet</h3>
+                        <p id="profileRoomStatus" class="profileRoomStatus"></p>
+                        <p id="profileRoomFavorites" class="profileRoomFavorites">⭐ 0 Favorites</p>
+                        <p id="profileRoomGame" class="profileRoomMeta"></p>
+                        <p id="profileRoomPlatform" class="profileRoomMeta"></p>
+                    </div>
+
+                    <a id="profileJoinRoom" class="profileButton profileButtonPrimary profileJoinRoom" href="#" hidden>🎲 Join Room</a>
+                </section>
+
+                <section class="profilePanel profileReviewsSection">
+                    <div class="profileSectionHeading">
+                        <span class="profileSectionIcon">💬</span>
+                        <div>
+                            <p class="profileSectionEyebrow">Player reputation</p>
+                            <h2>Community Reviews</h2>
+                        </div>
+                    </div>
+
+                    <div id="profileReviewPreview" class="profileReviewList"></div>
+                    <div class="profileReviewActions">
+                        <button id="submitReviewButton" class="profileButton profileButtonPrimary" type="button" hidden>✍️ Submit Review</button>
+                        <button id="viewAllReviewsButton" class="profileButton profileButtonSecondary" type="button" hidden>View All Reviews</button>
+                    </div>
+                    <p id="reviewEligibilityMessage" class="reviewEligibilityMessage" hidden></p>
+                </section>
+            </div>
+
+
+                            <section id="profileCustomerOrdersBox" class="customerOrdersBox profileCustomerOrdersBox" hidden>
+                    <div class="customerOrdersHeader">
+                        <div>
+                            <h2>Customer Orders</h2>
+                            <p id="profileCustomerOrdersSummary" class="customerOrdersSummary">Loading orders...</p>
+                        </div>
+                    </div>
+
+                    <label class="customerOrderSearchWrap">
+                        <span>Search by IGN or item</span>
+                        <input
+                            id="profileCustomerOrderSearch"
+                            type="search"
+                            placeholder="Search by IGN or item..."
+                            autocomplete="off"
+                        >
+                    </label>
+
+                    <div
+                        id="profileCustomerOrdersList"
+                        class="customerOrdersScroller"
+                        aria-live="polite"
+                    >
+                        <p class="emptyOrders">Loading orders...</p>
+                    </div>
+                </section>
+
+
+            <section id="profileShopSection" class="profileShopSection" aria-labelledby="shopTitle">
+                <div class="profileShopHeader">
+                    <div class="profileSectionHeading">
+                        <span class="profileSectionIcon">🛒</span>
+                        <div><p class="profileSectionEyebrow"></p><h2 id="shopTitle">Shop</h2></div>
+                    </div>
+                    <div class="profileShopHeaderActions">
+                        <p id="shopMessage" class="shopMessage">Loading shop…</p>
+                    </div>
+                </div>
+                <p id="sellingStatusMessage" class="sellingStatusMessage" hidden></p>
+                <div id="buyerCartControls" class="buyerCartControls" hidden>
+                    <button id="openCartButton" class="profileButton profileButtonPrimary" type="button">🛒 View Cart (<span id="cartCount">0</span>)</button>
+                </div>
+                <div id="sellerControls" class="sellerControls" hidden>
+                    
+                    <button id="paymentInfoButton" class="profileButton profileButtonSecondary paymentInfoButton" type="button">💳 Payment Information</button>
+                    <a id="sellerOrdersButton" class="profileButton profileButtonSecondary" href="orders.html">📦 Customer Orders</a>
+                    <button id="addProductButton" class="profileButton profileButtonPrimary" type="button">➕ Add Product</button>
+                    <button id="sellingToggleButton" class="profileButton sellingToggleButton" type="button">⏸ Stop Selling</button>
+                    
+                </div>
+
+
+                <div id="productList" class="profileProductGrid" aria-live="polite"><p>Loading products…</p></div>
+            </section>
+
+            <section id="staffManagement" class="staffManagement" hidden>
+                <div class="profileSectionHeading">
+                    <span class="profileSectionIcon">🛠️</span>
+                    <div>
+                        <p class="profileSectionEyebrow">Private controls</p>
+                        <h2>Staff Management</h2>
+                    </div>
+                </div>
+                <p class="staffRoleLine">Internal role: <strong id="internalRole">User</strong></p>
+                <button id="toggleModeratorButton" class="profileButton profileButtonPrimary" type="button"></button>
+                <p id="staffActionMessage" class="joinMessage"></p>
+            </section>
+        </article>
+    </main>
+
+    <div id="reviewsModal" class="reviewModal" hidden>
+        <div class="reviewModalBackdrop" data-close-reviews></div>
+        <section class="reviewModalDialog profileReviewsDialog" role="dialog" aria-modal="true" aria-labelledby="allReviewsTitle">
+            <button id="closeReviewsButton" class="modalCloseButton" type="button" aria-label="Close">&times;</button>
+            <p class="profileSectionEyebrow">Player reputation</p>
+            <h2 id="allReviewsTitle">Community Reviews</h2>
+            <div id="allReviewsList" class="profileReviewList"></div>
+        </section>
+    </div>
+
+    <div id="submitReviewModal" class="reviewModal" hidden>
+        <div class="reviewModalBackdrop" data-close-submit-review></div>
+        <section class="reviewModalDialog submitReviewDialog" role="dialog" aria-modal="true" aria-labelledby="submitReviewTitle">
+            <button id="closeSubmitReviewButton" class="modalCloseButton" type="button" aria-label="Close">&times;</button>
+            <p class="profileSectionEyebrow">Share your experience</p>
+            <h2 id="submitReviewTitle">Submit Community Review</h2>
+            <p class="submitReviewHelp">Choose whether you vouch for this user, then add an optional comment.</p>
+
+            <div class="reviewVoteChoices" role="radiogroup" aria-label="Review recommendation">
+                <button id="reviewVouchButton" class="reviewVoteButton reviewVotePositive" type="button" data-review-choice="true" aria-pressed="false">
+                    <span>👍</span><strong>I Vouch</strong><small>Positive experience</small>
+                </button>
+                <button id="reviewAgainstButton" class="reviewVoteButton reviewVoteNegative" type="button" data-review-choice="false" aria-pressed="false">
+                    <span>👎</span><strong>I Don’t Vouch</strong><small>Negative experience</small>
+                </button>
+            </div>
+
+            <label class="reviewCommentLabel" for="reviewComment">Review comment <span>(optional)</span></label>
+            <textarea id="reviewComment" class="reviewComment" maxlength="500" placeholder="Describe your experience with this user..."></textarea>
+            <div class="reviewFormMeta">
+                <span id="reviewFormMessage" class="reviewFormMessage" aria-live="polite"></span>
+                <span id="reviewCharacterCount">0 / 500</span>
+            </div>
+
+            <div class="reviewSubmitActions">
+                <button id="cancelSubmitReviewButton" class="profileButton profileButtonSecondary" type="button">Cancel</button>
+                <button id="saveReviewButton" class="profileButton profileButtonPrimary" type="button">Submit Review</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Integrated Stage 2 shop dialogs -->
+<div id="productModal" class="modalOverlay" hidden>
+<section class="modalCard" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
+<h2 id="productModalTitle">Add Product</h2>
+<label class="fieldLabel">Product Image<input id="productImage" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG, or WebP. Maximum 1 MB.</small></label>
+<div class="imagePreviewBox"><img id="productImagePreview" alt="Product preview"></div>
+<label class="fieldLabel">Product Name<input id="productName" type="text" maxlength="100"></label>
+<div class="fieldGrid"><label class="fieldLabel">Price<input id="productPrice" type="number" min="0.01" step="0.01"></label><label class="fieldLabel">Stock<input id="productStock" type="number" min="0" step="1"></label></div>
+<div class="fieldGrid"><label class="fieldLabel">Minimum Purchase<input id="productMinimum" type="number" min="1" step="1"></label><label class="fieldLabel">Delivery Time<input id="productDelivery" type="text" maxlength="100" placeholder="Example: 5–10 minutes"></label></div>
+<label class="fieldLabel">Description<textarea id="productDescription" maxlength="1000"></textarea></label>
+<div class="modalActions"><button id="cancelProductButton" class="secondaryButton" type="button">Cancel</button><button id="saveProductButton" type="button">Save Product</button></div>
+</section></div>
+
+<div id="paymentInfoModal" class="modalOverlay" hidden>
+<section class="modalCard wideModal" role="dialog" aria-modal="true" aria-labelledby="paymentInfoTitle">
+<h2 id="paymentInfoTitle">EDIT PAYMENT INFORMATION</h2>
+<div id="paymentSetupStep1">
+<p class="stepText">Choose every payment method customers may use.</p>
+<div class="methodToggleList">
+<label class="methodToggle"><span><strong>GCash</strong><small>Mobile number and QR code</small></span><input id="enableGcash" type="checkbox"></label>
+<label class="methodToggle"><span><strong>Maya</strong><small>Mobile number and QR code</small></span><input id="enableMaya" type="checkbox"></label>
+<label class="methodToggle"><span><strong>PayPal</strong><small>Email and payment QR code</small></span><input id="enablePaypal" type="checkbox"></label>
+</div>
+<p id="paymentMethodSelectionError" class="formError">Enable at least one payment method.</p>
+<label class="methodToggle guestToggle"><span><strong>Allow Guest Orders</strong><small>Guests may order without a registered account. A cooldown still applies.</small></span><input id="allowGuestOrders" type="checkbox"></label>
+<div class="modalActions"><button id="cancelPaymentInfoButton" class="secondaryButton" type="button">Cancel</button><button id="continuePaymentSetupButton" type="button">Continue</button></div>
+</div>
+<div id="paymentSetupStep2" hidden>
+<div id="gcashSettingsSection" class="paymentAccordion" hidden><button type="button" data-payment-accordion aria-expanded="true"><span>GCash Details</span><span class="paymentAccordionArrow">▼</span></button><div class="paymentAccordionBody"><label class="fieldLabel">GCash Name<input id="gcashName" type="text" maxlength="100"></label><label class="fieldLabel">GCash Number<input id="gcashNumber" type="tel" maxlength="11" placeholder="09XXXXXXXXX"></label><label class="fieldLabel">GCash QR Code<input id="gcashQrInput" type="file" accept="image/png,image/jpeg,image/webp"><small>Maximum 2 MB.</small></label><div class="qrPreviewBox"><img id="gcashQrPreview" alt="GCash QR preview"></div></div></div>
+<div id="mayaSettingsSection" class="paymentAccordion" hidden><button type="button" data-payment-accordion aria-expanded="true"><span>Maya Details</span><span class="paymentAccordionArrow">▼</span></button><div class="paymentAccordionBody"><label class="fieldLabel">Maya Name<input id="mayaName" type="text" maxlength="100"></label><label class="fieldLabel">Maya Number<input id="mayaNumber" type="tel" maxlength="20"></label><label class="fieldLabel">Maya QR Code<input id="mayaQrInput" type="file" accept="image/png,image/jpeg,image/webp"><small>Maximum 2 MB.</small></label><div class="qrPreviewBox"><img id="mayaQrPreview" alt="Maya QR preview"></div></div></div>
+<div id="paypalSettingsSection" class="paymentAccordion" hidden><button type="button" data-payment-accordion aria-expanded="true"><span>PayPal Details</span><span class="paymentAccordionArrow">▼</span></button><div class="paymentAccordionBody"><label class="fieldLabel">PayPal Email<input id="paypalEmail" type="email" maxlength="150"></label><label class="fieldLabel">PayPal QR Code<input id="paypalQrInput" type="file" accept="image/png,image/jpeg,image/webp"><small>Maximum 2 MB.</small></label><div class="qrPreviewBox"><img id="paypalQrPreview" alt="PayPal QR preview"></div></div></div>
+<div class="modalActions"><button id="backPaymentSetupButton" class="secondaryButton" type="button">Back</button><button id="savePaymentInfoButton" type="button">Save Information</button></div>
+</div>
+</section></div>
+
+<div id="cartModal" class="modalOverlay" hidden><section class="modalCard wideModal" role="dialog" aria-modal="true" aria-labelledby="cartTitle"><h2 id="cartTitle">YOUR CART</h2><div id="cartItems" class="cartItems"></div><div class="totalRow"><span>Grand Total</span><strong id="cartTotal">₱0</strong></div><div class="modalActions"><button id="closeCartButton" class="secondaryButton" type="button">Continue Shopping</button><button id="checkoutCartButton" type="button">Proceed to Payment</button></div></section></div>
+
+<div id="paymentModal" class="modalOverlay" hidden><section class="modalCard wideModal paymentCard" role="dialog" aria-modal="true" aria-labelledby="paymentTitle"><h2 id="paymentTitle">PAYMENT</h2><p class="paymentWarning">⚠️ Take a screenshot or photo of your receipt after sending payment.</p><div class="paymentCartSummary"><h3>Order Summary</h3><div id="paymentCartItems" class="paymentCartItems"></div></div><div class="totalRow"><span>Amount</span><strong id="paymentAmount">₱0</strong></div><h3 id="buyerPaymentMethodTitle">Choose Payment Method</h3><div id="paymentMethodChoices" class="paymentMethodChoices"></div><section id="selectedPaymentDetails" class="selectedPaymentDetails" hidden><div class="buyerQrBox"><img id="buyerQrImage" alt="Seller payment QR code"></div><p id="buyerAccountName" class="accountName"></p><div class="copyPaymentRow"><strong id="buyerPaymentDestination">—</strong><button id="copyPaymentDestinationButton" type="button">Copy</button></div></section><section id="paymentFillUpForm" hidden><div class="fieldGrid"><label class="fieldLabel">Payment Date *<input id="paymentDate" type="date"></label><label class="fieldLabel">Payment Time *<input id="paymentTime" type="time"></label></div><label class="fieldLabel"><span id="paymentReferenceLabel">Reference Number *</span><input id="paymentReference" type="text" maxlength="100"></label><label class="fieldLabel">Upload Payment Proof *<input id="paymentProof" type="file" accept="image/png,image/jpeg,image/webp"></label><div class="proofPreviewBox"><img id="paymentProofPreview" alt="Payment proof preview"></div><p class="noProofWarning">No payment proof = no item delivery.</p><label class="fieldLabel">Username / IGN *<input id="buyerUsername" type="text" maxlength="100"></label><label class="fieldLabel">Buyer Notes<textarea id="buyerNotes" maxlength="500" placeholder="Optional instructions for the seller"></textarea></label></section><div class="modalActions"><button id="backToCartButton" class="secondaryButton" type="button">Back to Cart</button><button id="submitOrderButton" type="button">Send Order</button></div></section></div>
+
+
+
+
+<div id="customerProofModal" class="customerProofModal" hidden>
+    <button class="customerProofModalBackdrop" type="button" data-close-customer-proof aria-label="Close payment proof"></button>
+    <section class="customerProofModalDialog" role="dialog" aria-modal="true" aria-labelledby="customerProofModalTitle">
+        <button id="closeCustomerProofButton" class="customerProofModalClose" type="button" aria-label="Close">&times;</button>
+        <p class="profileSectionEyebrow">Buyer upload</p>
+        <h2 id="customerProofModalTitle">Payment Proof</h2>
+        <img id="customerProofModalImage" src="" alt="Buyer payment proof">
+        <a id="customerProofOpenOriginal" class="profileButton profileButtonPrimary customerProofOriginalLink" href="#" target="_blank" rel="noopener">Open Original Image</a>
+    </section>
+</div>
+
+<!-- PERYA custom popup -->
+<div
+    id="peryaPopupOverlay"
+    class="peryaPopupOverlay"
+    data-type="info"
+    role="presentation"
+    hidden
+>
+    <section
+        class="peryaPopupCard"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="peryaPopupTitle"
+        aria-describedby="peryaPopupMessage"
+    >
+        <div class="peryaPopupHeader">
+            <span id="peryaPopupIcon" class="peryaPopupIcon" aria-hidden="true">ℹ️</span>
+            <h2 id="peryaPopupTitle" class="peryaPopupTitle">Notice</h2>
+        </div>
+
+        <p id="peryaPopupMessage" class="peryaPopupMessage"></p>
+
+        <input
+            id="peryaPopupInput"
+            class="peryaPopupInput"
+            type="text"
+            maxlength="300"
+            autocomplete="off"
+            hidden
+        >
+
+        <div class="peryaPopupActions">
+            <button
+                id="peryaPopupCancelButton"
+                class="peryaPopupButton peryaPopupCancelButton"
+                type="button"
+                hidden
+            >
+                Cancel
+            </button>
+
+            <button
+                id="peryaPopupConfirmButton"
+                class="peryaPopupButton peryaPopupConfirmButton"
+                type="button"
+            >
+                OK
+            </button>
+        </div>
+    </section>
+</div>
+
+
+    <script src="perya-popup.js"></script>
+    <script type="module" src="profile.js"></script>
+    <script type="module" src="profile-shop.js"></script>
+    <script type="module" src="notifications.js"></script>
+    <script type="module" src="account-menu.js"></script>
+    <script type="module" src="presence.js"></script>
+</body>
+</html>

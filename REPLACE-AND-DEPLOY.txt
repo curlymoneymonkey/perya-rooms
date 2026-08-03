@@ -1,0 +1,18 @@
+Replace only these files:
+- functions/index.js
+- ball-drop.js
+- ball-drop.css
+- room.js
+- room.html
+- imamonkeyandilovemoney.js
+- imamonkeyandilovemoney.html
+- irothemfkingdogadmin.js
+- irothemfkingdogadmin.html
+
+Firebase Functions to deploy:
+firebase deploy --only functions:getSecureBallDropQueue,functions:setSecureBallDropQueue,functions:setSecureBallDropCount,functions:startSecureBallDrop,functions:finishSecureBallDrop
+
+Important:
+- The existing Color Dice queue and Dice flow remain unchanged.
+- Ball Drop supports 1–8 balls and keeps 10 secure future results.
+- Admin pages automatically read room.gameMode; no game selector is added.

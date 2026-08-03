@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Control Hub | PERYA DICE</title>
+  <link rel="icon" href="favicon.png">
+  <link rel="stylesheet" href="staff.css">
+  <link rel="stylesheet" href="pdo_hub.css">
+</head>
+<body class="pdo-page">
+<div class="pdo-app">
+  <aside class="pdo-sidebar" aria-label="Staff navigation">
+    <a class="pdo-brand" href="pdo_hub.html"><img class="pdo-brand-logo" src="favicon.png" alt=""><span class="pdo-brand-copy"><strong>PERYA DICE</strong><span>Private Staff Portal</span></span></a>
+    <nav class="pdo-nav">
+      <p class="pdo-nav-section">OVERVIEW</p>
+      <a class="pdo-nav-link active" href="pdo_hub.html"><span class="pdo-nav-icon">⌂</span>Control Hub</a>
+      <a class="pdo-nav-link" href="pdo_control.html" data-admin-only><span class="pdo-nav-icon">⚙</span>User & Room Control</a>
+      <a class="pdo-nav-link" href="pdo_dice_skins.html" data-admin-only><span class="pdo-nav-icon">🎨</span>Dice Skin Management</a>
+      <p class="pdo-nav-section">MODERATION</p>
+      <a class="pdo-nav-link" href="pdo_workspace.html"><span class="pdo-nav-icon">🛡</span>Workspace</a>
+      <a class="pdo-nav-link" href="review_queue.html"><span class="pdo-nav-icon">💬</span>Review Queue</a>
+      <a class="pdo-nav-link" href="pdo_console.html" data-admin-only><span class="pdo-nav-icon">▤</span>Activity Console</a>
+      <p class="pdo-nav-section">ACCOUNT</p>
+      <a class="pdo-nav-link" href="dashboard.html"><span class="pdo-nav-icon">↩</span>Back to Dashboard</a>
+    </nav>
+    <div class="pdo-sidebar-footer"><span class="pdo-role-chip"><span class="pdo-role-dot"></span><span data-staff-role>Checking access…</span></span></div>
+  </aside>
+
+  <div class="pdo-backdrop" data-close-menu></div>
+  <main class="pdo-main">
+    <header class="pdo-topbar">
+      <div class="hub-heading"><button class="pdo-mobile-menu" type="button" data-open-menu aria-label="Open navigation">☰</button><div class="pdo-title-wrap"><p class="pdo-eyebrow">PRIVATE ADMIN PORTAL</p><h1 class="pdo-title">Control Hub</h1><p class="pdo-subtitle">Live overview of users, rooms, roles, and approximate activity locations.</p></div></div>
+      <div class="pdo-top-actions"><a class="pdo-button secondary" href="dashboard.html">Dashboard</a><div class="pdo-user-pill"><span class="pdo-avatar">P</span><span><strong>Staff Account</strong><span data-staff-role>Verifying…</span></span></div></div>
+    </header>
+
+    <section class="hub-stat-grid">
+      <article class="pdo-card hub-stat"><span>Online Users</span><strong id="onlineTotal">0</strong><small>Unique signed-in accounts</small></article>
+      <article class="pdo-card hub-stat"><span>Active Rooms</span><strong id="activeRooms">0</strong><small>Rooms with online users</small></article>
+      <article class="pdo-card hub-stat"><span>Staff Online</span><strong id="staffOnline">0</strong><small>Admins and moderators</small></article>
+      <article class="pdo-card hub-stat"><span>VIP Online</span><strong id="vipOnline">0</strong><small>Active VIP accounts</small></article>
+    </section>
+
+    <section class="pdo-grid hub-live-grid">
+      <section class="pdo-card pdo-panel pdo-span-8 live-map-card">
+        <div class="pdo-panel-head"><div><h2>🌐 Live Activity Map</h2><p>Approximate country or region activity only. Exact addresses and coordinates are not collected.</p></div><span class="pdo-badge" id="liveUpdated">Connecting…</span></div>
+        <div class="map-layout">
+          <div class="live-map-canvas" id="liveMapCanvas" aria-label="Approximate live activity map">
+            <svg viewBox="0 0 1000 480" role="img" aria-hidden="true"><path d="M74 121l83-54 114 14 44 57-23 66-73 28-59 62-58-15-33-77zm270-34 105-28 116 36 29 61-52 46-22 100-85 18-43-64-76-42zm308 24 102-45 130 43 46 76-49 74-107 8-42-41-79-19zm-174 243 85-22 69 31-16 66-92 14-61-37zm305-24 88-18 55 43-21 61-87 5-42-46z"/></svg>
+          </div>
+          <div class="location-list" id="locationRows"></div>
+        </div>
+      </section>
+
+      <section class="pdo-card pdo-panel pdo-span-4 privacy-card">
+        <div class="pdo-panel-head"><div><h2>Privacy Protection</h2><p>Presence is designed for operational monitoring, not personal tracking.</p></div></div>
+        <ul class="privacy-list"><li>No exact GPS coordinates</li><li>No public IP address display</li><li>Private room IDs remain staff-only</li><li>Location comes from optional profile fields</li><li>Sessions are removed on disconnect</li></ul>
+      </section>
+
+      <section class="pdo-card pdo-panel pdo-span-12">
+        <div class="pdo-panel-head"><div><h2>🟢 Online Users</h2><p>Search active users and filter by role. Users on imamonkeyandilovemoney.html appear only in the separate admin list below.</p></div></div>
+        <div class="online-toolbar"><input class="pdo-input" id="onlineSearch" type="search" placeholder="Search username, UID, page, room, or location"><select class="pdo-input" id="onlineRoleFilter"><option value="all">All roles</option><option value="head-admin">Head Admin</option><option value="admin">Admin</option><option value="moderator">Moderator</option><option value="vip">VIP</option><option value="user">User</option></select></div>
+        <div class="online-table-head"><span>Account</span><span>Role</span><span>Current activity</span><span>Location / device</span></div>
+        <div id="onlineRows"><div class="pdo-empty"><span class="pdo-empty-icon">…</span>Loading presence data.</div></div>
+      </section>
+
+      <section class="pdo-card pdo-panel pdo-span-12" data-admin-only>
+        <div class="pdo-panel-head">
+          <div>
+            <h2>🔒 Monkeys Online</h2>
+            <p>Admin-only list of accounts currently active on imamonkeyandilovemoney.html. These accounts are excluded from the general Online Users list.</p>
+          </div>
+          <span class="pdo-badge"><span id="monkeyOnlineCount">0</span> online</span>
+        </div>
+        <div class="online-table-head"><span>Account</span><span>Role</span><span>Current activity</span><span>Location / device</span></div>
+        <div id="monkeyOnlineRows"><div class="pdo-empty"><span class="pdo-empty-icon">…</span>Loading page presence.</div></div>
+      </section>
+
+      <a class="pdo-card pdo-action-card pdo-span-4" href="pdo_control.html"><span class="pdo-action-icon">👥</span><h3>User & Room Control</h3><p>Search users and rooms, manage roles, restrictions, and permissions.</p><span class="pdo-action-arrow">Open control center →</span></a>
+      <a class="pdo-card pdo-action-card pdo-span-4" href="pdo_workspace.html"><span class="pdo-action-icon">🛡️</span><h3>Moderation Workspace</h3><p>Access review requests, appeals, reports, and moderation tools.</p><span class="pdo-action-arrow">Open workspace →</span></a>
+      <a class="pdo-card pdo-action-card pdo-span-4" href="pdo_console.html" data-admin-only><span class="pdo-action-icon">📜</span><h3>Activity Console</h3><p>Review staff actions and moderation history.</p><span class="pdo-action-arrow">View activity →</span></a>
+    </section>
+  </main>
+</div>
+<script type="module" src="pdo_permissions.js"></script>
+<script type="module" src="presence.js"></script>
+<script type="module" src="pdo_hub.js"></script>
+</body>
+</html>

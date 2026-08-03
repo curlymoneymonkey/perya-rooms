@@ -1,0 +1,981 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function registeredUser() {
+      return signedIn()
+        && request.auth.token.firebase.sign_in_provider != "anonymous";
+    }
+
+    // Registered buyers may order from any shop. Anonymous buyers may order
+    // only when that seller explicitly enabled guest orders.
+    function mayOrderFromSeller(sellerUid) {
+      return registeredUser()
+        || (
+          signedIn()
+          && exists(
+            /databases/$(database)/documents/users/$(sellerUid)/shopSettings/paymentInformation
+          )
+          && get(
+            /databases/$(database)/documents/users/$(sellerUid)/shopSettings/paymentInformation
+          ).data.allowGuestOrders == true
+        );
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.enabled == true;
+    }
+
+    function isHeadAdmin() {
+      return isAdmin()
+        && ("role" in get(/databases/$(database)/documents/admins/$(request.auth.uid)).data)
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == "head-admin";
+    }
+
+    function isModerator() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/moderators/$(request.auth.uid))
+        && get(/databases/$(database)/documents/moderators/$(request.auth.uid)).data.enabled == true;
+    }
+
+    function isStaff() {
+      return isAdmin() || isModerator();
+    }
+
+    function hasActiveRoomAccess() {
+      return registeredUser()
+        && exists(/databases/$(database)/documents/specialPermissions/$(request.auth.uid))
+        && get(/databases/$(database)/documents/specialPermissions/$(request.auth.uid)).data.roomAccess == true
+        && (
+          !("roomAccessExpiresAt" in get(/databases/$(database)/documents/specialPermissions/$(request.auth.uid)).data)
+          || get(/databases/$(database)/documents/specialPermissions/$(request.auth.uid)).data.roomAccessExpiresAt == null
+          || get(/databases/$(database)/documents/specialPermissions/$(request.auth.uid)).data.roomAccessExpiresAt > request.time
+        );
+    }
+
+    function userDocumentExists(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function accountIsSuspended(uid) {
+      return userDocumentExists(uid)
+        && ("accountSuspended" in get(/databases/$(database)/documents/users/$(uid)).data)
+        && get(/databases/$(database)/documents/users/$(uid)).data.accountSuspended == true;
+    }
+
+    function rollingIsRestricted(uid) {
+      return userDocumentExists(uid)
+        && ("rollingRestricted" in get(/databases/$(database)/documents/users/$(uid)).data)
+        && get(/databases/$(database)/documents/users/$(uid)).data.rollingRestricted == true;
+    }
+
+    function reviewsAreRestricted(uid) {
+      return userDocumentExists(uid)
+        && ("reviewsRestricted" in get(/databases/$(database)/documents/users/$(uid)).data)
+        && get(/databases/$(database)/documents/users/$(uid)).data.reviewsRestricted == true;
+    }
+
+    function canUseAccount(uid) {
+      return !accountIsSuspended(uid);
+    }
+
+    function canRoll(uid) {
+      return canUseAccount(uid) && !rollingIsRestricted(uid);
+    }
+
+    function canReview(uid) {
+      return canUseAccount(uid) && !reviewsAreRestricted(uid);
+    }
+
+
+    function roomFavoriteCount(roomId) {
+      return exists(/databases/$(database)/documents/permanentRooms/$(roomId))
+        && ("favoriteCount" in get(/databases/$(database)/documents/permanentRooms/$(roomId)).data)
+        ? get(/databases/$(database)/documents/permanentRooms/$(roomId)).data.favoriteCount
+        : 0;
+    }
+
+    function cooldownPath(hostUid, reviewerUid) {
+      return /databases/$(database)/documents/users/$(hostUid)/vouchCooldowns/$(reviewerUid);
+    }
+
+    function mayCreateVouch(hostUid, reviewerUid) {
+      return !exists(cooldownPath(hostUid, reviewerUid))
+        || get(cooldownPath(hostUid, reviewerUid)).data.blockedUntil <= request.time;
+    }
+
+    match /admins/{adminUid} {
+      allow read: if isOwner(adminUid) || isAdmin();
+
+      // Normal Administrators may create only normal Administrator accounts.
+      // Only a Head Administrator may create another Head Administrator.
+      allow create: if request.resource.data.uid == adminUid
+        && request.resource.data.enabled == true
+        && request.resource.data.promotedBy == request.auth.uid
+        && request.resource.data.role is string
+        && request.resource.data.role in ["admin", "head-admin"]
+        && (
+          (isHeadAdmin())
+          || (isAdmin() && request.resource.data.role == "admin")
+        );
+
+      // Head Administrator documents are protected from normal Administrators.
+      // Nobody may disable or change their own Administrator role.
+      allow update: if request.resource.data.uid == adminUid
+        && request.resource.data.enabled is bool
+        && request.resource.data.role is string
+        && request.resource.data.role in ["admin", "head-admin"]
+        && (
+          (
+            isHeadAdmin()
+            && (adminUid != request.auth.uid
+              || (request.resource.data.enabled == true
+                && request.resource.data.role == "head-admin"))
+          )
+          || (
+            isAdmin()
+            && (!("role" in resource.data) || resource.data.role != "head-admin")
+            && request.resource.data.role == "admin"
+            && (adminUid != request.auth.uid || request.resource.data.enabled == true)
+          )
+        );
+
+      allow delete: if adminUid != request.auth.uid
+        && (
+          isHeadAdmin()
+          || (isAdmin() && (!("role" in resource.data) || resource.data.role != "head-admin"))
+        );
+    }
+
+    match /moderators/{moderatorUid} {
+      allow read: if isOwner(moderatorUid) || isAdmin();
+
+      allow create: if isAdmin()
+        && request.resource.data.uid == moderatorUid
+        && request.resource.data.enabled == true
+        && request.resource.data.promotedBy == request.auth.uid;
+
+      allow update: if isAdmin()
+        && request.resource.data.uid == moderatorUid
+        && request.resource.data.enabled is bool;
+
+      allow delete: if isAdmin();
+    }
+
+    match /specialPermissions/{uid} {
+      // Users may read only their own hidden permission. Administrators manage it.
+      allow read: if isOwner(uid) || isAdmin();
+
+      allow create, update: if isAdmin()
+        && request.resource.data.uid == uid
+        && request.resource.data.roomAccess is bool
+        && (request.resource.data.roomAccessExpiresAt == null
+          || request.resource.data.roomAccessExpiresAt is timestamp)
+        && request.resource.data.grantedBy is string
+        && (request.resource.data.grantedAt == null
+          || request.resource.data.grantedAt is timestamp)
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt is timestamp;
+
+      allow delete: if isAdmin();
+    }
+
+    match /games/{gameId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && canUseAccount(request.auth.uid)
+        && request.resource.data.hostId == request.auth.uid;
+
+      // Guest host controls. Guest and permanent rooms use the same
+      // rollingSuspended moderation fields.
+      allow update: if (
+          signedIn()
+          && canRoll(request.auth.uid)
+          && resource.data.hostId == request.auth.uid
+          && request.resource.data.hostId == resource.data.hostId
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+            "rollingSuspended",
+            "rollingSuspensionReason",
+            "rollingSuspendedAt",
+            "rollingSuspendedBy",
+            "guestRollingSuspended",
+            "guestSuspensionReason",
+            "guestSuspendedAt",
+            "guestSuspendedBy",
+            "guestClosedBy"
+          ])
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+              "rolling",
+              "latestResult",
+              "pendingResult",
+              "nextRolls",
+              "history",
+              "rollNumber",
+              "diceCount"
+            ])
+            || !(
+              (("rollingSuspended" in resource.data) && resource.data.rollingSuspended == true)
+              || (("guestRollingSuspended" in resource.data) && resource.data.guestRollingSuspended == true)
+            )
+          )
+        ) || (
+          // Administrators may edit only the future-roll queue.
+          isAdmin()
+          && request.resource.data.hostId == resource.data.hostId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "nextRolls",
+            "updatedAt"
+          ])
+          && request.resource.data.nextRolls is list
+          && request.resource.data.nextRolls.size() > 0
+          && request.resource.data.nextRolls.size() <= 10
+        ) || (
+          // Administrators may suspend/restore rolling or force-close a guest room.
+          isAdmin()
+          && request.resource.data.hostId == resource.data.hostId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "rollingSuspended",
+            "rollingSuspensionReason",
+            "rollingSuspendedAt",
+            "rollingSuspendedBy",
+            "guestClosedBy",
+            "roomClosing",
+            "closingAt",
+            "status",
+            "rolling",
+            "pendingResult",
+            "updatedAt"
+          ])
+          && (!("rollingSuspended" in request.resource.data)
+              || request.resource.data.rollingSuspended is bool)
+          && (!("rollingSuspensionReason" in request.resource.data)
+              || (request.resource.data.rollingSuspensionReason is string
+                  && request.resource.data.rollingSuspensionReason.size() <= 300))
+          && (!("rolling" in request.resource.data)
+              || request.resource.data.rolling == false)
+        );
+
+      // The host may delete their own guest room; administrators may remove any.
+      allow delete: if isAdmin() || (
+        signedIn()
+        && resource.data.hostId == request.auth.uid
+      );
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+
+      // Account owners may create their profile, but they cannot assign
+      // protected VIP or moderation fields to themselves.
+      allow create: if (
+          isOwner(uid)
+          && !request.resource.data.keys().hasAny([
+            "vip",
+            "vipGrantedBy",
+            "vipStartedAt",
+            "vipExpiresAt",
+            "rollingRestricted",
+            "reviewsRestricted",
+            "accountSuspended",
+            "restrictionReason",
+            "restrictionsUpdatedAt",
+            "restrictionsUpdatedBy",
+            "allowedPages",
+            "imamonkeyandilovemoneyAccess",
+            "pageAccessUpdatedAt",
+            "pageAccessUpdatedBy"
+          ])
+        ) || (
+          isAdmin()
+          && request.resource.data.keys().hasOnly([
+            "vip",
+            "vipGrantedBy",
+            "vipStartedAt",
+            "vipExpiresAt",
+            "rollingRestricted",
+            "reviewsRestricted",
+            "accountSuspended",
+            "restrictionReason",
+            "restrictionsUpdatedAt",
+            "restrictionsUpdatedBy",
+            "allowedPages",
+            "imamonkeyandilovemoneyAccess",
+            "pageAccessUpdatedAt",
+            "pageAccessUpdatedBy"
+          ])
+          && request.resource.data.vip is bool
+          && request.resource.data.vipGrantedBy is string
+          && (request.resource.data.vipStartedAt is timestamp
+              || request.resource.data.vipStartedAt == null)
+          && (request.resource.data.vipExpiresAt is timestamp
+              || request.resource.data.vipExpiresAt == null)
+          && request.resource.data.rollingRestricted is bool
+          && request.resource.data.reviewsRestricted is bool
+          && request.resource.data.accountSuspended is bool
+          && request.resource.data.restrictionReason is string
+          && request.resource.data.restrictionReason.size() <= 300
+          && request.resource.data.restrictionsUpdatedBy == request.auth.uid
+          && request.resource.data.allowedPages is list
+          && request.resource.data.allowedPages.size() <= 1
+          && request.resource.data.allowedPages.hasOnly([
+            "imamonkeyandilovemoney.html"
+          ])
+          && request.resource.data.imamonkeyandilovemoneyAccess is bool
+          && request.resource.data.pageAccessUpdatedBy == request.auth.uid
+          && request.resource.data.pageAccessUpdatedAt is timestamp
+        );
+
+      // Owners may edit ordinary profile/account fields but cannot change
+      // moderation controls. Administrators may change only moderation controls.
+      allow update: if (
+          isOwner(uid)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+            "vip",
+            "vipGrantedBy",
+            "vipStartedAt",
+            "vipExpiresAt",
+            "rollingRestricted",
+            "reviewsRestricted",
+            "accountSuspended",
+            "restrictionReason",
+            "restrictionsUpdatedAt",
+            "restrictionsUpdatedBy",
+            "allowedPages",
+            "imamonkeyandilovemoneyAccess",
+            "pageAccessUpdatedAt",
+            "pageAccessUpdatedBy"
+          ])
+        ) || (
+          isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "vip",
+            "vipGrantedBy",
+            "vipStartedAt",
+            "vipExpiresAt",
+            "rollingRestricted",
+            "reviewsRestricted",
+            "accountSuspended",
+            "restrictionReason",
+            "restrictionsUpdatedAt",
+            "restrictionsUpdatedBy",
+            "allowedPages",
+            "imamonkeyandilovemoneyAccess",
+            "pageAccessUpdatedAt",
+            "pageAccessUpdatedBy"
+          ])
+          && request.resource.data.vip is bool
+          && request.resource.data.vipGrantedBy is string
+          && (request.resource.data.vipStartedAt is timestamp
+              || request.resource.data.vipStartedAt == null)
+          && (request.resource.data.vipExpiresAt is timestamp
+              || request.resource.data.vipExpiresAt == null)
+          && request.resource.data.rollingRestricted is bool
+          && request.resource.data.reviewsRestricted is bool
+          && request.resource.data.accountSuspended is bool
+          && request.resource.data.restrictionReason is string
+          && request.resource.data.restrictionReason.size() <= 300
+          && request.resource.data.restrictionsUpdatedBy == request.auth.uid
+          && request.resource.data.allowedPages is list
+          && request.resource.data.allowedPages.size() <= 1
+          && request.resource.data.allowedPages.hasOnly([
+            "imamonkeyandilovemoney.html"
+          ])
+          && request.resource.data.imamonkeyandilovemoneyAccess is bool
+          && request.resource.data.pageAccessUpdatedBy == request.auth.uid
+          && request.resource.data.pageAccessUpdatedAt is timestamp
+        ) || (
+          isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "roomId",
+            "updatedAt"
+          ])
+          && request.resource.data.roomId == ""
+        );
+
+      allow delete: if false;
+    }
+
+    match /publicProfiles/{uid} {
+      allow read: if signedIn();
+
+      allow create: if isOwner(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.username is string
+        && request.resource.data.username.size() >= 3
+        && request.resource.data.username.size() <= 20
+        && request.resource.data.photoURL is string
+        && request.resource.data.bio is string
+        && request.resource.data.bio.size() <= 300;
+
+      allow update: if isOwner(uid)
+        && canUseAccount(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.username == resource.data.username
+        && request.resource.data.usernameLower == resource.data.usernameLower
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.bio is string
+        && request.resource.data.bio.size() <= 300
+        && request.resource.data.photoURL is string;
+
+      allow delete: if false;
+    }
+
+    match /usernames/{usernameLower} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && canUseAccount(request.auth.uid)
+        && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /permanentRoomIds/{diceId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && canUseAccount(request.auth.uid)
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.roomId is string;
+
+      allow delete: if (
+          signedIn()
+          && resource.data.ownerUid == request.auth.uid
+        ) || isAdmin();
+
+      allow update: if false;
+    }
+
+    match /permanentRooms/{roomId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && canUseAccount(request.auth.uid)
+        && request.resource.data.ownerUid == request.auth.uid;
+
+      // Room owner updates. The owner cannot change staff suspension fields.
+      // Any update involving dice/rolling fields additionally requires that the
+      // account is not suspended and not restricted from rolling.
+      allow update: if (
+          signedIn()
+          && resource.data.ownerUid == request.auth.uid
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+            "rollingSuspended",
+            "rollingSuspensionReason",
+            "rollingSuspendedAt",
+            "rollingSuspendedBy",
+            "favoriteCount"
+          ])
+          && (
+            (
+              request.resource.data.diff(resource.data).affectedKeys().hasAny([
+                "rolling",
+                "pendingResult",
+                "nextRolls",
+                "latestResult",
+                "history",
+                "rollNumber",
+                "lastRollAt",
+                "diceCount"
+              ])
+              && canRoll(request.auth.uid)
+              && !(
+                ("rollingSuspended" in resource.data)
+                && resource.data.rollingSuspended == true
+              )
+            )
+            || (
+              !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+                "rolling",
+                "pendingResult",
+                "nextRolls",
+                "latestResult",
+                "history",
+                "rollNumber",
+                "lastRollAt",
+                "diceCount"
+              ])
+              && canUseAccount(request.auth.uid)
+            )
+          )
+        ) || (
+          registeredUser()
+          && canUseAccount(request.auth.uid)
+          && resource.data.ownerUid != request.auth.uid
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "favoriteCount",
+            "updatedAt"
+          ])
+          && request.resource.data.favoriteCount is int
+          && request.resource.data.favoriteCount >= 0
+          && (
+            (
+              request.resource.data.favoriteCount == roomFavoriteCount(roomId) + 1
+              && !exists(/databases/$(database)/documents/users/$(request.auth.uid)/favoriteRooms/$(roomId))
+              && existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)/favoriteRooms/$(roomId))
+            )
+            || (
+              request.resource.data.favoriteCount == roomFavoriteCount(roomId) - 1
+              && exists(/databases/$(database)/documents/users/$(request.auth.uid)/favoriteRooms/$(roomId))
+              && !existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)/favoriteRooms/$(roomId))
+            )
+          )
+        ) || (
+          // A user with active Room Access may edit only their own future-roll queue.
+          hasActiveRoomAccess()
+          && resource.data.ownerUid == request.auth.uid
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "nextRolls",
+            "updatedAt"
+          ])
+          && request.resource.data.nextRolls is list
+          && request.resource.data.nextRolls.size() > 0
+          && request.resource.data.nextRolls.size() <= 10
+        ) || (
+          // Only enabled administrators may edit the future-roll queue.
+          isAdmin()
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "nextRolls",
+            "updatedAt"
+          ])
+          && request.resource.data.nextRolls is list
+          && request.resource.data.nextRolls.size() > 0
+          && request.resource.data.nextRolls.size() <= 10
+        ) || (
+          isStaff()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "roomName",
+            "rollingSuspended",
+            "rollingSuspensionReason",
+            "rollingSuspendedAt",
+            "rollingSuspendedBy",
+            "rolling",
+            "pendingResult",
+            "updatedAt"
+          ])
+          && request.resource.data.roomName is string
+          && request.resource.data.roomName.size() >= 2
+          && request.resource.data.roomName.size() <= 80
+          && request.resource.data.rollingSuspended is bool
+          && request.resource.data.rollingSuspensionReason is string
+          && request.resource.data.rollingSuspensionReason.size() <= 300
+          && request.resource.data.rolling == false
+          && request.resource.data.pendingResult is list
+          && request.resource.data.rollingSuspendedBy
+            == (request.resource.data.rollingSuspended ? request.auth.uid : "")
+        ) || (
+          isStaff()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "isLive",
+            "liveStartedAt",
+            "streamLink",
+            "rolling",
+            "pendingResult",
+            "updatedAt"
+          ])
+          && request.resource.data.isLive == false
+          && request.resource.data.liveStartedAt == null
+          && request.resource.data.streamLink == ""
+          && request.resource.data.rolling == false
+          && request.resource.data.pendingResult is list
+        );
+
+      allow delete: if (
+          signedIn()
+          && resource.data.ownerUid == request.auth.uid
+        ) || isAdmin();
+    }
+
+
+match /users/{uid}/shopProducts/{productId} {
+      allow read: if signedIn();
+
+      // Seller creates and manages listings under their own UID.
+      allow create: if isOwner(uid)
+        && canUseAccount(uid)
+        && request.resource.data.ownerUid == uid;
+
+      allow update: if (
+          isOwner(uid)
+          && canUseAccount(uid)
+        ) || (
+          // A registered buyer, or a guest allowed by this seller, may only
+          // reduce stock through a matching reservation in the same transaction.
+          mayOrderFromSeller(uid)
+          && canUseAccount(request.auth.uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "stock",
+            "lastReservationId",
+            "updatedAt"
+          ])
+          && request.resource.data.stock is int
+          && request.resource.data.stock >= 0
+          && request.resource.data.stock < resource.data.stock
+          && request.resource.data.lastReservationId is string
+          && existsAfter(
+            /databases/$(database)/documents/users/$(uid)/stockReservations/$(request.resource.data.lastReservationId)
+          )
+          && getAfter(
+            /databases/$(database)/documents/users/$(uid)/stockReservations/$(request.resource.data.lastReservationId)
+          ).data.sellerUid == uid
+          && getAfter(
+            /databases/$(database)/documents/users/$(uid)/stockReservations/$(request.resource.data.lastReservationId)
+          ).data.buyerUid == request.auth.uid
+          && getAfter(
+            /databases/$(database)/documents/users/$(uid)/stockReservations/$(request.resource.data.lastReservationId)
+          ).data.productId == productId
+          && getAfter(
+            /databases/$(database)/documents/users/$(uid)/stockReservations/$(request.resource.data.lastReservationId)
+          ).data.status == "reserved"
+          && getAfter(
+            /databases/$(database)/documents/users/$(uid)/stockReservations/$(request.resource.data.lastReservationId)
+          ).data.quantity == resource.data.stock - request.resource.data.stock
+        );
+
+      allow delete: if isOwner(uid)
+        && canUseAccount(uid);
+    }
+
+    // Reservation records make buyer stock deductions verifiable.
+    match /users/{sellerUid}/stockReservations/{reservationId} {
+      allow read: if isOwner(sellerUid)
+        || (signedIn() && resource.data.buyerUid == request.auth.uid);
+
+      allow create: if mayOrderFromSeller(sellerUid)
+        && canUseAccount(request.auth.uid)
+        && request.resource.data.reservationId == reservationId
+        && request.resource.data.sellerUid == sellerUid
+        && request.resource.data.buyerUid == request.auth.uid
+        && request.resource.data.productId is string
+        && request.resource.data.quantity is int
+        && request.resource.data.quantity > 0
+        && request.resource.data.status == "reserved";
+
+      // Seller may release a reservation when rejecting an order.
+      allow update: if isOwner(sellerUid)
+        && request.resource.data.reservationId == resource.data.reservationId
+        && request.resource.data.sellerUid == resource.data.sellerUid
+        && request.resource.data.buyerUid == resource.data.buyerUid
+        && request.resource.data.productId == resource.data.productId
+        && request.resource.data.quantity == resource.data.quantity;
+
+      allow delete: if false;
+    }
+
+    // Registered buyers: one cart order every 2 minutes.
+    // Anonymous buyers: one cart order every 5 minutes.
+    match /users/{buyerUid}/orderLimits/{limitId} {
+      allow read: if isOwner(buyerUid);
+
+      allow create: if isOwner(buyerUid)
+        && signedIn()
+        && canUseAccount(buyerUid)
+        && limitId == "cartOrder"
+        && request.resource.data.keys().hasOnly([
+          "buyerUid",
+          "buyerIsGuest",
+          "cooldownSeconds",
+          "lastOrderAt"
+        ])
+        && request.resource.data.buyerUid == buyerUid
+        && request.resource.data.buyerIsGuest is bool
+        && request.resource.data.buyerIsGuest
+          == (request.auth.token.firebase.sign_in_provider == "anonymous")
+        && request.resource.data.cooldownSeconds is int
+        && request.resource.data.cooldownSeconds
+          == (request.resource.data.buyerIsGuest ? 300 : 120)
+        && request.resource.data.lastOrderAt == request.time;
+
+      allow update: if isOwner(buyerUid)
+        && signedIn()
+        && canUseAccount(buyerUid)
+        && limitId == "cartOrder"
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "buyerIsGuest",
+          "cooldownSeconds",
+          "lastOrderAt"
+        ])
+        && request.resource.data.buyerUid == resource.data.buyerUid
+        && request.resource.data.buyerUid == buyerUid
+        && request.resource.data.buyerIsGuest is bool
+        && request.resource.data.buyerIsGuest
+          == (request.auth.token.firebase.sign_in_provider == "anonymous")
+        && request.resource.data.cooldownSeconds is int
+        && request.resource.data.cooldownSeconds
+          == (request.resource.data.buyerIsGuest ? 300 : 120)
+        && request.resource.data.lastOrderAt == request.time
+        && request.time >= resource.data.lastOrderAt
+          + duration.value(
+              request.auth.token.firebase.sign_in_provider == "anonymous" ? 5 : 2,
+              "m"
+            );
+
+      allow delete: if false;
+    }
+
+    // Seller payment information shown to buyers during checkout.
+    match /users/{uid}/shopSettings/{settingId} {
+      allow read: if signedIn();
+
+      allow create, update: if isOwner(uid)
+        && canUseAccount(uid);
+
+      allow delete: if isOwner(uid);
+    }
+
+    // Orders are stored below the seller's UID.
+    match /users/{sellerUid}/orders/{orderId} {
+      allow read: if isOwner(sellerUid)
+        || (
+          signedIn()
+          && (
+            resource.data.status == "order_sent"
+            || resource.data.buyerUid == request.auth.uid
+          )
+        );
+
+      // The order and all stock reservations are written atomically.
+      allow create: if mayOrderFromSeller(sellerUid)
+        && canUseAccount(request.auth.uid)
+        && request.resource.data.buyerUid == request.auth.uid
+        && request.resource.data.sellerUid == sellerUid
+        && existsAfter(
+          /databases/$(database)/documents/users/$(request.auth.uid)/orderLimits/cartOrder
+        )
+        && getAfter(
+          /databases/$(database)/documents/users/$(request.auth.uid)/orderLimits/cartOrder
+        ).data.buyerUid == request.auth.uid
+        && getAfter(
+          /databases/$(database)/documents/users/$(request.auth.uid)/orderLimits/cartOrder
+        ).data.lastOrderAt == request.time
+        && request.resource.data.status == "order_sent"
+        && request.resource.data.stockReserved == true
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0
+        && request.resource.data.items.size() <= 50
+        && request.resource.data.itemCount is int
+        && request.resource.data.itemCount == request.resource.data.items.size()
+        && request.resource.data.quantity is int
+        && request.resource.data.quantity > 0
+        && request.resource.data.totalAmount is number
+        && request.resource.data.totalAmount > 0
+        && request.resource.data.paymentProofUrl is string
+        && request.resource.data.paymentProofUrl.size() > 0
+        && request.resource.data.paymentProofPath is string
+        && request.resource.data.paymentProofPath.size() > 0;
+
+      // Seller may complete or reject an order.
+      allow update: if isOwner(sellerUid)
+        && canUseAccount(sellerUid)
+        && request.resource.data.sellerUid == sellerUid;
+
+      allow delete: if false;
+    }
+
+    match /users/{uid}/favoriteRooms/{roomId} {
+      allow read: if isOwner(uid);
+
+      allow create: if registeredUser()
+        && isOwner(uid)
+        && canUseAccount(uid)
+        && request.resource.data.keys().hasOnly([
+          "userUid",
+          "roomId",
+          "ownerUid",
+          "diceId",
+          "roomName",
+          "createdAt"
+        ])
+        && request.resource.data.userUid == uid
+        && request.resource.data.roomId == roomId
+        && request.resource.data.ownerUid is string
+        && request.resource.data.ownerUid != uid
+        && request.resource.data.diceId is string
+        && request.resource.data.roomName is string
+        && request.resource.data.createdAt == request.time
+        && exists(/databases/$(database)/documents/permanentRooms/$(roomId))
+        && get(/databases/$(database)/documents/permanentRooms/$(roomId)).data.ownerUid == request.resource.data.ownerUid
+        && getAfter(/databases/$(database)/documents/permanentRooms/$(roomId)).data.favoriteCount == roomFavoriteCount(roomId) + 1;
+
+      allow update: if false;
+
+      allow delete: if registeredUser()
+        && isOwner(uid)
+        && exists(/databases/$(database)/documents/permanentRooms/$(roomId))
+        && getAfter(/databases/$(database)/documents/permanentRooms/$(roomId)).data.favoriteCount == roomFavoriteCount(roomId) - 1;
+    }
+
+    match /users/{hostUid}/reviews/{reviewerUid} {
+      allow read: if signedIn();
+
+      allow create: if registeredUser()
+        && canReview(request.auth.uid)
+        && reviewerUid == request.auth.uid
+        && hostUid != request.auth.uid
+        && mayCreateVouch(hostUid, reviewerUid)
+        && request.resource.data.reviewerUid == request.auth.uid
+        && request.resource.data.hostUid == hostUid
+        && request.resource.data.recommend is bool
+        && request.resource.data.review is string
+        && request.resource.data.review.size() <= 200;
+
+      allow update: if false;
+      allow delete: if isStaff();
+    }
+
+    match /users/{hostUid}/vouchCooldowns/{reviewerUid} {
+      allow read: if isOwner(reviewerUid) || isOwner(hostUid) || isStaff();
+      allow create, update, delete: if isStaff();
+    }
+
+    match /users/{hostUid}/vouchRemovalRequests/{reviewerUid} {
+      allow read: if isOwner(hostUid) || isStaff();
+
+      allow create: if isOwner(hostUid)
+        && canUseAccount(hostUid)
+        && request.resource.data.hostUid == hostUid
+        && request.resource.data.reviewerUid == reviewerUid
+        && request.resource.data.status == "pending"
+        && request.resource.data.reason is string
+        && request.resource.data.reason in [
+          "false_information",
+          "harassment",
+          "spam",
+          "impersonation",
+          "personal_information",
+          "other"
+        ]
+        && request.resource.data.details is string
+        && request.resource.data.details.size() <= 300
+        && request.resource.data.roomId is string
+        && request.resource.data.roomId.size() > 0
+        && request.resource.data.vouchPath == "users/" + hostUid + "/reviews/" + reviewerUid
+        && exists(/databases/$(database)/documents/users/$(hostUid)/reviews/$(reviewerUid));
+
+      allow update: if isStaff()
+        && resource.data.status == "pending"
+        && request.resource.data.status == "rejected"
+        && request.resource.data.hostUid == resource.data.hostUid
+        && request.resource.data.reviewerUid == resource.data.reviewerUid
+        && request.resource.data.roomId == resource.data.roomId
+        && request.resource.data.vouchPath == resource.data.vouchPath
+        && request.resource.data.reason == resource.data.reason
+        && request.resource.data.details == resource.data.details
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.moderatorUid == request.auth.uid
+        && request.resource.data.moderatorNote is string
+        && request.resource.data.moderatorNote.size() <= 500;
+
+      allow delete: if isStaff();
+    }
+
+    match /{path=**}/vouchRemovalRequests/{requestId} {
+      allow read: if isStaff();
+    }
+
+    match /users/{uid}/notifications/{notificationId} {
+      allow read, update: if isOwner(uid);
+      allow create: if isStaff()
+        && request.resource.data.uid == uid
+        && request.resource.data.createdBy == request.auth.uid;
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
+    match /activityLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isStaff()
+        && request.resource.data.staffUid == request.auth.uid
+        && request.resource.data.type is string
+        && request.resource.data.targetType is string
+        && request.resource.data.targetId is string;
+      allow update, delete: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if signedIn()
+        && (
+          resource.data.recipientUid == request.auth.uid
+          || resource.data.uid == request.auth.uid
+        );
+
+      allow update: if signedIn()
+        && (
+          resource.data.recipientUid == request.auth.uid
+          || resource.data.uid == request.auth.uid
+        )
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "read"
+        ]);
+
+      allow delete: if signedIn()
+        && (
+          resource.data.recipientUid == request.auth.uid
+          || resource.data.uid == request.auth.uid
+        );
+
+      allow create: if false;
+    }
+
+
+    // Dice skins are publicly readable so guest and signed-in room viewers can render them.
+    // Only enabled administrators may create or manage skin documents.
+    match /diceSkins/{skinId} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 50
+        && request.resource.data.accessLevels is list
+        && request.resource.data.accessLevels.size() > 0
+        && request.resource.data.accessLevels.size() <= 3
+        && request.resource.data.accessLevels.hasOnly(["everyone", "users", "vip"])
+        && request.resource.data.enabled is bool
+        && request.resource.data.images is map
+        && request.resource.data.images.red is string
+        && request.resource.data.images.blue is string
+        && request.resource.data.images.green is string
+        && request.resource.data.images.yellow is string
+        && request.resource.data.images.purple is string
+        && request.resource.data.images.orange is string
+        && request.resource.data.updatedBy == request.auth.uid;
+      allow delete: if isAdmin() && skinId != "classic";
+    }
+
+
+    // Allows a signed-in buyer to list only their own orders through
+    // collectionGroup(db, "orders"). The query must include:
+    // where("buyerUid", "==", request.auth.uid)
+    //
+    // This adds collection-group query access without changing the existing
+    // seller order permissions above.
+    match /{path=**}/orders/{orderId} {
+      allow list: if signedIn()
+        && resource.data.buyerUid == request.auth.uid;
+    }
+
+    // Server-only future-roll queues. Cloud Functions use the Admin SDK
+    // and bypass these client rules. No browser may read or change them.
+    match /_secureRollQueues/{queueId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

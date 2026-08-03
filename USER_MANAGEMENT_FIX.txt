@@ -1,0 +1,16 @@
+USER MANAGEMENT FIX
+
+Updated pdo_control.js so User Management now:
+- waits for administrator verification before searching;
+- searches UID directly;
+- resolves usernames through usernames/{usernameLower};
+- falls back to users and publicProfiles usernameLower queries;
+- searches private user email;
+- merges users and publicProfiles data;
+- supports accounts with incomplete private user documents;
+- shows avatar, username, email, UID, role, and room ID;
+- saves restrictions with setDoc merge;
+- keeps a successful account update even if a log or notification fails;
+- supports older moderator documents.
+
+IMPORTANT: Publish the included firestore.rules in Firebase Console so role changes work with older moderator records.

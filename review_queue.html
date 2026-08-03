@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <title>Review Queue | PERYA DICE</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="staff.css">
+    <link rel="stylesheet" href="review_queue.css">
+</head>
+
+<body class="reviewQueuePage pdo-page">
+    <main class="reviewQueueShell">
+
+        <header class="reviewQueueHeader">
+            <div class="reviewQueueHeading">
+                <p class="reviewQueueEyebrow">PRIVATE STAFF ACCESS</p>
+                <h1>🛡️ Vouch Removal Queue</h1>
+                <p class="reviewQueueIntro">
+                    Review requests submitted by room hosts. Vouches remain visible
+                    unless an authorized staff member approves their removal.
+                </p>
+            </div>
+
+            <a class="secondaryButton reviewQueueHomeLink" href="pdo_workspace.html">
+                ← Moderation Workspace
+            </a>
+        </header>
+
+        <section id="accessChecking" class="reviewQueueNotice">
+            <span class="queueSpinner" aria-hidden="true"></span>
+            Checking staff access…
+        </section>
+
+        <section id="accessDenied" class="reviewQueueNotice queueAccessDenied" hidden>
+            <h2>Access denied</h2>
+            <p>
+                Sign in with an account enabled in the private <code>admins</code> or <code>moderators</code> collection.
+            </p>
+        </section>
+
+        <section id="reviewQueuePanel" hidden>
+
+            <section class="queueStats" aria-label="Removal request statistics">
+                <article class="queueStatCard">
+                    <span class="queueStatLabel">Pending</span>
+                    <strong id="pendingCount">0</strong>
+                </article>
+
+                <article class="queueStatCard">
+                    <span class="queueStatLabel">Approved</span>
+                    <strong id="approvedCount">0</strong>
+                </article>
+
+                <article class="queueStatCard">
+                    <span class="queueStatLabel">Rejected</span>
+                    <strong id="rejectedCount">0</strong>
+                </article>
+
+                <article class="queueStatCard">
+                    <span class="queueStatLabel">Total</span>
+                    <strong id="totalCount">0</strong>
+                </article>
+            </section>
+
+            <section class="reviewQueueWorkspace">
+                <div class="reviewQueueToolbar">
+                    <div class="reviewQueueTabs" role="tablist" aria-label="Request status filter">
+                        <button
+                            id="showPendingButton"
+                            class="queueTab active"
+                            type="button"
+                            role="tab"
+                            aria-selected="true"
+                        >
+                            Pending
+                        </button>
+
+                        <button
+                            id="showAllButton"
+                            class="queueTab"
+                            type="button"
+                            role="tab"
+                            aria-selected="false"
+                        >
+                            All Requests
+                        </button>
+                    </div>
+
+                    <button id="refreshQueueButton" class="secondaryButton queueRefreshButton" type="button">
+                        ↻ Refresh
+                    </button>
+                </div>
+
+                <div class="queueStatusRow">
+                    <p id="queueSummary" class="queueSummary"></p>
+                    <p id="queueMessage" class="joinMessage"></p>
+                </div>
+
+                <div id="requestList" class="removalRequestList"></div>
+            </section>
+        </section>
+    </main>
+
+    <div id="decisionModal" class="reviewModal" hidden>
+        <div class="reviewModalBackdrop" data-close-decision-modal></div>
+
+        <section
+            class="reviewModalDialog decisionDialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="decisionModalTitle"
+        >
+            <button
+                id="closeDecisionModalButton"
+                class="modalCloseButton"
+                type="button"
+                aria-label="Close"
+            >
+                &times;
+            </button>
+
+            <p class="decisionEyebrow">STAFF REVIEW</p>
+            <h2 id="decisionModalTitle">Review Removal Request</h2>
+
+            <div id="decisionRequestDetails"></div>
+
+            <div class="formGroup">
+                <label for="moderatorNoteInput">
+                    Staff note
+                    <span class="mutedText">(optional)</span>
+                </label>
+
+                <textarea
+                    id="moderatorNoteInput"
+                    maxlength="500"
+                    placeholder="Explain the decision to the host…"
+                ></textarea>
+
+                <p id="moderatorNoteCount" class="reviewCharacterCount">
+                    0 / 500
+                </p>
+            </div>
+
+            <p id="decisionMessage" class="joinMessage"></p>
+
+            <div class="decisionButtons">
+                <button
+                    id="rejectRequestButton"
+                    class="secondaryButton"
+                    type="button"
+                >
+                    Reject Request
+                </button>
+
+                <button
+                    id="approveRemovalButton"
+                    class="dangerButton"
+                    type="button"
+                >
+                    Approve Removal
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <script type="module" src="review_queue.js"></script>
+    <script type="module" src="presence.js"></script>
+</body>
+</html>

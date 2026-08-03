@@ -1,0 +1,54 @@
+PERYA DICE — PRIVATE ADMIN/MODERATOR SETUP
+
+FILES ADDED
+- permissions.js
+- profile.html
+- profile.js
+
+FILES UPDATED
+- firestore.rules
+- irothemfkingdogadmin.html
+- irothemfkingdogadmin.js
+- review_queue.html
+- review_queue.js
+- username.js
+- dashboard.js
+- style.css
+
+IMPORTANT DEPLOYMENT STEPS
+1. Upload all rewritten website files to Netlify/GitHub.
+2. Publish the included firestore.rules in Firebase Console > Firestore Database > Rules.
+3. Keep your administrator document in:
+   admins/{ADMIN_UID}
+   enabled: true
+4. Do not manually create moderator documents unless needed. An administrator can open:
+   profile.html?id=USER_UID
+   and click Promote to Moderator.
+
+PRIVATE ROLE STORAGE
+- Administrator: admins/{uid} with enabled: true
+- Moderator: moderators/{uid} with enabled: true
+- Staff roles are NOT stored in publicProfiles, so ordinary profile visitors cannot see them.
+
+PERMISSIONS
+Moderator can:
+- Open review_queue.html
+- Approve or reject vouch removal requests
+- Remove the related review when approving
+
+Moderator cannot:
+- Open irothemfkingdogadmin.html
+- Promote or demote moderators
+- Suspend, disable, update, or delete another user's room
+- Change administrator records
+
+Administrator can:
+- Open irothemfkingdogadmin.html
+- Open review_queue.html
+- Promote/demote moderators from profile pages
+
+ADMIN PAGE SECURITY
+The old browser-visible password was removed. The page now checks the signed-in Firebase account against admins/{uid}. A non-admin who knows the URL is redirected to index.html. Firestore rules also block unauthorized database actions.
+
+PUBLIC PROFILE DATA
+Public-safe fields are copied to publicProfiles/{uid}. Private users/{uid} documents remain unreadable to other users, protecting fields such as email.

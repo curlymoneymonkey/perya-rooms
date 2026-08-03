@@ -1,0 +1,25 @@
+ONLY THESE FILES NEED TO BE REPLACED
+
+Replace each file in your project using the same path/name:
+
+firebase.js
+firestore.rules
+script.js
+imamonkeyandilovemoney.js
+guest-room.js
+irothemfkingdogadmin.js
+functions/index.js
+
+Do not delete or replace your images, sounds, HTML, CSS, or other files.
+
+After replacing the files, run from the project root:
+
+cd functions
+npm install
+cd ..
+firebase deploy --only functions
+firebase deploy --only firestore:rules
+
+Then deploy/push the updated frontend JavaScript files to Netlify.
+
+Important: Keep a backup of the old files before replacing them.

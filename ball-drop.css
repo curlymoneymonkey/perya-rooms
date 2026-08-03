@@ -1,0 +1,1484 @@
+/* Ball Drop V3 — Balanced Arcade Board */
+
+.ballDropGame {
+  width: 100%;
+  margin-top: 12px;
+  --ball-drop-count: 3;
+}
+
+.ballDropTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+  font-weight: 900;
+}
+
+.ballDropTopline strong {
+  color: rgba(255,255,255,.74);
+  font-size: .86rem;
+}
+
+.ballDropMixer {
+  --dynamic-ball-size:
+    clamp(28px, calc(66px - var(--ball-drop-count) * 4px), 48px);
+
+  position: relative;
+  height: 86px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  border: 1px solid rgba(220,232,240,.28);
+  border-radius: 20px 20px 10px 10px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255,255,255,.11), transparent 54%),
+    linear-gradient(180deg, rgba(42,51,58,.94), rgba(17,22,27,.96));
+  box-shadow:
+    inset 0 0 24px rgba(0,0,0,.32),
+    0 6px 16px rgba(0,0,0,.16);
+}
+
+.ballDropHolderBall {
+  position: absolute;
+  top: 20px;
+  width: var(--dynamic-ball-size);
+  height: var(--dynamic-ball-size);
+  border: 1px solid rgba(255,255,255,.92);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 25%, #fff 0 25%, #f1f3f2 55%, #b9c2c6 100%);
+  box-shadow:
+    inset -7px -8px 11px rgba(0,0,0,.14),
+    0 6px 12px rgba(0,0,0,.26);
+  transition:
+    opacity .12s linear,
+    filter .18s ease;
+  will-change: left, transform;
+}
+
+.ballDropGame[data-dropping="true"] .ballDropHolderBall {
+  filter: brightness(1.08);
+}
+
+.ballDropBoard {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  height: 760px;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(222,235,244,.38);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% -7%, rgba(255,255,255,.115), transparent 42%),
+    linear-gradient(180deg, rgba(34,45,53,.99), rgba(8,12,16,.995));
+  box-shadow:
+    inset 0 0 68px rgba(0,0,0,.62),
+    inset 0 1px 0 rgba(255,255,255,.16),
+    0 18px 42px rgba(0,0,0,.38);
+}
+
+.ballDropBoard::before {
+  content: "";
+  position: absolute;
+  inset: 13px;
+  z-index: 0;
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,.065);
+  border-radius: 13px;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255,255,255,.018),
+      transparent 20%,
+      transparent 80%,
+      rgba(255,255,255,.018)
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,.01) 0,
+      rgba(255,255,255,.01) 1px,
+      transparent 1px,
+      transparent 9px
+    );
+}
+
+#ballDropCanvas {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 2 !important;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent;
+  image-rendering: auto;
+  filter:
+    drop-shadow(0 2px 2px rgba(0,0,0,.34))
+    drop-shadow(0 0 1px rgba(255,255,255,.13));
+}
+
+.ballDropSlotBacks,
+.ballDropSlotFronts,
+.ballDropSlotNames {
+  position: absolute;
+  left: 1.5%;
+  right: 1.5%;
+  bottom: 6px;
+  height: 102px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 7px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.ballDropSlotBacks {
+  z-index: 1;
+}
+
+.ballDropSlotBacks span {
+  border-radius: 8px 8px 2px 2px;
+  box-shadow:
+    inset 0 9px 14px rgba(255,255,255,.15),
+    inset 0 -16px 20px rgba(0,0,0,.24),
+    0 -3px 8px rgba(0,0,0,.16);
+}
+
+.ballDropSlotBacks .purple {
+  background: linear-gradient(#ab62e3, #702fa8);
+}
+
+.ballDropSlotBacks .yellow {
+  background: linear-gradient(#ffe86d, #d3ab12);
+}
+
+.ballDropSlotBacks .red {
+  background: linear-gradient(#f45f56, #bd2a22);
+}
+
+.ballDropSlotBacks .green {
+  background: linear-gradient(#58db79, #218f41);
+}
+
+.ballDropSlotBacks .orange {
+  background: linear-gradient(#ffa74c, #d96a11);
+}
+
+.ballDropSlotBacks .blue {
+  background: linear-gradient(#5db5f7, #2571b0);
+}
+
+.ballDropSlotNames {
+  z-index: 3;
+  align-items: end;
+  padding-bottom: 14px;
+}
+
+.ballDropSlotNames span {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: clamp(.5rem, 1.35vw, .74rem);
+  font-weight: 900;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0,0,0,.75);
+}
+
+.ballDropSlotFronts {
+  z-index: 4;
+}
+
+.ballDropSlotFronts span {
+  position: relative;
+}
+
+.ballDropSlotFronts span::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: -8px;
+  bottom: 0;
+  width: 8px;
+  background:
+    linear-gradient(90deg, #050709, #242a30 50%, #050709);
+  box-shadow:
+    inset 1px 0 0 rgba(255,255,255,.12),
+    1px 0 3px rgba(0,0,0,.55);
+}
+
+.ballDropSlotFronts span::after {
+  content: "";
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  bottom: -1px;
+  height: 10px;
+  background: linear-gradient(#20262b, #06080a);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 -2px 5px rgba(0,0,0,.42);
+}
+
+.ballDropSlotFronts span:last-child {
+  border-right: 8px solid #07090b;
+}
+
+
+.ballDropButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    
+
+    width: fit-content;
+    min-width: 0;
+
+    padding: 14px 38px;
+
+    margin: 20px auto 0;
+
+    border-radius: 14px;
+}
+
+.ballDropResultsWrap {
+  margin-top: 14px;
+}
+
+.ballDropResultsWrap h2,
+.ballDropHistoryWrap h2 {
+  margin: 0 0 8px;
+}
+
+.ballDropResults {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(62px, 1fr));
+  gap: 8px;
+}
+
+.ballDropResults > span {
+  min-height: 82px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 12px;
+  background: rgba(255,255,255,.06);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ballDropResults > span::before {
+  content: "";
+  width: 42px;
+  height: 42px;
+  margin-bottom: 4px;
+  border: 2px solid rgba(255,255,255,.68);
+  border-radius: 50%;
+  box-shadow:
+    inset -5px -6px 8px rgba(0,0,0,.22),
+    inset 4px 4px 7px rgba(255,255,255,.28);
+}
+
+.ballDropResults > span.waiting::before {
+  background:
+    radial-gradient(circle at 30% 25%, #fff, #d9dfe1 58%, #9da9af);
+  opacity: .7;
+}
+
+.ballDropResults > span.purple::before {
+  background:
+    radial-gradient(circle at 30% 25%, #dca8ff, #8f3fd1 55%, #4b176e);
+}
+
+.ballDropResults > span.yellow::before {
+  background:
+    radial-gradient(circle at 30% 25%, #fff9a8, #f4cf24 55%, #9c7200);
+}
+
+.ballDropResults > span.red::before {
+  background:
+    radial-gradient(circle at 30% 25%, #ffaaa2, #e84136 55%, #86150f);
+}
+
+.ballDropResults > span.green::before {
+  background:
+    radial-gradient(circle at 30% 25%, #aef6bd, #35b957 55%, #17672e);
+}
+
+.ballDropResults > span.orange::before {
+  background:
+    radial-gradient(circle at 30% 25%, #ffd09b, #f28a22 55%, #9b4208);
+}
+
+.ballDropResults > span.blue::before {
+  background:
+    radial-gradient(circle at 30% 25%, #a9dcff, #338edb 55%, #14528f);
+}
+
+.ballDropHistoryWrap {
+  margin-top: 14px;
+}
+
+.ballDropHistory {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: visible;
+  padding-right: 0;
+}
+
+.ballDropHistory > p {
+  margin: 0;
+  color: rgba(255,255,255,.65);
+}
+
+.ballDropHistoryRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 7px;
+  width: 100%;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 10px;
+  background: rgba(255,255,255,.04);
+}
+
+.ballDropHistoryRow i {
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(255,255,255,.65);
+  border-radius: 50%;
+  box-shadow: inset -3px -4px 5px rgba(0,0,0,.2);
+}
+
+.ballDropHistoryRow i.purple { background: #8f3fd1; }
+.ballDropHistoryRow i.yellow { background: #f4cf24; }
+.ballDropHistoryRow i.red { background: #e84136; }
+.ballDropHistoryRow i.green { background: #35b957; }
+.ballDropHistoryRow i.orange { background: #f28a22; }
+.ballDropHistoryRow i.blue { background: #338edb; }
+
+body[data-room-game-mode="ballDrop"] #hostDiceCountControl,
+body[data-room-game-mode="ballDrop"] #permanentDiceSkinControl,
+body[data-room-game-mode="ballDrop"] #permanentResults,
+body[data-room-game-mode="ballDrop"] #permanentRollButton,
+body[data-room-game-mode="ballDrop"] #permanentWaitingText,
+body[data-room-game-mode="ballDrop"] #diceHistoryBox,
+body[data-room-game-mode="ballDrop"] #hostDiceBlurControl {
+  display: none !important;
+}
+
+body[data-room-game-mode="dice"] #ballDropGame {
+  display: none !important;
+}
+
+.ballDropGame.manyBalls .ballDropResults > span {
+  min-height: 54px;
+  font-size: .72rem;
+}
+
+@media (max-width: 700px) {
+  .ballDropBoard {
+    height: 620px;
+  }
+
+  .ballDropMixer {
+    min-height: 78px;
+  }
+
+  .ballDropSlotBacks,
+  .ballDropSlotFronts,
+  .ballDropSlotNames {
+    height: 80px;
+    gap: 4px;
+  }
+
+  .ballDropSlotNames span {
+    font-size: .42rem;
+  }
+
+  .ballDropResults > span {
+    min-height: 72px;
+    font-size: .7rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .ballDropResults {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+
+/* Horizontal pre-drop selection */
+.ballDropMixer::before {
+  content: "";
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  top: 50%;
+  height: 2px;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255,255,255,.12) 10%,
+      rgba(255,255,255,.12) 90%,
+      transparent
+    );
+  transform: translateY(-50%);
+}
+
+.ballDropGame[data-dropping="true"] .ballDropMixer {
+  box-shadow:
+    inset 0 0 27px rgba(0,0,0,.36),
+    0 0 16px rgba(255,255,255,.025);
+}
+
+.ballDropHolderBall {
+  will-change: left, transform, opacity;
+}
+
+
+/* Immediate high-speed pre-drop movement */
+.ballDropGame[data-dropping="true"] .ballDropMixer {
+  box-shadow:
+    inset 0 0 30px rgba(0,0,0,.4),
+    0 0 18px rgba(255,255,255,.03);
+}
+
+.ballDropHolderBall {
+  transition:
+    opacity .12s linear,
+    filter .18s ease;
+}
+
+
+/* Visible funnel/chute entrances above result bins */
+.ballDropBoard {
+  --funnel-metal: rgba(190,205,214,.9);
+}
+
+.ballDropSlotBacks span {
+  box-shadow:
+    inset 0 10px 15px rgba(255,255,255,.16),
+    inset 0 -18px 22px rgba(0,0,0,.26),
+    0 -5px 10px rgba(0,0,0,.2);
+}
+
+
+
+
+/* =========================================================
+   BALL DROP BOTTOM PANELS
+   Previous Drops sits outside the game, left of Customer Orders.
+========================================================= */
+body[data-room-game-mode="ballDrop"] .bottomPanels {
+  display: grid !important;
+  grid-template-columns: minmax(150px, 0.26fr) minmax(0, 0.74fr) !important;
+  gap: 10px !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+body[data-room-game-mode="ballDrop"] .bottomPanels > #hostHistoryToolbar {
+  grid-column: 1 / -1 !important;
+}
+
+body[data-room-game-mode="ballDrop"] #diceHistoryBox {
+  display: none !important;
+}
+
+body[data-room-game-mode="ballDrop"] #ballDropHistoryBox {
+  display: flex !important;
+  flex-direction: column;
+  grid-column: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 200px;
+  margin: 0 !important;
+  padding: 12px !important;
+  box-sizing: border-box;
+}
+
+body[data-room-game-mode="ballDrop"] #customerOrdersBox {
+  grid-column: 2 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 200px;
+  margin: 0 !important;
+  box-sizing: border-box;
+}
+
+body[data-room-game-mode="ballDrop"] #ballDropHistoryBox > h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+body[data-room-game-mode="ballDrop"] #ballDropHistory {
+  flex: 0 0 auto;
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+}
+
+body[data-room-game-mode="dice"] #ballDropHistoryBox {
+  display: none !important;
+}
+
+@media (max-width: 700px) {
+  body[data-room-game-mode="ballDrop"] .bottomPanels {
+    grid-template-columns: minmax(110px, 0.31fr) minmax(0, 0.69fr) !important;
+    gap: 8px !important;
+  }
+
+  body[data-room-game-mode="ballDrop"] #ballDropHistoryBox,
+  body[data-room-game-mode="ballDrop"] #customerOrdersBox {
+    min-height: 210px;
+  }
+
+  body[data-room-game-mode="ballDrop"] #ballDropHistoryBox {
+    padding: 10px !important;
+  }
+
+  body[data-room-game-mode="ballDrop"] #ballDropHistoryBox > h2 {
+    font-size: .88rem;
+  }
+
+  body[data-room-game-mode="ballDrop"] .ballDropHistoryRow {
+    gap: 5px;
+    padding: 7px 6px;
+  }
+
+  body[data-room-game-mode="ballDrop"] .ballDropHistoryRow i {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+  }
+}
+
+@media (max-width: 430px) {
+  body[data-room-game-mode="ballDrop"] .bottomPanels {
+    grid-template-columns: minmax(100px, 0.34fr) minmax(0, 0.66fr) !important;
+    gap: 7px !important;
+  }
+
+  body[data-room-game-mode="ballDrop"] #ballDropHistoryBox,
+  body[data-room-game-mode="ballDrop"] #customerOrdersBox {
+    min-height: 190px;
+  }
+}
+
+
+/* Horizontal two-piece trap door is rendered by ball-drop.js on the canvas. */
+
+
+/* Fresh Ball Drop session: show one compact empty-results message. */
+.ballDropResults > span.emptyResult {
+  display: none;
+}
+
+.ballDropResults > span.emptyResult:first-child {
+  display: grid;
+  grid-column: 1 / -1;
+  min-height: 70px;
+  color: rgba(255,255,255,.68);
+  font-size: .9rem;
+  text-transform: none;
+}
+
+.ballDropResults > span.emptyResult:first-child::before {
+  display: none;
+}
+
+
+/* =========================================================
+   BALL DROP — SETUP CARD
+========================================================= */
+
+.ballDropSetupCard {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 14px 0 16px;
+  padding: 0;
+  border: 1px solid rgba(166, 205, 232, 0.28);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 85% 0%, rgba(105, 190, 240, 0.13), transparent 40%),
+    linear-gradient(145deg, rgba(27, 38, 47, 0.96), rgba(12, 18, 24, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 26px rgba(0, 0, 0, 0.24);
+}
+
+.ballDropSetupCard[hidden] {
+  display: none !important;
+}
+
+.ballDropSetupCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      115deg,
+      transparent 0 42%,
+      rgba(255, 255, 255, 0.035) 49%,
+      transparent 56%
+    );
+}
+
+.ballDropSetupHeader {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.ballDropSetupEyebrow {
+  display: block;
+  margin-bottom: 2px;
+  color: rgba(159, 211, 244, 0.82);
+  font-size: 0.62rem;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+}
+
+.ballDropSetupHeader h3 {
+  margin: 0;
+  color: #f7fbfd;
+  font-size: 1.08rem;
+  font-weight: 950;
+  letter-spacing: 0.02em;
+}
+
+.ballDropSetupBadge {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid rgba(111, 196, 246, 0.35);
+  border-radius: 999px;
+  background: rgba(72, 160, 215, 0.13);
+  color: #cceeff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.ballDropSetupBody {
+  position: relative;
+  z-index: 1;
+  padding: 13px 16px 16px;
+}
+
+.ballDropSetupLabel {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+}
+
+.ballDropSetupLabel > span {
+  color: #ffffff;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.ballDropSetupLabel > small {
+  max-width: 260px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.ballDropCountChoices {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.ballDropCountChoice {
+  position: relative;
+  min-width: 0;
+  min-height: 57px;
+  display: grid;
+  place-content: center;
+  gap: 1px;
+  padding: 7px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 11px;
+  outline: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025));
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ballDropCountChoice > span {
+  font-size: 1.12rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.ballDropCountChoice > small {
+  font-size: 0.58rem;
+  font-weight: 850;
+  opacity: 0.78;
+}
+
+.ballDropCountChoice:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: rgba(117, 205, 255, 0.48);
+  background:
+    linear-gradient(180deg, rgba(89, 185, 242, 0.18), rgba(55, 125, 169, 0.08));
+  color: #ffffff;
+}
+
+.ballDropCountChoice:focus-visible {
+  border-color: #86d4ff;
+  box-shadow:
+    0 0 0 3px rgba(80, 181, 239, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.ballDropCountChoice.isSelected {
+  border-color: rgba(126, 216, 255, 0.78);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(190, 236, 255, 0.2), transparent 58%),
+    linear-gradient(180deg, rgba(50, 169, 232, 0.42), rgba(26, 92, 132, 0.48));
+  color: #ffffff;
+  box-shadow:
+    0 0 0 1px rgba(114, 210, 255, 0.14),
+    0 7px 16px rgba(22, 115, 169, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.ballDropCountChoice.isSelected::after {
+  content: "✓";
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  color: #dff7ff;
+  font-size: 0.58rem;
+  font-weight: 950;
+}
+
+.ballDropCountChoice:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  transform: none;
+}
+
+@media (max-width: 620px) {
+  .ballDropSetupLabel {
+    display: block;
+  }
+
+  .ballDropSetupLabel > small {
+    display: block;
+    max-width: none;
+    margin-top: 3px;
+    text-align: left;
+  }
+
+  .ballDropCountChoices {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ballDropCountChoice {
+    min-height: 52px;
+  }
+}
+
+
+/* =========================================================
+   ROOM GAME — COLLAPSIBLE SETUP SELECTOR
+========================================================= */
+
+.gameSetupCard {
+  width: 100%;
+  margin: 12px 0;
+  padding: 0;
+  overflow: visible;
+  border: 1px solid rgba(166, 205, 232, 0.28);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 86% 0%, rgba(105, 190, 240, 0.12), transparent 42%),
+    linear-gradient(145deg, rgba(27, 38, 47, 0.96), rgba(12, 18, 24, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 26px rgba(0, 0, 0, 0.24);
+}
+
+.gameModeDetails {
+  position: relative;
+}
+
+.gameModeSummary {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 14px;
+  box-sizing: border-box;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  border-radius: 15px;
+  transition:
+    background 0.16s ease,
+    border-radius 0.16s ease;
+}
+
+.gameModeSummary::-webkit-details-marker {
+  display: none;
+}
+
+.gameModeSummary:hover {
+  background: rgba(91, 178, 230, 0.09);
+}
+
+.gameModeSummaryIcon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(118, 207, 255, 0.28);
+  border-radius: 11px;
+  background:
+    linear-gradient(145deg, rgba(71, 165, 220, 0.25), rgba(26, 75, 105, 0.28));
+  font-size: 1.05rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.11);
+}
+
+.gameModeSummaryText {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.gameModeSummaryText small {
+  color: rgba(159, 211, 244, 0.78);
+  font-size: 0.59rem;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+}
+
+.gameModeSummaryText strong {
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 0.96rem;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gameModeSummaryArrow {
+  flex: 0 0 auto;
+  color: rgba(214, 238, 250, 0.78);
+  font-size: 1.1rem;
+  font-weight: 900;
+  transition: transform 0.18s ease;
+}
+
+.gameModeDetails[open] .gameModeSummary {
+  border-radius: 15px 15px 0 0;
+  background: rgba(91, 178, 230, 0.08);
+}
+
+.gameModeDetails[open] .gameModeSummaryArrow {
+  transform: rotate(180deg);
+}
+
+.gameModeOptions {
+  display: grid;
+  gap: 7px;
+  padding: 9px 11px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  animation: gameModeOptionsOpen 0.16s ease-out;
+}
+
+@keyframes gameModeOptionsOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gameModeOption {
+  width: 100%;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 11px;
+  outline: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018));
+  color: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.gameModeOption:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(117, 205, 255, 0.43);
+  background:
+    linear-gradient(180deg, rgba(89, 185, 242, 0.16), rgba(55, 125, 169, 0.07));
+}
+
+.gameModeOption:focus-visible {
+  border-color: #86d4ff;
+  box-shadow: 0 0 0 3px rgba(80, 181, 239, 0.17);
+}
+
+.gameModeOptionIcon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 1rem;
+}
+
+.gameModeOption > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.gameModeOption strong {
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.gameModeOption small {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.64rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gameModeOption > i {
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  color: transparent;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.gameModeOption.isSelected {
+  border-color: rgba(126, 216, 255, 0.72);
+  background:
+    radial-gradient(circle at 82% 0%, rgba(190, 236, 255, 0.15), transparent 45%),
+    linear-gradient(180deg, rgba(50, 169, 232, 0.34), rgba(26, 92, 132, 0.38));
+  box-shadow:
+    0 6px 15px rgba(22, 115, 169, 0.17),
+    inset 0 1px 0 rgba(255, 255, 255, 0.13);
+}
+
+.gameModeOption.isSelected > i {
+  background: rgba(208, 246, 255, 0.18);
+  color: #e5f9ff;
+}
+
+.gameModeOption:disabled,
+.gameModeDetails.isDisabled .gameModeSummary {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.visuallyHiddenGameModeSelect {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
+.gameSetupCard .roomGameModeHint {
+  margin: 0;
+  padding: 0 14px 12px;
+  color: rgba(255, 255, 255, 0.54);
+  font-size: 0.67rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 520px) {
+  .gameModeOption small {
+    white-space: normal;
+  }
+
+  .gameModeSummary {
+    min-height: 57px;
+    padding: 9px 11px;
+  }
+}
+
+
+/* =========================================================
+   COMPACT CENTERED GAME SELECTOR
+========================================================= */
+
+.gameSetupCard {
+  width: min(330px, calc(100% - 24px));
+  margin: 12px auto;
+}
+
+.gameModeSummary {
+  min-height: 54px;
+  padding: 8px 11px;
+}
+
+.gameModeSummaryIcon {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  border-radius: 9px;
+}
+
+.gameModeSummaryText strong {
+  font-size: .88rem;
+}
+
+.gameSetupCard .roomGameModeHint {
+  padding: 0 11px 9px;
+  text-align: center;
+}
+
+/* =========================================================
+   COLOR DICE — HORIZONTAL SETUP PICKER
+========================================================= */
+
+.diceSetupCard {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 14px 0 16px;
+  padding: 0;
+  border: 1px solid rgba(166, 205, 232, .28);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 85% 0%, rgba(105, 190, 240, .13), transparent 40%),
+    linear-gradient(145deg, rgba(27, 38, 47, .96), rgba(12, 18, 24, .98));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 10px 26px rgba(0,0,0,.24);
+}
+
+.diceSetupCard[hidden] { display: none !important; }
+
+.diceSetupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.09);
+}
+
+.diceSetupEyebrow {
+  display: block;
+  margin-bottom: 2px;
+  color: rgba(159,211,244,.82);
+  font-size: .62rem;
+  font-weight: 950;
+  letter-spacing: .16em;
+}
+
+.diceSetupHeader h3 {
+  margin: 0;
+  color: #f7fbfd;
+  font-size: 1.08rem;
+  font-weight: 950;
+}
+
+.diceSetupBadge {
+  padding: 5px 9px;
+  border: 1px solid rgba(111,196,246,.35);
+  border-radius: 999px;
+  background: rgba(72,160,215,.13);
+  color: #cceeff;
+  font-size: .68rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.diceSetupBody { padding: 13px 16px 16px; }
+
+.diceSetupLabel {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+}
+
+.diceSetupLabel > span {
+  color: #fff;
+  font-size: .86rem;
+  font-weight: 900;
+}
+
+.diceSetupLabel > small {
+  color: rgba(255,255,255,.58);
+  font-size: .68rem;
+}
+
+.diceCountChoices {
+  display: flex;
+  gap: 7px;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 1px 7px;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 8px;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.diceCountChoices::-webkit-scrollbar { display: none; }
+
+.diceCountChoice {
+  position: relative;
+  flex: 0 0 66px;
+  min-height: 57px;
+  display: grid;
+  place-content: center;
+  gap: 1px;
+  padding: 7px 4px;
+  scroll-snap-align: center;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 11px;
+  outline: none;
+  background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.025));
+  color: rgba(255,255,255,.72);
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055);
+  transition:
+    transform .15s ease,
+    border-color .15s ease,
+    background .15s ease,
+    color .15s ease;
+}
+
+.diceCountChoice > span {
+  font-size: 1.12rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.diceCountChoice > small {
+  font-size: .58rem;
+  font-weight: 850;
+  opacity: .78;
+}
+
+.diceCountChoice:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: rgba(117,205,255,.48);
+  background: linear-gradient(180deg, rgba(89,185,242,.18), rgba(55,125,169,.08));
+  color: #fff;
+}
+
+.diceCountChoice:focus-visible {
+  border-color: #86d4ff;
+  box-shadow: 0 0 0 3px rgba(80,181,239,.18);
+}
+
+.diceCountChoice.isSelected {
+  border-color: rgba(126,216,255,.78);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(190,236,255,.2), transparent 58%),
+    linear-gradient(180deg, rgba(50,169,232,.42), rgba(26,92,132,.48));
+  color: #fff;
+  box-shadow:
+    0 0 0 1px rgba(114,210,255,.14),
+    0 7px 16px rgba(22,115,169,.24),
+    inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+.diceCountChoice.isSelected::after {
+  content: "✓";
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  color: #dff7ff;
+  font-size: .58rem;
+  font-weight: 950;
+}
+
+.diceCountChoice:disabled {
+  cursor: not-allowed;
+  opacity: .48;
+  transform: none;
+}
+
+@media (max-width: 520px) {
+  .gameSetupCard {
+    width: min(290px, calc(100% - 16px));
+  }
+
+  .diceSetupLabel {
+    display: block;
+  }
+
+  .diceSetupLabel > small {
+    display: block;
+    margin-top: 3px;
+  }
+
+  .diceCountChoice {
+    flex-basis: 60px;
+    min-height: 52px;
+  }
+}
+
+
+/* =========================================================
+   FORMAL GAME SETTINGS
+========================================================= */
+
+.formalGameSettingsCard {
+  width: min(430px, calc(100% - 24px));
+  margin: 16px auto 18px;
+  overflow: hidden;
+  border: 1px solid rgba(190, 205, 218, 0.22);
+  border-radius: 15px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(29, 36, 45, 0.97),
+      rgba(17, 22, 29, 0.98)
+    );
+  color: #f5f7fa;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.27),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.formalGameSettingsHeader {
+  padding: 18px 20px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.formalGameSettingsHeader h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+}
+
+.formalGameSettingsHeader p {
+  margin: 4px 0 0;
+  color: rgba(225, 232, 239, 0.62);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.formalGameSettingsFields {
+  display: grid;
+  gap: 15px;
+  padding: 17px 20px 15px;
+}
+
+.formalSettingField {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.formalSettingField[hidden] {
+  display: none !important;
+}
+
+.formalSettingField > span:first-child,
+.formalSettingField > label {
+  color: rgba(244, 247, 250, 0.88);
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.formalSelectShell {
+  position: relative;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 34px;
+  align-items: center;
+  min-height: 47px;
+  overflow: hidden;
+  border: 1px solid rgba(195, 210, 222, 0.2);
+  border-radius: 10px;
+  background: rgba(7, 11, 16, 0.43);
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.formalSelectShell:focus-within {
+  border-color: rgba(112, 182, 230, 0.72);
+  background: rgba(8, 14, 20, 0.66);
+  box-shadow: 0 0 0 3px rgba(67, 146, 202, 0.13);
+}
+
+.formalSelectIcon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 100%;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  color: #d8e6ef;
+  font-size: 0.94rem;
+}
+
+.formalQuantityIcon {
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.formalSelectShell select {
+  width: 100%;
+  min-width: 0;
+  height: 47px;
+  padding: 0 8px 0 12px;
+  border: 0;
+  outline: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.formalSelectShell select option {
+  background: #17202a;
+  color: #ffffff;
+}
+
+.formalSelectShell select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.formalSelectChevron {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 100%;
+  pointer-events: none;
+  color: rgba(225, 237, 245, 0.66);
+  font-size: 1rem;
+}
+
+.formalGameSettingsHint {
+  margin: 0;
+  padding: 0 20px 16px;
+  color: rgba(220, 229, 236, 0.48);
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 520px) {
+  .formalGameSettingsCard {
+    width: min(390px, calc(100% - 16px));
+    margin-top: 12px;
+  }
+
+  .formalGameSettingsHeader {
+    padding: 15px 16px 13px;
+  }
+
+  .formalGameSettingsFields {
+    padding: 15px 16px 13px;
+  }
+
+  .formalGameSettingsHint {
+    padding: 0 16px 14px;
+  }
+}
+
+
+/* Performance-safe mobile reductions; layout and game behavior are unchanged. */
+@media (max-width: 600px) {
+  .ballDropBoard {
+    box-shadow:
+      inset 0 0 34px rgba(0,0,0,.48),
+      inset 0 1px 0 rgba(255,255,255,.12),
+      0 10px 24px rgba(0,0,0,.28);
+  }
+
+  #ballDropCanvas {
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,.28));
+  }
+
+  .ballDropMixer {
+    box-shadow:
+      inset 0 0 15px rgba(0,0,0,.27),
+      0 4px 10px rgba(0,0,0,.13);
+  }
+}
+
+/* COLOR BALLS DROP BUTTON — FINAL COLORS */
+body[data-room-game-mode="ballDrop"] .ballDropButton {
+  background: #ffffff;
+  color: #110e0e;
+}
+
+body[data-room-game-mode="ballDrop"] .ballDropButton:hover:not(:disabled) {
+  background: #cccbcc;
+  color: #110e0e;
+}
+
+body[data-room-game-mode="ballDrop"] .ballDropButton:active:not(:disabled) {
+  background: #b9adb7;
+  color: #110e0e;
+}
