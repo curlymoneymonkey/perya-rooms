@@ -1122,7 +1122,7 @@ async function createRoom() {
 
     await stopHostPresence(true);
 
-    showLoading("Generating your Room...");
+    showLoading("Room Generated!");
 
     let roomId = "";
     let reference = null;
@@ -2410,7 +2410,7 @@ async function startApplication() {
     try {
 
         showLoading(
-            "Generating Room..."
+            "Generating your Room..."
         );
 
         currentUser =
