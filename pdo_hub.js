@@ -1,4 +1,4 @@
-import { db, realtimeDb } from './firebase.js';
+import { db, realtimeDb, auth, signInWithGoogle, logOut } from './firebase.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
 import { onValue, ref } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js';
 
@@ -12,8 +12,63 @@ const roleFilter = document.getElementById('onlineRoleFilter');
 const locationRows = document.getElementById('locationRows');
 const mapCanvas = document.getElementById('liveMapCanvas');
 const liveUpdated = document.getElementById('liveUpdated');
-const monkeyOnlineCount = document.getElementById('monkeyOnlineCount');
-const monkeyOnlineRows = document.getElementById('monkeyOnlineRows');
+const googleLoginButton = document.getElementById('googleLoginButton');
+const logoutButton = document.getElementById('logoutButton');
+const staffAccountName = document.getElementById('staffAccountName');
+const staffAvatar = document.getElementById('staffAvatar');
+
+function updateAccountUi(user) {
+  const signedIn = Boolean(user && !user.isAnonymous);
+  if (googleLoginButton) googleLoginButton.hidden = signedIn;
+  if (logoutButton) logoutButton.hidden = !signedIn;
+
+  if (staffAccountName) {
+    staffAccountName.textContent = signedIn
+      ? (user.displayName || user.email || 'Google Account')
+      : 'Not signed in';
+  }
+
+  if (staffAvatar) {
+    const initial = signedIn
+      ? String(user.displayName || user.email || 'G').trim().slice(0, 1).toUpperCase()
+      : 'P';
+    staffAvatar.textContent = initial || 'P';
+  }
+}
+
+if (googleLoginButton) {
+  googleLoginButton.addEventListener('click', async () => {
+    googleLoginButton.disabled = true;
+    googleLoginButton.textContent = 'Signing in…';
+    try {
+      await signInWithGoogle();
+      updateAccountUi(auth.currentUser);
+    } catch (error) {
+      console.error('Google sign-in failed:', error);
+      googleLoginButton.disabled = false;
+      googleLoginButton.textContent = 'Sign in with Google';
+      alert('Google sign-in failed. Please try again.');
+    }
+  });
+}
+
+if (logoutButton) {
+  logoutButton.addEventListener('click', async () => {
+    logoutButton.disabled = true;
+    logoutButton.textContent = 'Logging out…';
+    try {
+      await logOut();
+      window.location.replace('index.html');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      logoutButton.disabled = false;
+      logoutButton.textContent = 'Logout';
+      alert('Logout failed. Please try again.');
+    }
+  });
+}
+
+updateAccountUi(auth.currentUser);
 
 let sessions = [];
 let profileCache = new Map();
@@ -105,36 +160,6 @@ function renderStats(users) {
   vipOnline.textContent = vips.toLocaleString();
 }
 
-function isMonkeyMoneyPage(page = '') {
-  const normalized = String(page)
-    .trim()
-    .toLowerCase()
-    .split('?')[0]
-    .split('#')[0]
-    .replace(/^\/+|\/+$/g, '');
-
-  return normalized === 'imamonkeyandilovemoney.html'
-    || normalized.endsWith('/imamonkeyandilovemoney.html')
-    || normalized === 'imamonkeyandilovemoney';
-}
-
-function createOnlineUserRow(user) {
-  const location = [user.city, user.region, user.country].filter(Boolean).join(', ');
-  const avatar = user.photoURL
-    ? `<img src="${escapeHtml(user.photoURL)}" alt="">`
-    : `<span>${escapeHtml((user.username || 'U').slice(0, 1).toUpperCase())}</span>`;
-
-  return `<article class="online-user-row">
-    <div class="online-user-main">
-      <div class="online-avatar">${avatar}<i></i></div>
-      <div><strong>${escapeHtml(user.username)}</strong><span>${escapeHtml(user.uid)}</span></div>
-    </div>
-    <span class="online-role role-${escapeHtml(user.role)}">${escapeHtml(roleLabel(user.role))}</span>
-    <div class="online-meta"><strong>${escapeHtml(user.page || 'Unknown page')}</strong><span>${user.roomId ? `Room ${escapeHtml(user.roomId)}` : 'No room'}</span></div>
-    <div class="online-meta"><strong>${escapeHtml(location || 'Location unavailable')}</strong><span>${escapeHtml(user.device || 'unknown')} · ${escapeHtml(timeAgo(user.lastSeen))}</span></div>
-  </article>`;
-}
-
 function renderOnlineUsers(users) {
   const query = onlineSearch.value.trim().toLowerCase();
   const role = roleFilter.value;
@@ -152,25 +177,21 @@ function renderOnlineUsers(users) {
     return;
   }
 
-  onlineRows.innerHTML = filtered.slice(0, 100).map(createOnlineUserRow).join('');
-}
-
-function renderMonkeyOnlineUsers(users) {
-  if (!monkeyOnlineRows || !monkeyOnlineCount) return;
-
-  monkeyOnlineCount.textContent = users.length.toLocaleString();
-
-  if (!users.length) {
-    monkeyOnlineRows.innerHTML = '<div class="pdo-empty"><span class="pdo-empty-icon">○</span>No active monkey </div>';
-    return;
-  }
-
-  const sorted = [...users].sort(
-    (a, b) => roleRank(b.role) - roleRank(a.role)
-      || String(a.username).localeCompare(String(b.username))
-  );
-
-  monkeyOnlineRows.innerHTML = sorted.slice(0, 100).map(createOnlineUserRow).join('');
+  onlineRows.innerHTML = filtered.slice(0, 100).map((user) => {
+    const location = [user.city, user.region, user.country].filter(Boolean).join(', ');
+    const avatar = user.photoURL
+      ? `<img src="${escapeHtml(user.photoURL)}" alt="">`
+      : `<span>${escapeHtml((user.username || 'U').slice(0, 1).toUpperCase())}</span>`;
+    return `<article class="online-user-row">
+      <div class="online-user-main">
+        <div class="online-avatar">${avatar}<i></i></div>
+        <div><strong>${escapeHtml(user.username)}</strong><span>${escapeHtml(user.uid)}</span></div>
+      </div>
+      <span class="online-role role-${escapeHtml(user.role)}">${escapeHtml(roleLabel(user.role))}</span>
+      <div class="online-meta"><strong>${escapeHtml(user.page || 'Unknown page')}</strong><span>${user.roomId ? `Room ${escapeHtml(user.roomId)}` : 'No room'}</span></div>
+      <div class="online-meta"><strong>${escapeHtml(location || 'Location unavailable')}</strong><span>${escapeHtml(user.device || 'unknown')} · ${escapeHtml(timeAgo(user.lastSeen))}</span></div>
+    </article>`;
+  }).join('');
 }
 
 function renderMap(users) {
@@ -197,12 +218,8 @@ function renderMap(users) {
 
 function render() {
   const users = dedupeUsers(sessions);
-  const monkeyUsers = users.filter((user) => isMonkeyMoneyPage(user.page));
-  const generalUsers = users.filter((user) => !isMonkeyMoneyPage(user.page));
-
   renderStats(users);
-  renderOnlineUsers(generalUsers);
-  renderMonkeyOnlineUsers(monkeyUsers);
+  renderOnlineUsers(users);
   renderMap(users);
   liveUpdated.textContent = `Updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
 }
@@ -213,9 +230,6 @@ onValue(ref(realtimeDb, 'presenceSessions'), async (snapshot) => {
 }, (error) => {
   console.error('Unable to load presence:', error);
   onlineRows.innerHTML = '<div class="pdo-empty"><span class="pdo-empty-icon">!</span>Presence access was denied. Check Realtime Database rules.</div>';
-  if (monkeyOnlineRows) {
-    monkeyOnlineRows.innerHTML = '<div class="pdo-empty"><span class="pdo-empty-icon">!</span>Presence access was denied.</div>';
-  }
 });
 
 onlineSearch.addEventListener('input', render);

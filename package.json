@@ -1,0 +1,29 @@
+{
+  "name": "perya-rooms-online",
+  "version": "1.0.0",
+  "description": "",
+  "main": "account-menu.js",
+  "scripts": {
+    "build": "node build.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/curlymoneymonkey/perya-rooms.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/curlymoneymonkey/perya-rooms/issues"
+  },
+  "homepage": "https://github.com/curlymoneymonkey/perya-rooms#readme",
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "javascript-obfuscator": "^5.7.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

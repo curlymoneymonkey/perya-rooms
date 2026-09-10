@@ -4,8 +4,6 @@ import {
     authReady,
     realtimeDb,
     functions,
-    signInWithGoogle,
-    logOut
 } from "./firebase.js";
 
 import {
@@ -32,7 +30,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
 import {
-    onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 
 import {
@@ -179,7 +176,6 @@ const diceCountDisplay = document.getElementById("diceCountDisplay");
 
 const guestDiceBlurToolbar = document.getElementById("guestDiceBlurToolbar");
 const guestDiceBlurCheckbox = document.getElementById("guestDiceBlurCheckbox");
-const guestBlurModeLabel = document.getElementById("guestBlurModeLabel");
 const guestDiceSkinControl = document.getElementById("guestDiceSkinControl");
 const guestDiceSkinSelect = document.getElementById("guestDiceSkinSelect");
 const guestDiceSkinGallery = document.getElementById("guestDiceSkinGallery");
@@ -591,7 +587,7 @@ function wait(milliseconds) {
 
 
 function clampDiceCount(value) {
-    return Math.min(30, Math.max(1, Number(value) || 3));
+    return Math.min(30, Math.max(1, Math.round(Number(value) || 3)));
 }
 
 
@@ -775,13 +771,28 @@ function showDice(container, values, className = "dice") {
 }
 
 function startPreparingRoll() {
-    if (roomStatus) roomStatus.textContent = nextPreparingRollMessage();
+    if (roomStatus) {
+        roomStatus.textContent = nextPreparingRollMessage();
+    }
+
+    document.body.classList.remove("diceRolling");
     document.body.classList.add("dicePreparingStage");
+
     for (const die of results.children) {
-        if (die instanceof HTMLImageElement) {
-            die.classList.remove("shake");
-            die.classList.add("dicePreparing");
-        }
+        if (!(die instanceof HTMLImageElement)) continue;
+
+        // Remove animation classes left from the previous roll.
+        die.classList.remove(
+            "shake",
+            "diceResultReveal",
+            "dicePreparing"
+        );
+
+        // Force the browser to reset the animation.
+        void die.offsetWidth;
+
+        // Start a fresh preparation wobble.
+        die.classList.add("dicePreparing");
     }
 }
 
@@ -850,19 +861,27 @@ function renderHistory(room) {
 
     history.innerHTML = "";
 
+    /*
+     * Show the newest roll first, including the current result.
+     * Duplicate prevention is handled by saving history only on the server.
+     */
     const roomHistory = Array.isArray(room?.history)
-        ? room.history.slice(-10).reverse()
+        ? room.history.slice(-7).reverse()
         : [];
 
     if (roomHistory.length === 0) {
+
         const empty = document.createElement("p");
+
         empty.className = "emptyHistory";
         empty.textContent = "No rolls yet.";
+
         history.appendChild(empty);
         return;
     }
 
-    roomHistory.forEach((roll, index) => {
+    roomHistory.forEach(roll => {
+
         const diceValues =
             typeof roll === "string"
                 ? roll
@@ -876,25 +895,21 @@ function renderHistory(room) {
                     ? roll.dice
                     : [];
 
-        if (diceValues.length === 0) return;
-
-        const section = document.createElement("section");
-        section.className = "historyRollSection";
-
-        const row = document.createElement("div");
-        row.className = "historyRow";
-
-        showDice(row, diceValues, "historyDice");
-
-        if (index === 0) {
-            const label = document.createElement("p");
-            label.className = "historyRollPosition";
-            label.textContent = "Current Result";
-            section.append(label);
+        if (diceValues.length === 0) {
+            return;
         }
 
-        section.appendChild(row);
-        history.appendChild(section);
+        const row = document.createElement("div");
+
+        row.className = "historyRow";
+
+        showDice(
+            row,
+            diceValues,
+            "historyDice"
+        );
+
+        history.appendChild(row);
     });
 }
 
@@ -1185,7 +1200,7 @@ async function joinRoom(roomId) {
         await stopHostPresence(true);
     }
 
-    showLoading(`Room ID: ${cleanedRoomId}...`);
+    showLoading(`Entering ${cleanedRoomId}...`);
 
     // ==========================
     // Check temporary guest room
@@ -1457,20 +1472,8 @@ function updateScreen() {
         results.style.display = colorBallsSelected ? "none" : "";
     }
     if (guestDiceBlurToolbar) {
-        // The host can use Anti-Restriction Mode for either Color Dice
-        // or the complete Color Balls machine.
-        guestDiceBlurToolbar.hidden = !isHost;
-        if (isHost) {
-            guestDiceBlurToolbar.style.removeProperty("display");
-        } else {
-            guestDiceBlurToolbar.style.setProperty("display", "none", "important");
-        }
-    }
-
-    if (guestBlurModeLabel) {
-        guestBlurModeLabel.textContent = colorBallsSelected
-            ? "Blur Machine (Anti-Restriction Mode)"
-            : "Blur Dice (Anti-Restriction Mode)";
+        guestDiceBlurToolbar.hidden = colorBallsSelected;
+        guestDiceBlurToolbar.style.display = colorBallsSelected ? "none" : "";
     }
     if (diceHistoryBox) {
         diceHistoryBox.hidden = colorBallsSelected;
@@ -1806,15 +1809,25 @@ async function rollDice() {
     try {
         // Start the Firebase request first so no network time is wasted.
         const rollRequest = startSecureRoll({
-            roomType: "guest",
-            roomId: currentRoomId
-        });
+    roomType: "guest",
+    roomId: currentRoomId
+});
 
-        // Give instant feedback while Firebase prepares the secure result.
-        // Keep the existing dice visible and use only a slow transform wobble.
-        startPreparingRoll();
+const preparingStartedAt = performance.now();
 
-        const response = await rollRequest;
+startPreparingRoll();
+
+const response = await rollRequest;
+
+const preparingElapsed =
+    performance.now() - preparingStartedAt;
+
+const preparingRemaining =
+    PREPARING_WOBBLE_DURATION_MS - preparingElapsed;
+
+if (preparingRemaining > 0) {
+    await wait(preparingRemaining);
+}
 
 
         const finalResult = Array.isArray(response.data?.result)
@@ -1915,19 +1928,6 @@ async function updateDiceCount() {
             roomId: currentRoomId,
             amount
         });
-
-        // Immediately display the newly selected number of idle white dice.
-        // The Firestore update also clears latestResult, so this remains the
-        // authoritative idle state for the host and all connected viewers.
-        showWhiteDice(amount);
-
-        if (currentResult) {
-            currentResult.innerHTML = "";
-        }
-
-        if (currentResultPanel) {
-            currentResultPanel.hidden = true;
-        }
     } catch (error) {
         console.error("Could not change dice count:", error);
 
@@ -2143,120 +2143,6 @@ async function openProfileByExactUsername() {
     }
 }
 
-async function routeGoogleUser(user) {
-    const userSnapshot = await getDoc(doc(db, "users", user.uid));
-    const username = userSnapshot.exists()
-        ? String(userSnapshot.data().username || "").trim()
-        : "";
-
-    window.location.href = username ? "dashboard.html" : "username.html";
-}
-
-async function updateAccountControls(user) {
-    const isGoogleUser = Boolean(
-        user &&
-        !user.isAnonymous &&
-        user.providerData.some(
-            provider => provider.providerId === "google.com"
-        )
-    );
-
-    if (signedOutControls) {
-        signedOutControls.hidden = isGoogleUser;
-    }
-
-    if (signedInControls) {
-        signedInControls.hidden = !isGoogleUser;
-    }
-
-    // The guest instruction must only appear while signed out.
-    if (guestText) {
-        guestText.hidden = isGoogleUser;
-    }
-
-    if (accountName) {
-        accountName.textContent = isGoogleUser
-            ? (user.displayName || user.email || "Creator")
-            : "";
-
-        const oldBadge = document.getElementById("accountVipBadge");
-        if (oldBadge) oldBadge.remove();
-
-        if (isGoogleUser) {
-            try {
-                const userSnapshot = await getDoc(doc(db, "users", user.uid));
-                const isVip = userSnapshot.exists() && userSnapshot.data().vip === true;
-
-                if (isVip) {
-                    const badge = document.createElement("span");
-                    badge.id = "accountVipBadge";
-                    badge.textContent = "VIP";
-                    badge.setAttribute("aria-label", "VIP member");
-                    badge.style.cssText = [
-                        "display:inline-flex",
-                        "align-items:center",
-                        "margin-left:7px",
-                        "padding:3px 8px",
-                        "border-radius:999px",
-                        "background:linear-gradient(135deg,#ffd700,#ff9d00)",
-                        "color:#2a1800",
-                        "font-size:11px",
-                        "font-weight:800",
-                        "letter-spacing:.5px",
-                        "vertical-align:middle"
-                    ].join(";");
-                    accountName.insertAdjacentElement("afterend", badge);
-                }
-            } catch (error) {
-                console.error("Could not load VIP status:", error);
-            }
-        }
-    }
-}
-
-if (googleSignInButton) {
-    googleSignInButton.addEventListener("click", async () => {
-        googleSignInButton.disabled = true;
-        authMessage.textContent = "Opening Google sign-in...";
-
-        try {
-            const user = await signInWithGoogle();
-            authMessage.textContent = "Signed in successfully.";
-            await routeGoogleUser(user);
-        } catch (error) {
-            console.error("Google sign-in failed:", error);
-            authMessage.textContent = error.code === "auth/popup-closed-by-user"
-                ? "Google sign-in was cancelled."
-                : "Could not sign in with Google.";
-            googleSignInButton.disabled = false;
-        }
-    });
-}
-
-if (dashboardButton) {
-    dashboardButton.addEventListener("click", async () => {
-        if (auth.currentUser && !auth.currentUser.isAnonymous) {
-            await routeGoogleUser(auth.currentUser);
-        }
-    });
-}
-
-if (signOutButton) {
-    signOutButton.addEventListener("click", async () => {
-        signOutButton.disabled = true;
-        try {
-            await logOut();
-            window.location.href = "index.html";
-        } catch (error) {
-            console.error("Sign out failed:", error);
-            authMessage.textContent = "Could not sign out.";
-            signOutButton.disabled = false;
-        }
-    });
-}
-
-onAuthStateChanged(auth, updateAccountControls);
-
 if (rollButton) {
     rollButton.addEventListener(
         "click",
@@ -2418,7 +2304,7 @@ async function startApplication() {
 
         if (!currentUser?.uid) {
             throw new Error(
-                "Could not get your user ID. Please check your internet connection and try again."
+                "Failed!"
             );
         }
 
@@ -2443,13 +2329,13 @@ async function startApplication() {
     } catch (error) {
 
         console.error(
-            "Application startup failed:",
+            "Failed!",
             error
         );
 
         showLoading(
             error.message ||
-            "The Room could not be opened."
+            "Failed!"
         );
     }
 }

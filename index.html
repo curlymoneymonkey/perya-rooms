@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -7,529 +8,620 @@
     <link rel="preconnect" href="https://asia-southeast1-peryadice.cloudfunctions.net" crossorigin>
     <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="//asia-southeast1-peryadice.cloudfunctions.net">
-    <title>PERYA ROOMS ONLINE</title>
+    <title>PERYA DICE</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="preload" as="image" href="images/PERYA.png">
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="ball-drop.css">
+    <link rel="stylesheet" href="dist/styles.css">
 
-    <style>
-        .diceSkinControl {
-            width: min(520px, 100%);
-            margin: 8px auto 12px;
-            position: relative;
-        }
-        .diceSkinControl > label {
-            display: block;
-            margin: 0 0 5px;
-            font-size: 12px;
-            font-weight: 800;
-            opacity: .9;
-        }
-        .diceSkinControl > select { display: none; }
-        .diceSkinControl .joinMessage {
-            min-height: 0;
-            margin: 4px 0 0;
-            font-size: 11px;
-        }
-        .diceSkinPicker { position: relative; width: 100%; }
-        .diceSkinPickerButton,
-        .diceSkinOption {
-            width: 100%;
-            min-height: 36px;
-            padding: 6px 9px;
-            border: 1px solid rgba(255,255,255,.18);
-            border-radius: 8px;
-            background: rgba(8,12,20,.82);
-            color: #fff;
-            font: inherit;
-        }
-        .diceSkinPickerButton {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            text-align: left;
-            cursor: pointer;
-        }
-        .diceSkinPickerButton:hover { border-color: rgba(111,178,255,.75); }
-        .diceSkinSelectedName {
-            flex: 0 1 120px;
-            min-width: 72px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 13px;
-            font-weight: 800;
-        }
-        .diceSkinMiniPreview {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            min-width: 0;
-            overflow: hidden;
-        }
-        .diceSkinMiniPreview img {
-            width: 18px;
-            height: 18px;
-            flex: 0 0 18px;
-            object-fit: contain;
-        }
-        .diceSkinArrow { margin-left: auto; font-size: 10px; opacity: .8; }
-        .diceSkinOptions {
-            position: absolute;
-            z-index: 50;
-            top: calc(100% + 4px);
-            left: 0;
-            right: 0;
-            max-height: 230px;
-            overflow-y: auto;
-            padding: 4px;
-            border: 1px solid rgba(255,255,255,.2);
-            border-radius: 9px;
-            background: #111722;
-            box-shadow: 0 14px 35px rgba(0,0,0,.45);
-        }
-        .diceSkinOptions[hidden] { display: none !important; }
-        .diceSkinOption {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            min-height: 34px;
-            margin: 0 0 3px;
-            text-align: left;
-            cursor: pointer;
-            border-color: transparent;
-            background: transparent;
-        }
-        .diceSkinOption:last-child { margin-bottom: 0; }
-        .diceSkinOption:hover:not(:disabled) { background: rgba(111,178,255,.13); }
-        .diceSkinOption.isSelected {
-            background: rgba(111,178,255,.18);
-            border-color: rgba(111,178,255,.4);
-        }
-        .diceSkinOption:disabled { cursor: not-allowed; opacity: .45; }
-        .diceSkinOptionName {
-            flex: 0 1 120px;
-            min-width: 72px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 12px;
-            font-weight: 800;
-        }
-        .diceSkinOptionStatus {
-            margin-left: auto;
-            flex: 0 0 auto;
-            font-size: 9px;
-            font-weight: 900;
-            white-space: nowrap;
-        }
-        .diceSkinOptionStatus.unavailable { color: #ffb4ad; }
-        @media (max-width: 520px) {
-            .diceSkinControl { width: 100%; }
-            .diceSkinSelectedName,
-            .diceSkinOptionName { flex-basis: 82px; min-width: 58px; }
-            .diceSkinMiniPreview { gap: 2px; }
-            .diceSkinMiniPreview img { width: 16px; height: 16px; flex-basis: 16px; }
-            .diceSkinOptionStatus { font-size: 8px; }
-        }
-    
-        /* Compact inline dice-skin selector placed below Roll Dice */
-        .roomCard .diceSkinControl {
-            width: min(520px, 100%);
-            margin: 10px auto 4px;
-            display: grid;
-            grid-template-columns: auto minmax(0, 1fr);
-            align-items: center;
-            gap: 6px 8px;
-        }
-        .roomCard .diceSkinControl > label {
-            display: block;
-            margin: 0;
-            white-space: nowrap;
-            font-size: 12px;
-        }
-        .roomCard .diceSkinControl .diceSkinPicker { min-width: 0; }
-        .roomCard .diceSkinControl .joinMessage {
-            grid-column: 1 / -1;
-            margin-top: 0;
-        }
-        .roomCard .diceSkinPickerButton { min-height: 34px; padding: 5px 8px; }
-        @media (max-width: 420px) {
-            .roomCard .diceSkinControl { gap: 5px; }
-            .roomCard .diceSkinControl > label { font-size: 11px; }
-            .roomCard .diceSkinSelectedName { flex-basis: 68px; min-width: 52px; font-size: 11px; }
-            .roomCard .diceSkinMiniPreview img { width: 14px; height: 14px; flex-basis: 14px; }
-        }
+<style>
+    .diceSkinControl {
+        width: min(520px, 100%);
+        margin: 8px auto 12px;
+        position: relative;
+    }
+    .diceSkinControl > label {
+        display: block;
+        margin: 0 0 5px;
+        font-size: 12px;
+        font-weight: 800;
+        opacity: .9;
+    }
+    .diceSkinControl > select { display: none; }
+    .diceSkinControl .joinMessage {
+        min-height: 0;
+        margin: 4px 0 0;
+        font-size: 11px;
+    }
+    .diceSkinPicker { position: relative; width: 100%; }
+    .diceSkinPickerButton,
+    .diceSkinOption {
+        width: 100%;
+        min-height: 36px;
+        padding: 6px 9px;
+        border: 1px solid rgba(255,255,255,.18);
+        border-radius: 8px;
+        background: rgba(8,12,20,.82);
+        color: #fff;
+        font: inherit;
+    }
+    .diceSkinPickerButton {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        text-align: left;
+        cursor: pointer;
+    }
+    .diceSkinPickerButton:hover { border-color: rgba(111,178,255,.75); }
+    .diceSkinSelectedName {
+        flex: 0 1 120px;
+        min-width: 72px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 13px;
+        font-weight: 800;
+    }
+    .diceSkinMiniPreview {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        min-width: 0;
+        overflow: hidden;
+    }
+    .diceSkinMiniPreview img {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 18px;
+        object-fit: contain;
+    }
+    .diceSkinArrow { margin-left: auto; font-size: 10px; opacity: .8; }
+    .diceSkinOptions {
+        position: absolute;
+        z-index: 50;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        max-height: 230px;
+        overflow-y: auto;
+        padding: 4px;
+        border: 1px solid rgba(255,255,255,.2);
+        border-radius: 9px;
+        background: #111722;
+        box-shadow: 0 14px 35px rgba(0,0,0,.45);
+    }
+    .diceSkinOptions[hidden] { display: none !important; }
+    .diceSkinOption {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 34px;
+        margin: 0 0 3px;
+        text-align: left;
+        cursor: pointer;
+        border-color: transparent;
+        background: transparent;
+    }
+    .diceSkinOption:last-child { margin-bottom: 0; }
+    .diceSkinOption:hover:not(:disabled) { background: rgba(111,178,255,.13); }
+    .diceSkinOption.isSelected {
+        background: rgba(111,178,255,.18);
+        border-color: rgba(111,178,255,.4);
+    }
+    .diceSkinOption:disabled { cursor: not-allowed; opacity: .45; }
+    .diceSkinOptionName {
+        flex: 0 1 120px;
+        min-width: 72px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+        font-weight: 800;
+    }
+    .diceSkinOptionStatus {
+        margin-left: auto;
+        flex: 0 0 auto;
+        font-size: 9px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+    .diceSkinOptionStatus.unavailable { color: #ffb4ad; }
+    @media (max-width: 520px) {
+        .diceSkinControl { width: 100%; }
+        .diceSkinSelectedName,
+        .diceSkinOptionName { flex-basis: 82px; min-width: 58px; }
+        .diceSkinMiniPreview { gap: 2px; }
+        .diceSkinMiniPreview img { width: 16px; height: 16px; flex-basis: 16px; }
+        .diceSkinOptionStatus { font-size: 8px; }
+    }
 
-        /* Clean header dice-skin selector */
-        .diceSkinHeaderBar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            width: 100%;
+    .roomCard .diceSkinControl {
+        width: min(520px, 100%);
+        margin: 10px auto 4px;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 6px 8px;
+    }
+    .roomCard .diceSkinControl > label {
+        display: block;
+        margin: 0;
+        white-space: nowrap;
+        font-size: 12px;
+    }
+    .roomCard .diceSkinControl .diceSkinPicker { min-width: 0; }
+    .roomCard .diceSkinControl .joinMessage {
+        grid-column: 1 / -1;
+        margin-top: 0;
+    }
+    .roomCard .diceSkinPickerButton { min-height: 34px; padding: 5px 8px; }
+    @media (max-width: 420px) {
+        .roomCard .diceSkinControl { gap: 5px; }
+        .roomCard .diceSkinControl > label { font-size: 11px; }
+        .roomCard .diceSkinSelectedName { flex-basis: 68px; min-width: 52px; font-size: 11px; }
+        .roomCard .diceSkinMiniPreview img { width: 14px; height: 14px; flex-basis: 14px; }
+    }
+
+    .diceSkinHeaderBar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+    }
+    .diceSkinBrandText {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-width: 0;
+        white-space: nowrap;
+    }
+    .diceSkinHeaderBar .diceSkinControl {
+        width: auto;
+        margin: 0 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .diceSkinHeaderBar .diceSkinControl > label {
+        display: block;
+        margin: 0;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+    .diceSkinHeaderBar .diceSkinPicker { width: auto; min-width: 0; }
+    .diceSkinHeaderBar .diceSkinPickerButton {
+        width: auto;
+        min-width: 102px;
+        min-height: 30px;
+        padding: 4px 8px;
+        gap: 8px;
+    }
+    .diceSkinHeaderBar .diceSkinSelectedName {
+        flex: 1 1 auto;
+        min-width: 58px;
+        max-width: 120px;
+        font-size: 11px;
+    }
+    .diceSkinHeaderBar .diceSkinOptions {
+        left: auto;
+        right: 0;
+        width: 190px;
+    }
+    .diceSkinHeaderBar .diceSkinOption {
+        min-height: 31px;
+        padding: 5px 8px;
+    }
+    .diceSkinHeaderBar .diceSkinOptionName {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 11px;
+    }
+    .diceSkinHeaderBar .joinMessage {
+        display: none;
+    }
+    @media (max-width: 520px) {
+        .diceSkinHeaderBar { gap: 7px; }
+        .diceSkinBrandText strong { font-size: 11px; }
+        .diceSkinHeaderBar .diceSkinControl > label { font-size: 0; }
+        .diceSkinHeaderBar .diceSkinControl > label::after {
+            content: "🎨";
+            font-size: 12px;
         }
-        .diceSkinBrandText {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            min-width: 0;
-            white-space: nowrap;
-        }
-        .diceSkinHeaderBar .diceSkinControl {
-            width: auto;
-            margin: 0 0 0 auto;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .diceSkinHeaderBar .diceSkinControl > label {
-            display: block;
-            margin: 0;
-            font-size: 11px;
-            white-space: nowrap;
-        }
-        .diceSkinHeaderBar .diceSkinPicker { width: auto; min-width: 0; }
         .diceSkinHeaderBar .diceSkinPickerButton {
-            width: auto;
-            min-width: 102px;
-            min-height: 30px;
-            padding: 4px 8px;
-            gap: 8px;
-        }
-        .diceSkinHeaderBar .diceSkinSelectedName {
-            flex: 1 1 auto;
-            min-width: 58px;
+            min-width: 88px;
             max-width: 120px;
-            font-size: 11px;
         }
-        .diceSkinHeaderBar .diceSkinOptions {
-            left: auto;
-            right: 0;
-            width: 190px;
-        }
-        .diceSkinHeaderBar .diceSkinOption {
-            min-height: 31px;
-            padding: 5px 8px;
-        }
-        .diceSkinHeaderBar .diceSkinOptionName {
-            flex: 1 1 auto;
-            min-width: 0;
-            font-size: 11px;
-        }
-        .diceSkinHeaderBar .joinMessage {
-            display: none;
-        }
-        @media (max-width: 520px) {
-            .diceSkinHeaderBar { gap: 7px; }
-            .diceSkinBrandText strong { font-size: 11px; }
-            .diceSkinHeaderBar .diceSkinControl > label { font-size: 0; }
-            .diceSkinHeaderBar .diceSkinControl > label::after {
-                content: "🎨";
-                font-size: 12px;
-            }
-            .diceSkinHeaderBar .diceSkinPickerButton {
-                min-width: 88px;
-                max-width: 120px;
-            }
-            .diceSkinHeaderBar .diceSkinOptions { width: 170px; }
-        }
-
+        .diceSkinHeaderBar .diceSkinOptions { width: 170px; }
+    }
 </style>
 
 <style>
-.profileSearchBox .joinControls{
-display:flex;
-justify-content:center;
-align-items:center;
-gap:10px;
-flex-wrap:wrap;
-}
-#profileUsernameSearch{
-width:min(320px,100%);
-height:46px;
-padding:0 16px;
-text-align:center !important;
-font-size:16px;
-font-weight:700;
-}
-#profileUsernameSearch::placeholder{
-text-align:center;
-}
+    .profileSearchBox .joinControls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    #profileUsernameSearch {
+        width: min(320px,100%);
+        height: 46px;
+        padding: 0 16px;
+        text-align: center !important;
+        font-size: 16px;
+        font-weight: 700;
+    }
+    #profileUsernameSearch::placeholder {
+        text-align: center;
+    }
 </style>
 
+<style>
+    .dice.diceResultReveal {
+        animation: diceResultReveal 180ms ease-out both;
+        will-change: transform, opacity;
+    }
 
-    <style>
-        /* Lightweight white-to-result reveal. Uses only transform and opacity. */
+    @keyframes diceResultReveal {
+        from {
+            opacity: 0.35;
+            transform: scale(0.86);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
         .dice.diceResultReveal {
-            animation: diceResultReveal 180ms ease-out both;
-            will-change: transform, opacity;
+            animation: none;
         }
-
-        @keyframes diceResultReveal {
-            from {
-                opacity: 0.35;
-                transform: scale(0.86);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .dice.diceResultReveal {
-                animation: none;
-            }
-        }
-    </style>
-
+    }
+</style>
 
 <style>
-
 </style>
+
 </head>
+
 <body>
     <header class="siteHeader">
         <img class="logo" src="images/PERYA.png" alt="PERYA DICE" decoding="async" fetchpriority="high">
     </header>
 
-    <main>
 
-        <section id="loadingScreen" class="card loadingCard">
-            <h2 id="loadingMessage"></h2>
-        </section>
+<main>
 
-        <section id="gameScreen" hidden>
-            <section id="roomGameSelectorCard"
-                     class="formalGameSettingsCard"
-                     aria-labelledby="gameSettingsTitle">
-                <header class="formalGameSettingsHeader">
-                    <h2 id="gameSettingsTitle">Game Settings</h2>
-                    <p>Configure the current game.</p>
-                </header>
+    <section id="loadingScreen" class="card loadingCard">
+        <h2 id="loadingMessage">Connecting to your Room...</h2>
+    </section>
 
-                <div class="formalGameSettingsFields">
-                    <label class="formalSettingField" for="roomGameModeSelect">
-                        <span>Game</span>
-                        <span class="formalSelectShell">
-                            <span id="formalGameIcon"
-                                  class="formalSelectIcon"
-                                  aria-hidden="true">🎲</span>
+    <section id="gameScreen" hidden>
+        <section id="roomGameSelectorCard"
+                 class="formalGameSettingsCard"
+                 aria-labelledby="gameSettingsTitle">
+            <header class="formalGameSettingsHeader">
+                <h2 id="gameSettingsTitle">Game Settings</h2>
+                <p>Configure the current game.</p>
+            </header>
 
-                            <select id="roomGameModeSelect"
-                                    aria-label="Select room game">
-                                <option value="dice">Color Dice</option>
-                                <option value="ballDrop">Color Balls</option>
-                            </select>
+            <div class="formalGameSettingsFields">
+                <label class="formalSettingField" for="roomGameModeSelect">
+                    <span>Game</span>
+                    <span class="formalSelectShell">
+                        <span id="formalGameIcon"
+                              class="formalSelectIcon"
+                              aria-hidden="true">🎲</span>
 
-                            <span class="formalSelectChevron"
-                                  aria-hidden="true">⌄</span>
-                        </span>
-                    </label>
-
-                    <div id="hostDiceCountControl"
-                         class="formalSettingField"
-                         hidden>
-                        <label for="diceCount">Number of Dice</label>
-
-                        <span class="formalSelectShell">
-                            <span class="formalSelectIcon formalQuantityIcon"
-                                  aria-hidden="true">#</span>
-
-                            <select id="diceCount" aria-label="Number of dice">
-                                <option value="1">1 Die</option>
-                                <option value="2">2 Dice</option>
-                                <option value="3" selected>3 Dice</option>
-                                <option value="4">4 Dice</option>
-                                <option value="5">5 Dice</option>
-                                <option value="6">6 Dice</option>
-                                <option value="7">7 Dice</option>
-                                <option value="8">8 Dice</option>
-                                <option value="9">9 Dice</option>
-                                <option value="10">10 Dice</option>
-                                <option value="11">11 Dice</option>
-                                <option value="12">12 Dice</option>
-                                <option value="13">13 Dice</option>
-                                <option value="14">14 Dice</option>
-                                <option value="15">15 Dice</option>
-                                <option value="16">16 Dice</option>
-                                <option value="17">17 Dice</option>
-                                <option value="18">18 Dice</option>
-                                <option value="19">19 Dice</option>
-                                <option value="20">20 Dice</option>
-                                <option value="21">21 Dice</option>
-                                <option value="22">22 Dice</option>
-                                <option value="23">23 Dice</option>
-                                <option value="24">24 Dice</option>
-                                <option value="25">25 Dice</option>
-                                <option value="26">26 Dice</option>
-                                <option value="27">27 Dice</option>
-                                <option value="28">28 Dice</option>
-                                <option value="29">29 Dice</option>
-                                <option value="30">30 Dice</option>
-                            </select>
-
-                            <span class="formalSelectChevron" aria-hidden="true">⌄</span>
-                        </span>
-                    </div>
-
-                    <div id="hostBallDropCountControl"
-                         class="formalSettingField"
-                         hidden>
-                        <label for="ballDropCountDisplay">Number of Balls</label>
-
-                        <span class="formalSelectShell">
-                            <span class="formalSelectIcon formalQuantityIcon"
-                                  aria-hidden="true">#</span>
-
-                            <select id="ballDropCountDisplay"
-                                    aria-label="Number of Ball Drop balls">
-                                <option value="1">1 Ball</option>
-                                <option value="2">2 Balls</option>
-                                <option value="3" selected>3 Balls</option>
-                                <option value="4">4 Balls</option>
-                                <option value="5">5 Balls</option>
-                                <option value="6">6 Balls</option>
-                            </select>
-
-                            <span class="formalSelectChevron"
-                                  aria-hidden="true">⌄</span>
-                        </span>
-                    </div>
-                </div>
-
-                <p id="roomGameModeHint"
-                   class="formalGameSettingsHint">
-                    The host chooses the game for everyone in this room.
-                </p>
-            </section>
-
-            <div id="hostSettings" class="hostSettings" hidden>
-                <div class="hostWebsiteBrand diceSkinHeaderBar" aria-label="Perya Rooms website">
-                    <div id="roomGameBrand"
-                         class="diceSkinBrandText"
-                         aria-live="polite">
-                        <strong id="roomGameBrandPrimary">🌐 perya-rooms.com</strong>
-                    </div>
-
-                    <strong id="roomGameBrandSecondary"
-                            class="roomGameBrandSecondary"
-                            hidden>⚪ Color Balls</strong>
-
-                    <div id="guestDiceSkinControl" class="diceSkinControl" hidden>
-                        <label for="guestDiceSkinSelect">🎨 Dice Skin:</label>
-                        <select id="guestDiceSkinSelect" aria-label="Choose dice skin">
-                            <option value="default">Default</option>
+                        <select id="roomGameModeSelect"
+                                aria-label="Select room game">
+                            <option value="dice">Color Dice</option>
+                            <option value="ballDrop">Color Balls</option>
                         </select>
-                        <div class="diceSkinPicker">
-                            <button id="guestDiceSkinPickerButton" class="diceSkinPickerButton" type="button" aria-haspopup="listbox" aria-expanded="false">
-                                <span id="guestDiceSkinSelectedName" class="diceSkinSelectedName">Default</span>
-                                <span class="diceSkinArrow" aria-hidden="true">▼</span>
-                            </button>
-                            <div id="guestDiceSkinGallery" class="diceSkinOptions" role="listbox" hidden></div>
-                        </div>
-                        <p id="guestDiceSkinMessage" class="joinMessage"></p>
-                    </div>
-                </div>
-            </div>
 
-            <section class="card roomCard guestRoomCard">
-                <p id="roleText" class="roleText"></p>
-                <p id="roomStatus" class="roomStatus" aria-live="polite"></p>
-
-                <div id="results" class="results"></div>
-
-                <div class="gameIdBox">
-                    <strong>Room ID:</strong>
-                    <span id="gameId">-----</span>
-                    <button id="copyGameId" class="smallButton" type="button">📋</button>
-                </div>
-
-                <button id="rollButton" class="rollButton" type="button" hidden>🎲 Roll Dice</button>
-
-                <p id="waitingText" class="waitingText" hidden>Only the room creator can roll.</p>
-
-                <section id="ballDropGame" class="ballDropGame" hidden aria-label="Color Balls game">
-                    <div class="ballDropTopline"><span>Color Balls</span><strong id="ballDropStatus" aria-live="polite">Ready</strong></div>
-                    <div id="ballDropMixer" class="ballDropMixer" aria-label="Ball mixer">
-                        <span class="ballDropHolderBall" data-holder-ball="0"></span><span class="ballDropHolderBall" data-holder-ball="1"></span><span class="ballDropHolderBall" data-holder-ball="2"></span>
-                    </div>
-                    <div id="ballDropBoard" class="ballDropBoard">
-                        <div class="ballDropSlotBacks" aria-hidden="true"><span class="purple"></span><span class="yellow"></span><span class="red"></span><span class="green"></span><span class="orange"></span><span class="blue"></span></div>
-                        <canvas id="ballDropCanvas" aria-label="Color Balls peg board"></canvas>
-                        <div class="ballDropSlotFronts" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-                        <div class="ballDropSlotNames" aria-hidden="true"><span>Purple</span><span>Yellow</span><span>Red</span><span>Green</span><span>Orange</span><span>Blue</span></div>
-                    </div>
-                    <button id="ballDropButton" class="rollButton ballDropButton" type="button" hidden>⚪ ROLL &amp; RELEASE BALLS</button>
-                    <p id="ballDropWaitingText" class="waitingText" hidden>Only the room creator can drop the balls.</p>
-                    <div class="ballDropResultsWrap"><h2>Results</h2><div id="ballDropResults" class="ballDropResults"><span class="waiting">?</span><span class="waiting">?</span><span class="waiting">?</span></div></div>
-                </section>
-
-            </section>
-
-            <div id="guestDiceBlurToolbar" class="hostHistoryToolbar guestDiceBlurToolbar" hidden>
-                <div id="guestDiceBlurControl" class="hostDiceBlurControl">
-                    <label for="guestDiceBlurCheckbox">
-                        <input id="guestDiceBlurCheckbox" type="checkbox">
-                        <span id="guestBlurModeLabel">Blur Dice (Anti-Restriction Mode)</span>
-                    </label>
-                </div>
-            </div>
-            <script type="module" src="presence.js"></script>
-            <div class="bottomPanels guestBottomPanels">
-                <section id="diceHistoryBox" class="card historyBox">
-                    <h2>Previous Rolls</h2>
-                    <div id="history"></div>
-                </section>
-
-
-                <section id="ballDropHistoryBox" class="card historyBox ballDropHistoryBox" hidden>
-                    <h2>Previous Drops</h2>
-                    <div id="ballDropHistory" class="ballDropHistory"><p>No drops yet.</p></div>
-                </section>
-
-                <section class="card joinBox guestJoinBox">
-                    <h2>Enter & Verify a Room</h2>
-
-                    <div class="joinControls">
-                        <input
-                            id="joinRoomId"
-                            type="text"
-                            maxlength="20"
-                            autocomplete="off"
-                            placeholder="Enter Room ID"
-                        >
-                        <button id="joinRoomButton" type="button">Join Room</button>
-                    </div>
-
-                    <p id="joinMessage" class="joinMessage"></p>
-                    <p>Join an existing dice room and observe every roll in real time. Only the room creator can roll.</p>
-                </section>
-            </div>
-
-
-            <section id="rollAsGuestSection" class="rollAsGuestSection" hidden>
-                <button id="rollAsGuestButton" class="rollAsGuestButton" type="button">
-                    <span class="rollAsGuestIcon" aria-hidden="true">🎲</span>
-                    <span class="rollAsGuestText">
-                        <strong>Generate A Room</strong>
-                        <small></small>
+                        <span class="formalSelectChevron"
+                              aria-hidden="true">⌄</span>
                     </span>
-                    <span class="rollAsGuestArrow" aria-hidden="true">→</span>
-                </button>
-            </section>
+                </label>
 
-            <section class="card about guestAbout">
-                <h2>Welcome to Perya Rooms Online!</h2>
-                <p>Enjoy a <strong>100% ad-free</strong> online dice roller.</p>
-                <p>Share your Room ID so other people can watch every roll live.</p>
+                <div id="hostDiceCountControl"
+                     class="formalSettingField"
+                     hidden>
+                    <label for="diceCount">Number of Dice</label>
+
+                    <span class="formalSelectShell">
+                        <span class="formalSelectIcon formalQuantityIcon"
+                              aria-hidden="true">#</span>
+
+                        <select id="diceCount" aria-label="Number of dice">
+                            <option value="1">1 Die</option>
+                            <option value="2">2 Dice</option>
+                            <option value="3" selected>3 Dice</option>
+                            <option value="4">4 Dice</option>
+                            <option value="5">5 Dice</option>
+                            <option value="6">6 Dice</option>
+                            <option value="7">7 Dice</option>
+                            <option value="8">8 Dice</option>
+                            <option value="9">9 Dice</option>
+                            <option value="10">10 Dice</option>
+                            <option value="11">11 Dice</option>
+                            <option value="12">12 Dice</option>
+                            <option value="13">13 Dice</option>
+                            <option value="14">14 Dice</option>
+                            <option value="15">15 Dice</option>
+                            <option value="16">16 Dice</option>
+                            <option value="17">17 Dice</option>
+                            <option value="18">18 Dice</option>
+                            <option value="19">19 Dice</option>
+                            <option value="20">20 Dice</option>
+                            <option value="21">21 Dice</option>
+                            <option value="22">22 Dice</option>
+                            <option value="23">23 Dice</option>
+                            <option value="24">24 Dice</option>
+                            <option value="25">25 Dice</option>
+                            <option value="26">26 Dice</option>
+                            <option value="27">27 Dice</option>
+                            <option value="28">28 Dice</option>
+                            <option value="29">29 Dice</option>
+                            <option value="30">30 Dice</option>
+                        </select>
+
+                        <span class="formalSelectChevron" aria-hidden="true">⌄</span>
+                    </span>
+                </div>
+
+                <div id="hostBallDropCountControl"
+                     class="formalSettingField"
+                     hidden>
+                    <label for="ballDropCountDisplay">Number of Balls</label>
+
+                    <span class="formalSelectShell">
+                        <span class="formalSelectIcon formalQuantityIcon"
+                              aria-hidden="true">#</span>
+
+                        <select id="ballDropCountDisplay"
+                                aria-label="Number of Ball Drop balls">
+                            <option value="1">1 Ball</option>
+                            <option value="2">2 Balls</option>
+                            <option value="3" selected>3 Balls</option>
+                            <option value="4">4 Balls</option>
+                            <option value="5">5 Balls</option>
+                            <option value="6">6 Balls</option>
+                        </select>
+
+                        <span class="formalSelectChevron" aria-hidden="true">⌄</span>
+                    </span>
+                </div>
+            </div>
+
+            <p id="roomGameModeHint"
+               class="formalGameSettingsHint">
+                The host chooses the game for everyone in this room.
+            </p>
+        </section>
+
+        <div id="hostSettings" class="hostSettings" hidden>
+            <div class="hostWebsiteBrand diceSkinHeaderBar" aria-label="Perya Rooms website">
+                <div id="roomGameBrand"
+                     class="diceSkinBrandText"
+                     aria-live="polite">
+                    <strong id="roomGameBrandPrimary">🌐 perya-rooms.com</strong>
+                </div>
+
+                <strong id="roomGameBrandSecondary"
+                        class="roomGameBrandSecondary"
+                        hidden>⚪ Color Balls</strong>
+
+                <div id="guestDiceSkinControl" class="diceSkinControl" hidden>
+                    <label for="guestDiceSkinSelect">🎨 Dice Skin:</label>
+                    <select id="guestDiceSkinSelect" aria-label="Choose dice skin">
+                        <option value="default">Default</option>
+                    </select>
+                    <div class="diceSkinPicker">
+                        <button id="guestDiceSkinPickerButton"
+                                class="diceSkinPickerButton"
+                                type="button"
+                                aria-haspopup="listbox"
+                                aria-expanded="false">
+                            <span id="guestDiceSkinSelectedName"
+                                  class="diceSkinSelectedName">Default</span>
+                            <span class="diceSkinArrow"
+                                  aria-hidden="true">▼</span>
+                        </button>
+                        <div id="guestDiceSkinGallery"
+                             class="diceSkinOptions"
+                             role="listbox"
+                             hidden></div>
+                    </div>
+                    <p id="guestDiceSkinMessage" class="joinMessage"></p>
+                </div>
+            </div>
+        </div>
+
+        <section class="card roomCard guestRoomCard">
+            <p id="roleText" class="roleText"></p>
+            <p id="roomStatus" class="roomStatus" aria-live="polite"></p>
+
+            <div id="results" class="results"></div>
+
+            <div class="gameIdBox">
+                <strong>Room ID:</strong>
+                <span id="gameId">-----</span>
+                <button id="copyGameId" class="smallButton" type="button">📋</button>
+            </div>
+
+            <button id="rollButton"
+                    class="rollButton"
+                    type="button"
+                    hidden>🎲 Roll Dice</button>
+
+            <p id="waitingText"
+               class="waitingText"
+               hidden>Only the room creator can roll.</p>
+
+            <section id="ballDropGame"
+                     class="ballDropGame"
+                     hidden
+                     aria-label="Color Balls game">
+
+                <div class="ballDropTopline">
+                    <span>Color Balls</span>
+                    <strong id="ballDropStatus"
+                            aria-live="polite">Ready</strong>
+                </div>
+
+                <div id="ballDropMixer"
+                     class="ballDropMixer"
+                     aria-label="Ball mixer">
+                    <span class="ballDropHolderBall"
+                          data-holder-ball="0"></span>
+                    <span class="ballDropHolderBall"
+                          data-holder-ball="1"></span>
+                    <span class="ballDropHolderBall"
+                          data-holder-ball="2"></span>
+                </div>
+
+                <div id="ballDropBoard" class="ballDropBoard">
+                    <div class="ballDropSlotBacks"
+                         aria-hidden="true">
+                        <span class="purple"></span>
+                        <span class="yellow"></span>
+                        <span class="red"></span>
+                        <span class="green"></span>
+                        <span class="orange"></span>
+                        <span class="blue"></span>
+                    </div>
+
+                    <canvas id="ballDropCanvas"
+                            aria-label="Color Balls peg board"></canvas>
+
+                    <div class="ballDropSlotFronts"
+                         aria-hidden="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+
+                    <div class="ballDropSlotNames"
+                         aria-hidden="true">
+                        <span>Purple</span>
+                        <span>Yellow</span>
+                        <span>Red</span>
+                        <span>Green</span>
+                        <span>Orange</span>
+                        <span>Blue</span>
+                    </div>
+                </div>
+
+                <button id="ballDropButton"
+                        class="rollButton ballDropButton"
+                        type="button"
+                        hidden>⚪ ROLL &amp; RELEASE BALLS</button>
+
+                <p id="ballDropWaitingText"
+                   class="waitingText"
+                   hidden>Only the room creator can drop the balls.</p>
+
+                <div class="ballDropResultsWrap">
+                    <h2>Results</h2>
+                    <div id="ballDropResults"
+                         class="ballDropResults">
+                        <span class="waiting">?</span>
+                        <span class="waiting">?</span>
+                        <span class="waiting">?</span>
+                    </div>
+                </div>
             </section>
         </section>
-    </main>
 
-    <script type="module" src="script.js"></script>
-    <script type="module" src="ball-drop.js"></script>
+        <div id="guestDiceBlurToolbar"
+             class="hostHistoryToolbar guestDiceBlurToolbar"
+             hidden>
+            <div id="guestDiceBlurControl"
+                 class="hostDiceBlurControl">
+                <label for="guestDiceBlurCheckbox">
+                    <input id="guestDiceBlurCheckbox"
+                           type="checkbox">
+                    <span id="guestBlurModeLabel">Blur (Anti-Restriction Mode)</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="bottomPanels guestBottomPanels">
+            <section id="diceHistoryBox"
+                     class="card historyBox">
+                <h2>Previous Rolls</h2>
+                <div id="history"></div>
+            </section>
+
+            <section id="ballDropHistoryBox"
+                     class="card historyBox ballDropHistoryBox"
+                     hidden>
+                <h2>Previous Drops</h2>
+                <div id="ballDropHistory"
+                     class="ballDropHistory">
+                    <p>No drops yet.</p>
+                </div>
+            </section>
+
+            <section class="card joinBox guestJoinBox">
+                <h2>Enter a Room</h2>
+
+                <div class="joinControls">
+                    <input
+                        id="joinRoomId"
+                        type="text"
+                        maxlength="20"
+                        autocomplete="off"
+                        placeholder="Enter Room ID"
+                    >
+                    <button id="joinRoomButton"
+                            type="button">Join Room</button>
+                </div>
+
+                <p id="joinMessage"
+                   class="joinMessage"></p>
+
+                <p>Join an existing dice room and observe every roll in real time. Only the room creator can roll.</p>
+            </section>
+        </div>
+
+
+        <section id="rollAsGuestSection"
+                 class="rollAsGuestSection"
+                 hidden>
+            <button id="rollAsGuestButton"
+                    class="rollAsGuestButton"
+                    type="button">
+
+                <span class="rollAsGuestIcon"
+                      aria-hidden="true">🎲</span>
+
+                <span class="rollAsGuestText">
+                    <strong>Create a Room</strong>
+                    <small>Create your own room</small>
+                </span>
+
+                <span class="rollAsGuestArrow"
+                      aria-hidden="true">→</span>
+            </button>
+        </section>
+
+        <section class="card about guestAbout">
+            <h2>Welcome to Perya Rooms Online!</h2>
+            <p>Enjoy a <strong>100% ad-free</strong> online dice roller.</p>
+            <p>Share your Room ID so other people can watch every roll live.</p>
+        </section>
+    </section>
+</main>
+
+<script type="module" src="dist/presence.js"></script>
+<script type="module" src="dist/app.js"></script>
+<script type="module" src="dist/game.js"></script>
+
 </body>
 </html>

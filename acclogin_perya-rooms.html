@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator Account - PERYA ROOMS</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .accountLoginPage {
+            width: min(520px, calc(100% - 28px));
+            margin: 48px auto;
+        }
+
+        .accountLoginCard {
+            text-align: center;
+        }
+
+        .accountLoginCard h1 {
+            margin: 0 0 8px;
+        }
+
+        .accountLoginCard > p {
+            margin: 8px 0 20px;
+        }
+
+        .googleButton {
+            width: 100%;
+        }
+
+        .accountLoginSignedIn[hidden],
+        .accountLoginSignedOut[hidden] {
+            display: none !important;
+        }
+
+        .accountLoginStatus {
+            min-height: 22px;
+            margin: 12px 0 0;
+        }
+
+        .accountLoginActions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .accountLoginActions button {
+            min-width: 150px;
+        }
+
+        .accountLoginBack {
+            margin-top: 14px;
+            text-align: center;
+        }
+
+        .accountLoginBack a {
+            text-decoration: none;
+            font-weight: 800;
+        }
+
+        .accountLoginError {
+            color: #ff8585;
+            font-weight: 800;
+        }
+
+        .accountLoginSuccess {
+            font-weight: 800;
+        }
+    </style>
+</head>
+<body>
+    <header class="siteHeader">
+        <img class="logo" src="images/PERYA.png" alt="PERYA ROOMS" decoding="async" fetchpriority="high">
+    </header>
+
+    <main class="accountLoginPage">
+        <section class="card accountCard accountLoginCard">
+            <div id="accountLoginSignedOut" class="accountLoginSignedOut">
+                <h1>Creator Account</h1>
+                <p>Sign in with your Google account to manage your Perya Rooms creator account.</p>
+
+                <button id="accountLoginGoogleButton" class="googleButton" type="button">
+                    <svg class="googleIcon" viewBox="0 0 48 48" aria-hidden="true">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.73 1.22 9.24 3.61l6.9-6.9C35.95 2.38 30.45 0 24 0 14.62 0 6.51 5.38 2.56 13.22l8.03 6.23C12.49 13.53 17.77 9.5 24 9.5z"/>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.14-3.09-.39-4.55H24v9.09h12.94c-.56 2.98-2.24 5.5-4.77 7.2l7.32 5.68C43.96 37.79 46.98 31.73 46.98 24.55z"/>
+                        <path fill="#FBBC05" d="M10.59 28.55A14.53 14.53 0 019.5 24c0-1.59.38-3.1 1.09-4.55l-8.03-6.23A23.96 23.96 0 000 24c0 3.87.92 7.53 2.56 10.78l8.03-6.23z"/>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.81l-7.32-5.68c-2.03 1.36-4.63 2.17-8.57 2.17-6.23 0-11.51-4.03-13.41-9.95l-8.03 6.23C6.51 42.62 14.62 48 24 48z"/>
+                    </svg>
+                    <span>Sign in with Google</span>
+                </button>
+            </div>
+
+            <div id="accountLoginSignedIn" class="accountLoginSignedIn" hidden>
+                <h1>Creator Account</h1>
+                <p>Signed in as <strong id="accountLoginName">Creator</strong></p>
+
+                <div class="accountLoginActions">
+                    <button id="accountLoginDashboardButton" type="button">Open Dashboard</button>
+                    <button id="accountLoginSignOutButton" class="secondaryButton" type="button">Sign Out</button>
+                </div>
+            </div>
+
+            <p id="accountLoginStatus" class="accountLoginStatus" aria-live="polite"></p>
+
+            <div class="accountLoginBack">
+                <a href="index.html">← Back to Perya Rooms</a>
+            </div>
+        </section>
+    </main>
+
+    <script type="module">
+        import {
+            db,
+            auth,
+            signInWithGoogle,
+            logOut
+        } from "./firebase.js";
+
+        import {
+            doc,
+            getDoc
+        } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+        import {
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+
+        const signedOut = document.getElementById("accountLoginSignedOut");
+        const signedIn = document.getElementById("accountLoginSignedIn");
+        const googleButton = document.getElementById("accountLoginGoogleButton");
+        const dashboardButton = document.getElementById("accountLoginDashboardButton");
+        const signOutButton = document.getElementById("accountLoginSignOutButton");
+        const accountName = document.getElementById("accountLoginName");
+        const status = document.getElementById("accountLoginStatus");
+
+        async function routeGoogleUser(user) {
+            const userSnapshot = await getDoc(doc(db, "users", user.uid));
+            const username = userSnapshot.exists()
+                ? String(userSnapshot.data().username || "").trim()
+                : "";
+
+            window.location.href = username ? "dashboard.html" : "username.html";
+        }
+
+        function isGoogleUser(user) {
+            return Boolean(
+                user &&
+                !user.isAnonymous &&
+                user.providerData?.some(provider => provider.providerId === "google.com")
+            );
+        }
+
+        function renderAuthState(user) {
+            const signedInAsGoogle = isGoogleUser(user);
+
+            signedOut.hidden = signedInAsGoogle;
+            signedIn.hidden = !signedInAsGoogle;
+
+            if (signedInAsGoogle) {
+                accountName.textContent = user.displayName || user.email || "Creator";
+            } else {
+                status.textContent = "";
+            }
+        }
+
+        googleButton.addEventListener("click", async () => {
+            googleButton.disabled = true;
+            status.className = "accountLoginStatus";
+            status.textContent = "Opening Google sign-in...";
+
+            try {
+                const user = await signInWithGoogle();
+                if (!isGoogleUser(user)) {
+                    throw new Error("Google sign-in did not return a registered account.");
+                }
+
+                status.className = "accountLoginStatus accountLoginSuccess";
+                status.textContent = "Signed in successfully.";
+                await routeGoogleUser(user);
+            } catch (error) {
+                console.error("Google sign-in failed:", error);
+                status.className = "accountLoginStatus accountLoginError";
+                status.textContent = error?.code === "auth/popup-closed-by-user"
+                    ? "Google sign-in was cancelled."
+                    : "Could not sign in with Google. Please try again.";
+                googleButton.disabled = false;
+            }
+        });
+
+        dashboardButton.addEventListener("click", async () => {
+            const user = auth.currentUser;
+            if (!isGoogleUser(user)) return;
+
+            dashboardButton.disabled = true;
+            try {
+                await routeGoogleUser(user);
+            } catch (error) {
+                console.error("Could not open dashboard:", error);
+                status.className = "accountLoginStatus accountLoginError";
+                status.textContent = "Could not open the dashboard.";
+                dashboardButton.disabled = false;
+            }
+        });
+
+        signOutButton.addEventListener("click", async () => {
+            signOutButton.disabled = true;
+            status.className = "accountLoginStatus";
+            status.textContent = "Signing out...";
+
+            try {
+                await logOut();
+                status.textContent = "Signed out.";
+            } catch (error) {
+                console.error("Sign out failed:", error);
+                status.className = "accountLoginStatus accountLoginError";
+                status.textContent = "Could not sign out.";
+                signOutButton.disabled = false;
+            }
+        });
+
+        onAuthStateChanged(auth, renderAuthState);
+    </script>
+</body>
+</html>

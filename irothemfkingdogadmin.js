@@ -1071,7 +1071,7 @@ async function loadGame() {
         return;
     }
 
-    gameStatus.textContent = "Searching for room...";
+    gameStatus.textContent = "";
     gameIdInput.disabled = true;
     searchRoomButton.disabled = true;
 
