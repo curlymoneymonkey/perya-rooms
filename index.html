@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://asia-southeast1-peryadice.cloudfunctions.net" crossorigin>
     <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="//asia-southeast1-peryadice.cloudfunctions.net">
-    <title>PERYA DICE</title>
+    <title>PERYA ROOMS ONLINE</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="preload" as="image" href="images/PERYA.png">
     <link rel="stylesheet" href="style.css">
@@ -296,37 +296,6 @@ text-align:center;
     </header>
 
     <main>
-        <section class="card accountCard">
-            <div id="signedOutControls">
-                <h2>Creator Account</h2>
-
-                <button id="googleSignInButton" class="googleButton" type="button">
-                    <svg class="googleIcon" viewBox="0 0 48 48" aria-hidden="true">
-                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.73 1.22 9.24 3.61l6.9-6.9C35.95 2.38 30.45 0 24 0 14.62 0 6.51 5.38 2.56 13.22l8.03 6.23C12.49 13.53 17.77 9.5 24 9.5z"/>
-                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.14-3.09-.39-4.55H24v9.09h12.94c-.56 2.98-2.24 5.5-4.77 7.2l7.32 5.68C43.96 37.79 46.98 31.73 46.98 24.55z"/>
-                        <path fill="#FBBC05" d="M10.59 28.55A14.53 14.53 0 019.5 24c0-1.59.38-3.1 1.09-4.55l-8.03-6.23A23.96 23.96 0 000 24c0 3.87.92 7.53 2.56 10.78l8.03-6.23z"/>
-                        <path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.81l-7.32-5.68c-2.03 1.36-4.63 2.17-8.57 2.17-6.23 0-11.51-4.03-13.41-9.95l-8.03 6.23C6.51 42.62 14.62 48 24 48z"/>
-                    </svg>
-                    <span>Sign in with Google</span>
-                </button>
-
-                <p id="guestText" class="guestText">
-                    Sign in with Google to create a permanent room, <br>
-                    claim a custom Dice ID, open a shop, and build your reputation.
-                    
-                </p>
-            </div>
-
-            <div id="signedInControls" hidden>
-                <p>Signed in as <strong id="accountName">Creator</strong></p>
-                <div class="buttonRow">
-                    <button id="dashboardButton" type="button">Open Dashboard</button>
-                    <button id="signOutButton" class="secondaryButton" type="button">Sign Out</button>
-                </div>
-            </div>
-
-            <p id="authMessage" class="joinMessage"></p>
-        </section>
 
         <section id="loadingScreen" class="card loadingCard">
             <h2 id="loadingMessage">Connecting to Firebase...</h2>
@@ -522,7 +491,7 @@ text-align:center;
                 </section>
 
                 <section class="card joinBox guestJoinBox">
-                    <h2>Enter a Room</h2>
+                    <h2>Enter & Verify a Room</h2>
 
                     <div class="joinControls">
                         <input
@@ -540,24 +509,13 @@ text-align:center;
                 </section>
             </div>
 
-            <section class="card joinBox profileSearchBox">
-                <h2>👤 Search Profile</h2>
-                <div class="joinControls">
-                    <input id="profileUsernameSearch" type="text" maxlength="30" autocomplete="off" spellcheck="false" placeholder="Enter exact username" aria-label="Enter exact profile username">
-                    <button id="searchProfileButton" type="button">Search Profile</button>
-                </div>
-                <p id="profileSearchMessage" class="joinMessage" aria-live="polite"></p>
-                <p>Enter the user's exact username to view thei
-                    r profile, shop, rooms, and reputation.
-</p>
-            </section>
 
             <section id="rollAsGuestSection" class="rollAsGuestSection" hidden>
                 <button id="rollAsGuestButton" class="rollAsGuestButton" type="button">
                     <span class="rollAsGuestIcon" aria-hidden="true">🎲</span>
                     <span class="rollAsGuestText">
-                        <strong>Roll As Guest</strong>
-                        <small>Create your own temporary room</small>
+                        <strong>Generate A Room</strong>
+                        <small></small>
                     </span>
                     <span class="rollAsGuestArrow" aria-hidden="true">→</span>
                 </button>

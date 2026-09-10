@@ -1185,7 +1185,7 @@ async function joinRoom(roomId) {
         await stopHostPresence(true);
     }
 
-    showLoading(`Searching for room ${cleanedRoomId}...`);
+    showLoading(`Room ID: ${cleanedRoomId}...`);
 
     // ==========================
     // Check temporary guest room
@@ -2410,7 +2410,7 @@ async function startApplication() {
     try {
 
         showLoading(
-            "Connecting..."
+            "Generating Room..."
         );
 
         currentUser =
@@ -2418,7 +2418,7 @@ async function startApplication() {
 
         if (!currentUser?.uid) {
             throw new Error(
-                "Anonymous Firebase sign-in failed."
+                "Could not get your user ID. Please check your internet connection and try again."
             );
         }
 
