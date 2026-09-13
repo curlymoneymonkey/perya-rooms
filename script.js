@@ -594,15 +594,14 @@ function clampDiceCount(value) {
 function cleanRoomId(value) {
     return String(value || "")
         .trim()
-        .toUpperCase()
-        .replace(/[^A-Z0-9]/g, "")
-        .slice(0, 20);
+        .replace(/[^A-Za-z]/g, "")
+        .slice(0, 8);
 }
 
 
-function generateRoomId(length = 7) {
+function generateRoomId(length = 8) {
 
-    const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     const bytes = new Uint8Array(length);
 
     crypto.getRandomValues(bytes);
@@ -1184,12 +1183,9 @@ async function joinRoom(roomId) {
 
     const cleanedRoomId = cleanRoomId(roomId);
 
-    if (
-        cleanedRoomId.length < 4 ||
-        cleanedRoomId.length > 20
-    ) {
+    if (cleanedRoomId.length !== 8) {
         throw new Error(
-            "Dice ID must be between 4 and 20 characters."
+            "Room ID must contain exactly 8 letters."
         );
     }
 
@@ -2026,8 +2022,8 @@ async function joinAnotherRoom() {
     joinRoomIdInput.value =
         roomId;
 
-    if (roomId.length < 4 || roomId.length > 20) {
-    setJoinMessage("Dice ID must be between 4 and 20 characters.", true);
+    if (roomId.length !== 8) {
+    setJoinMessage("Room ID must contain exactly 8 letters.", true);
     return;
 }
 

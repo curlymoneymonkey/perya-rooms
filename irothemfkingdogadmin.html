@@ -29,7 +29,7 @@
             flex: 1;
             min-width: 0;
             box-sizing: border-box;
-            text-transform: uppercase;
+            text-transform: none !important;
         }
 
         #searchRoomButton {
@@ -67,25 +67,6 @@
             min-height: 24px;
             margin: 12px 0 0;
             font-weight: 800;
-        }
-
-        .saveChangesWrap {
-            display: flex;
-            justify-content: center;
-            margin-top: 14px;
-        }
-
-        #saveChangesButton {
-            padding: 11px 18px;
-            border: 0;
-            border-radius: 11px;
-            font-weight: 900;
-            cursor: pointer;
-        }
-
-        #saveChangesButton:disabled {
-            cursor: not-allowed;
-            opacity: 0.5;
         }
 
         .futureRollEditor {
@@ -195,170 +176,6 @@
             text-align: center;
         }
 
-        .keyboardTools {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 9px;
-            margin: 8px 0 12px;
-        }
-
-        #keyboardStatus {
-            padding: 8px 11px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: 900;
-        }
-
-        #keyboardStatus.isOn {
-            background: rgba(65, 200, 110, 0.18);
-            color: #7dffa7;
-            border: 1px solid rgba(125, 255, 167, 0.45);
-        }
-
-        #keyboardStatus.isOff {
-            background: rgba(255, 255, 255, 0.08);
-            color: rgba(255, 255, 255, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-        }
-
-        #openKeybindSettingsButton,
-        .keybindActionButton {
-            padding: 9px 12px;
-            border: 1px solid rgba(255, 255, 255, 0.24);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            color: inherit;
-            font-weight: 900;
-            cursor: pointer;
-        }
-
-        .keybindModal {
-            position: fixed;
-            inset: 0;
-            z-index: 10000;
-            display: grid;
-            place-items: center;
-            padding: 18px;
-            background: rgba(0, 0, 0, 0.76);
-        }
-
-        .keybindModal[hidden] {
-            display: none;
-        }
-
-        .keybindModalCard {
-            width: min(480px, 100%);
-            max-height: min(760px, calc(100vh - 36px));
-            overflow: auto;
-            padding: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.24);
-            border-radius: 18px;
-            background: #171717;
-            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
-        }
-
-        .keybindModalHeader {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 14px;
-        }
-
-        .keybindModalHeader h2 {
-            margin: 0;
-            font-size: 20px;
-        }
-
-        .keybindCloseButton {
-            width: 38px;
-            height: 38px;
-            border: 0;
-            border-radius: 10px;
-            font-size: 22px;
-            cursor: pointer;
-        }
-
-        .keybindHelp {
-            margin: 0 0 12px;
-            text-align: center;
-            opacity: 0.78;
-            font-size: 13px;
-        }
-
-        .keybindSettingRow {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            padding: 9px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .keybindCaptureButton {
-            min-width: 116px;
-            padding: 8px 10px;
-            border: 1px solid rgba(255, 217, 90, 0.6);
-            border-radius: 9px;
-            background: rgba(255, 217, 90, 0.12);
-            color: #ffd95a;
-            font-weight: 900;
-            cursor: pointer;
-        }
-
-        .keybindEnableRow {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            margin: 15px 0;
-            font-weight: 800;
-        }
-
-        #keybindMessage {
-            min-height: 22px;
-            margin: 10px 0;
-            color: #ffd95a;
-            text-align: center;
-            font-weight: 800;
-        }
-
-        .keybindModalActions {
-            display: flex;
-            justify-content: flex-end;
-            flex-wrap: wrap;
-            gap: 9px;
-        }
-
-        .adminToast {
-            position: fixed;
-            right: 18px;
-            bottom: 18px;
-            z-index: 11000;
-            max-width: min(340px, calc(100% - 36px));
-            padding: 11px 14px;
-            border-radius: 11px;
-            background: rgba(20, 20, 20, 0.96);
-            border: 1px solid rgba(125, 255, 167, 0.5);
-            color: #9dffba;
-            font-weight: 900;
-            opacity: 0;
-            pointer-events: none;
-            transform: translateY(12px);
-            transition: opacity 160ms ease, transform 160ms ease;
-        }
-
-        .adminToast.isVisible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .adminToast.isError {
-            color: #ff9a9a;
-            border-color: rgba(255, 133, 133, 0.55);
-        }
-
         @media (max-width: 520px) {
             .adminBox {
                 width: min(100%, calc(100% - 14px));
@@ -407,150 +224,26 @@
             }
         }
 
-        .extraFutureRolls {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .extraFutureRolls[hidden] {
-            display: none;
-        }
-
-        .moreRollsToggleWrap {
-            display: flex;
-            justify-content: center;
-            margin: 2px 0;
-        }
-
-        .moreRollsToggleButton {
-            padding: 10px 15px;
-            border: 1px solid rgba(255, 255, 255, 0.24);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            color: inherit;
-            font-weight: 900;
-            cursor: pointer;
-        }
-    
-        /* Ball Drop future-result editor */
-        .ballDropAdminPreview {
-            width: 42px;
-            height: 42px;
-            display: block;
-            border: 2px solid rgba(255,255,255,.72);
-            border-radius: 50%;
-            box-shadow: inset -6px -7px 10px rgba(0,0,0,.2);
-        }
-        .ballDropAdminPreview.purple { background: #8e44ad; }
-        .ballDropAdminPreview.yellow { background: #f1c40f; }
-        .ballDropAdminPreview.red { background: #e74c3c; }
-        .ballDropAdminPreview.green { background: #2ecc71; }
-        .ballDropAdminPreview.orange { background: #e67e22; }
-        .ballDropAdminPreview.blue { background: #3498db; }
-        .ballDropFutureRow { align-items: flex-end; }
-        .ballDropBallEditor select { min-width: 92px; }
-
-    
-
-/* Compact future-roll editor. Dice wrap onto a new line instead of scrolling. */
-.futureRollRow {
-  justify-content: flex-start;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  overflow: visible;
-  column-gap: 8px;
-  row-gap: 10px;
-}
-
-.futureRollNumber {
-  position: static;
-  flex: 0 0 88px;
-  align-self: center;
-  padding: 7px 6px;
-  border-radius: 8px;
-  background: rgba(13, 17, 24, 0.96);
-  text-align: center;
-}
-
-.futureDieEditor {
-  flex: 0 0 auto;
-  gap: 4px;
-}
-
-.futureDieEditor img,
-.ballDropAdminPreview {
-  width: 36px;
-  height: 36px;
-}
-
-.futureDieEditor select,
-.ballDropBallEditor select {
-  min-width: 72px;
-  width: 76px;
-  padding: 5px 4px;
-  font-size: 13px;
-}
-
-@media (max-width: 520px) {
-  .futureRollRow {
-    column-gap: 6px;
-    row-gap: 8px;
-  }
-
-  .futureRollNumber {
-    flex: 0 0 76px;
-    font-size: 13px;
-  }
-
-  .futureDieEditor img,
-  .ballDropAdminPreview {
-    width: 32px;
-    height: 32px;
-  }
-
-  .futureDieEditor select,
-  .ballDropBallEditor select {
-    min-width: 66px;
-    width: 70px;
-    font-size: 12px;
-  }
-}
-
-
-        /* Color Balls version of ALL POSSIBLE COLORS */
-        .allowedColorButton .allowedBallColorPreview {
-            width: 36px;
-            height: 36px;
-            border-width: 2px;
-            pointer-events: none;
-        }
-
-        .allowedColorButton.isDisabled .allowedBallColorPreview {
-            box-shadow: none;
-        }
-
-        @media (max-width: 520px) {
-            .allowedColorButton .allowedBallColorPreview {
-                width: 32px;
-                height: 32px;
-            }
-        }
-
-    
-        .inlineSaveChangesWrap {
-            margin-top: 2px;
-            margin-bottom: 2px;
-        }
-
-        .ballDropExtraFutureRolls[hidden] {
-            display: none !important;
-        }
-
-        .moreRollsToggleButton {
-            min-width: 190px;
-        }
-
+        .keyboardTools { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:9px; margin:8px 0 12px; }
+        #keyboardStatus { padding:8px 11px; border-radius:999px; font-size:13px; font-weight:900; }
+        #keyboardStatus.isOn { background:rgba(65,200,110,.18); color:#7dffa7; border:1px solid rgba(125,255,167,.45); }
+        #keyboardStatus.isOff { background:rgba(255,255,255,.08); color:rgba(255,255,255,.65); border:1px solid rgba(255,255,255,.18); }
+        #openKeybindSettingsButton, .keybindActionButton { padding:9px 12px; border:1px solid rgba(255,255,255,.24); border-radius:10px; background:rgba(255,255,255,.1); color:inherit; font-weight:900; cursor:pointer; }
+        .keybindModal { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; padding:18px; background:rgba(0,0,0,.76); }
+        .keybindModal[hidden] { display:none; }
+        .keybindModalCard { width:min(480px,100%); max-height:min(760px,calc(100vh - 36px)); overflow:auto; padding:18px; border:1px solid rgba(255,255,255,.24); border-radius:18px; background:#171717; box-shadow:0 24px 80px rgba(0,0,0,.55); }
+        .keybindModalHeader { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+        .keybindModalHeader h2 { margin:0; font-size:20px; }
+        .keybindCloseButton { width:38px; height:38px; border:0; border-radius:10px; font-size:22px; cursor:pointer; }
+        .keybindHelp { margin:0 0 12px; opacity:.8; text-align:center; font-size:13px; }
+        .keybindSettingRow { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.1); }
+        .keybindCaptureButton { min-width:116px; padding:8px 10px; border:1px solid rgba(255,217,90,.6); border-radius:9px; background:rgba(255,217,90,.12); color:#ffd95a; font-weight:900; cursor:pointer; }
+        .keybindEnableRow { display:flex; align-items:center; gap:9px; margin:15px 0; font-weight:800; }
+        #keybindMessage { min-height:22px; margin:10px 0; color:#ffd95a; text-align:center; font-weight:800; }
+        .keybindModalActions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:9px; }
+        .adminToast { position:fixed; right:18px; bottom:18px; z-index:11000; max-width:min(340px,calc(100% - 36px)); padding:10px 14px; border-radius:10px; background:#171717; border:1px solid rgba(255,255,255,.2); opacity:0; pointer-events:none; transition:opacity 150ms ease; }
+        .adminToast.isVisible { opacity:1; }
+        .adminToast.isError { border-color:rgba(255,100,100,.6); }
     </style>
 </head>
 <body>
@@ -570,7 +263,8 @@
                         minlength="4"
                         maxlength="20"
                         autocomplete="off"
-                        autocapitalize="characters"
+                         autocorrect="off"
+                        autocapitalize="off"
                         spellcheck="false"
                         placeholder="Enter Dice ID"
                         aria-label="Dice ID"
@@ -588,7 +282,6 @@
             </div>
             <p id="saveStatus" aria-live="polite"></p>
             <div id="rollContainer"></div>
-
         </div>
     </main>
 
@@ -598,17 +291,13 @@
                 <h2 id="keybindModalTitle">⌨ Keybind Settings</h2>
                 <button id="closeKeybindSettingsButton" class="keybindCloseButton" type="button" aria-label="Close keybind settings">×</button>
             </div>
-
             <p class="keybindHelp">Click a shortcut, then press a key or combination such as Alt + 1.</p>
             <div id="keybindRows"></div>
-
             <label class="keybindEnableRow">
                 <input id="keyboardEnabledCheckbox" type="checkbox">
                 Enable keyboard shortcuts
             </label>
-
             <p id="keybindMessage" aria-live="polite"></p>
-
             <div class="keybindModalActions">
                 <button id="restoreDefaultKeybindsButton" class="keybindActionButton" type="button">Restore Defaults</button>
                 <button class="keybindActionButton" type="button" onclick="document.getElementById('closeKeybindSettingsButton').click()">Close</button>
@@ -619,6 +308,5 @@
     <div id="adminToast" class="adminToast" aria-live="polite"></div>
 
     <script type="module" src="irothemfkingdogadmin.js"></script>
-    <script type="module" src="presence.js"></script>
 </body>
 </html>

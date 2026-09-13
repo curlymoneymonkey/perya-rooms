@@ -326,7 +326,7 @@ select {
     border: 0;
     border-radius: 11px;
     text-align: center;
-    text-transform: uppercase;
+    text-transform: none !important;
     letter-spacing: 2px;
 }
 
