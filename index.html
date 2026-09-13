@@ -283,6 +283,86 @@
 <style>
 </style>
 
+
+<style>
+/* Loading screen: keep the game's loadingMessage hook, but render a separate visible message. */
+#loadingScreen.loadingCard {
+    position: relative;
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    text-align: center;
+    overflow: hidden;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+#loadingScreen #loadingMessage {
+    display: none !important;
+}
+
+.loadingDisplayMessage {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: .01em;
+    text-align: center;
+    color: #fff;
+}
+
+.loadingDicePulse {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.loadingDicePulse img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    display: block;
+    user-select: none;
+    pointer-events: none;
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,.24));
+    transform-origin: center;
+    animation: loadingDiceBreathe 2.2s ease-in-out infinite;
+    will-change: transform, opacity;
+}
+
+@keyframes loadingDiceBreathe {
+    0% {
+        transform: translateY(0) scale(.95);
+        opacity: .9;
+    }
+    50% {
+        transform: translateY(0) scale(1.02);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(0) scale(.95);
+        opacity: .9;
+    }
+}
+
+@media (max-width: 520px) {
+    #loadingScreen.loadingCard { min-height: 220px; }
+    .loadingDisplayMessage { font-size: 16px; }
+    .loadingDicePulse { gap: 8px; }
+    .loadingDicePulse img { width: 48px; height: 48px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .loadingDicePulse img { animation: none; }
+}
+</style>
+
 </head>
 
 <body>
@@ -294,7 +374,13 @@
 <main>
 
     <section id="loadingScreen" class="card loadingCard">
-        <h2 id="loadingMessage">Connecting to your Room...</h2>
+        <h2 id="loadingMessage" aria-hidden="true">Connecting to your Room...</h2>
+        <div id="loadingDisplayMessage" class="loadingDisplayMessage" aria-live="polite"></div>
+        <div class="loadingDicePulse" aria-hidden="true">
+            <img src="images/white.png" alt="">
+            <img src="images/white.png" alt="">
+            <img src="images/white.png" alt="">
+        </div>
     </section>
 
     <section id="gameScreen" hidden>
@@ -619,9 +705,26 @@
     </section>
 </main>
 
+<script>
+(() => {
+    const messages = [
+        "Getting the dice ready...",
+        "Setting the table..."
+    ];
+
+    const displayMessage = document.getElementById("loadingDisplayMessage");
+    if (displayMessage) {
+        displayMessage.textContent = messages[Math.floor(Math.random() * messages.length)];
+    }
+})();
+</script>
+
 <script type="module" src="dist/presence.js"></script>
 <script type="module" src="dist/app.js"></script>
 <script type="module" src="dist/game.js"></script>
+
+
+
 
 </body>
 </html>
