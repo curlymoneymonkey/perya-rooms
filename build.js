@@ -164,7 +164,7 @@ fs.rmSync(tempCSS, {
 async function build() {
 console.log("");
 console.log("========================================");
-console.log("       PERYA ROOMS ONLINE BUILD");
+console.log("       PERYA DICE ONLINE BUILD");
 console.log("========================================");
 console.log("");
 
