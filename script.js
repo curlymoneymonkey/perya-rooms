@@ -769,6 +769,46 @@ function showDice(container, values, className = "dice") {
     finishRender();
 }
 
+let preparingColorTickTimer = null;
+let preparingLastColorIndex = -1;
+
+function startPreparingColorTicks() {
+    stopPreparingColorTicks();
+
+    const tick = () => {
+        const dice = Array.from(results.children).filter(
+            die => die instanceof HTMLImageElement
+        );
+        if (dice.length === 0) return;
+
+        for (const die of dice) {
+            // Each die gets its own random color on every tick.
+            let nextIndex;
+            do {
+                nextIndex = Math.floor(Math.random() * defaultDiceImages.length);
+            } while (
+                defaultDiceImages.length > 1 &&
+                nextIndex === Number(die.dataset.preparingColorIndex)
+            );
+
+            die.dataset.preparingColorIndex = String(nextIndex);
+            die.src = defaultDiceImages[nextIndex];
+            die.alt = "Preparing dice";
+        }
+    };
+
+    tick();
+    preparingColorTickTimer = window.setInterval(tick, 180);
+}
+
+function stopPreparingColorTicks() {
+    if (preparingColorTickTimer !== null) {
+        window.clearInterval(preparingColorTickTimer);
+        preparingColorTickTimer = null;
+    }
+    preparingLastColorIndex = -1;
+}
+
 function startPreparingRoll() {
     if (roomStatus) {
         roomStatus.textContent = nextPreparingRollMessage();
@@ -793,9 +833,14 @@ function startPreparingRoll() {
         // Start a fresh preparation wobble.
         die.classList.add("dicePreparing");
     }
+
+    // Added effect: randomize the visible dice color on timed ticks while
+    // preserving the existing preparation wobble and roll timing.
+    startPreparingColorTicks();
 }
 
 function stopPreparingRoll() {
+    stopPreparingColorTicks();
     document.body.classList.remove("dicePreparingStage");
     for (const die of results.children) {
         if (die instanceof HTMLImageElement) die.classList.remove("dicePreparing");
