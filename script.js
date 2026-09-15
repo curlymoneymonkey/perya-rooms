@@ -770,7 +770,6 @@ function showDice(container, values, className = "dice") {
 }
 
 let preparingColorTickTimer = null;
-let preparingLastColorIndex = -1;
 
 function startPreparingColorTicks() {
     stopPreparingColorTicks();
@@ -781,18 +780,27 @@ function startPreparingColorTicks() {
         );
         if (dice.length === 0) return;
 
+        // Use the currently selected dice skin, not the built-in default colors.
+        const preparingImages = Array.isArray(diceImages) && diceImages.length > 0
+            ? diceImages
+            : defaultDiceImages;
+
         for (const die of dice) {
-            // Each die gets its own random color on every tick.
+            // Each die gets its own random skin color on every tick.
+            // Avoid repeating the same color on the same die consecutively.
             let nextIndex;
-            do {
-                nextIndex = Math.floor(Math.random() * defaultDiceImages.length);
-            } while (
-                defaultDiceImages.length > 1 &&
-                nextIndex === Number(die.dataset.preparingColorIndex)
-            );
+            const previousIndex = Number(die.dataset.preparingColorIndex);
+
+            if (preparingImages.length === 1) {
+                nextIndex = 0;
+            } else {
+                do {
+                    nextIndex = Math.floor(Math.random() * preparingImages.length);
+                } while (nextIndex === previousIndex);
+            }
 
             die.dataset.preparingColorIndex = String(nextIndex);
-            die.src = defaultDiceImages[nextIndex];
+            die.src = preparingImages[nextIndex];
             die.alt = "Preparing dice";
         }
     };
@@ -806,7 +814,12 @@ function stopPreparingColorTicks() {
         window.clearInterval(preparingColorTickTimer);
         preparingColorTickTimer = null;
     }
-    preparingLastColorIndex = -1;
+
+    for (const die of results.children) {
+        if (die instanceof HTMLImageElement) {
+            delete die.dataset.preparingColorIndex;
+        }
+    }
 }
 
 function startPreparingRoll() {
