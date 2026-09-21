@@ -245,6 +245,7 @@ let keyboardShortcutsEnabled = true;
 let keybindBeingEdited = null;
 let toastTimer = null;
 let extraRollsVisible = false;
+let favorThreeColorRolls = false;
 
 
 /* ==================================
@@ -272,6 +273,7 @@ const keyboardEnabledCheckbox = document.getElementById("keyboardEnabledCheckbox
 const keybindRows = document.getElementById("keybindRows");
 const keybindMessage = document.getElementById("keybindMessage");
 const adminToast = document.getElementById("adminToast");
+const favorThreeColorRollsCheckbox = document.getElementById("favorThreeColorRollsCheckbox");
 
 
 /* ==================================
@@ -363,6 +365,12 @@ function clearLoadedRoom() {
     editableNextRolls = [];
     allowedNextOneColors = new Set(ALL_COLOR_INDEXES);
     extraRollsVisible = false;
+    favorThreeColorRolls = false;
+
+    if (favorThreeColorRollsCheckbox) {
+        favorThreeColorRollsCheckbox.checked = false;
+        favorThreeColorRollsCheckbox.closest(".colorWeightingToggle")?.setAttribute("hidden", "");
+    }
 
     rollContainer.innerHTML = "";
     roomType.textContent = "";
@@ -403,19 +411,182 @@ function markSaved(message = "🟢 Saved") {
     getSaveChangesButton()?.setAttribute("disabled", "");
 }
 
+function chooseWeightedPattern() {
+    // For four dice, these are the requested pattern probabilities:
+    // 4 same = 0.46%
+    // 3 same + 1 different = 9.26%
+    // 2 + 2 = 15%
+    // 3 colors (2 + 1 + 1) = 60.28%
+    // 4 different = 15%
+    const patterns = [
+        { name: "fourSame", weight: 0.46 },
+        { name: "threeSame", weight: 9.26 },
+        { name: "twoAndTwo", weight: 15 },
+        { name: "threeColors", weight: 60.28 },
+        { name: "fourDifferent", weight: 15 }
+    ];
+
+    const totalWeight = patterns.reduce((sum, pattern) => sum + pattern.weight, 0);
+    let roll = Math.random() * totalWeight;
+
+    for (const pattern of patterns) {
+        roll -= pattern.weight;
+        if (roll < 0) return pattern.name;
+    }
+
+    return "threeColors";
+}
+
+function generateFourDiceWeightedRoll() {
+    const allowedColors = [...allowedNextOneColors];
+
+    if (!allowedColors.length) {
+        return Array(4).fill(0);
+    }
+
+    const randomColor = () =>
+        allowedColors[Math.floor(Math.random() * allowedColors.length)];
+
+    const pickDistinctColors = (count) => {
+        const pool = [...allowedColors];
+
+        // If there are not enough allowed colors, use the maximum available.
+        const target = Math.min(count, pool.length);
+
+        for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+
+        return pool.slice(0, target);
+    };
+
+    const shuffle = (values) => {
+        for (let i = values.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [values[i], values[j]] = [values[j], values[i]];
+        }
+        return values;
+    };
+
+    const pattern = chooseWeightedPattern();
+    let result;
+
+    // If the selected pattern cannot be produced because too few unique
+    // colors are enabled, fall back to the closest possible pattern.
+    switch (pattern) {
+        case "fourSame": {
+            const color = randomColor();
+            result = [color, color, color, color];
+            break;
+        }
+
+        case "threeSame": {
+            const colors = pickDistinctColors(2);
+            if (colors.length < 2) {
+                const color = colors[0] ?? randomColor();
+                result = [color, color, color, color];
+            } else {
+                result = [colors[0], colors[0], colors[0], colors[1]];
+            }
+            break;
+        }
+
+        case "twoAndTwo": {
+            const colors = pickDistinctColors(2);
+            if (colors.length < 2) {
+                const color = colors[0] ?? randomColor();
+                result = [color, color, color, color];
+            } else {
+                result = [colors[0], colors[0], colors[1], colors[1]];
+            }
+            break;
+        }
+
+        case "threeColors": {
+            const colors = pickDistinctColors(3);
+            if (colors.length < 3) {
+                if (colors.length === 2) {
+                    result = [colors[0], colors[0], colors[1], colors[1]];
+                } else {
+                    const color = colors[0] ?? randomColor();
+                    result = [color, color, color, color];
+                }
+            } else {
+                // 2 + 1 + 1: exactly three unique colors.
+                result = [colors[0], colors[0], colors[1], colors[2]];
+            }
+            break;
+        }
+
+        case "fourDifferent": {
+            const colors = pickDistinctColors(4);
+            if (colors.length < 4) {
+                if (colors.length === 3) {
+                    result = [colors[0], colors[0], colors[1], colors[2]];
+                } else if (colors.length === 2) {
+                    result = [colors[0], colors[0], colors[1], colors[1]];
+                } else {
+                    const color = colors[0] ?? randomColor();
+                    result = [color, color, color, color];
+                }
+            } else {
+                result = colors.slice(0, 4);
+            }
+            break;
+        }
+
+        default:
+            result = Array(4).fill(null).map(randomColor);
+    }
+
+    return shuffle(result);
+}
+
+function generateWeightedNextRoll(diceCount) {
+    if (!favorThreeColorRolls) {
+        return Array.from({ length: diceCount }, () => randomAllowedColor());
+    }
+
+    // The requested pattern probabilities are specifically for a 4-dice roll.
+    // Preserve normal independent randomization for other dice counts.
+    if (diceCount !== 4) {
+        return Array.from({ length: diceCount }, () => randomAllowedColor());
+    }
+
+    return generateFourDiceWeightedRoll();
+}
+
+function shuffleArray(values) {
+    const shuffled = [...values];
+
+    for (let index = shuffled.length - 1; index > 0; index--) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [shuffled[index], shuffled[swapIndex]] =
+            [shuffled[swapIndex], shuffled[index]];
+    }
+
+    return shuffled;
+}
+
+
 function randomizeNextRoll() {
     if (!editableNextRolls[0]?.length) {
         showToast("No next roll is loaded.", true);
         return;
     }
-    editableNextRolls[0] = editableNextRolls[0].map(() => randomAllowedColor());
+
+    editableNextRolls[0] = generateWeightedNextRoll(editableNextRolls[0].length);
     markUnsaved();
     renderRolls();
-    showToast(
-        loadedGameMode === "ballDrop"
-            ? "⚪ Next drop randomized"
-            : "🎲 Next roll randomized"
-    );
+
+    if (loadedGameMode === "ballDrop") {
+        showToast("⚪ Next drop randomized");
+    } else if (favorThreeColorRolls) {
+        showToast("🎲 Next roll randomized — 3-color mode");
+    } else {
+        showToast("🎲 Next roll randomized");
+    }
 }
 
 
@@ -434,6 +605,7 @@ function displayKeyName(key) {
     if (key === "Space") return "Space";
     return key.length === 1 ? key.toUpperCase() : key;
 }
+
 
 function loadKeybindPreferences() {
     try {
@@ -500,7 +672,7 @@ function setAllColorsEnabled({ regenerate = true, notify = true } = {}) {
     allowedNextOneColors = new Set(ALL_COLOR_INDEXES);
 
     if (regenerate && editableNextRolls[0]?.length && !alreadyAllEnabled) {
-        editableNextRolls[0] = editableNextRolls[0].map(() => randomAllowedColor());
+        editableNextRolls[0] = generateWeightedNextRoll(editableNextRolls[0].length);
         isApplyingLocalChange = true;
         renderRolls();
         markUnsaved();
@@ -516,7 +688,7 @@ function toggleAllColors() {
         // Keep one color enabled so the roll can always be generated safely.
         allowedNextOneColors = new Set([ALL_COLOR_INDEXES.at(-1)]);
         if (editableNextRolls[0]?.length) {
-            editableNextRolls[0] = editableNextRolls[0].map(() => randomAllowedColor());
+            editableNextRolls[0] = generateWeightedNextRoll(editableNextRolls[0].length);
             isApplyingLocalChange = true;
             renderRolls();
             markUnsaved();
@@ -720,7 +892,7 @@ function toggleAllowedColor(colorIndex) {
         return true;
     }
 
-    editableNextRolls[0] = editableNextRolls[0].map(() => randomAllowedColor());
+    editableNextRolls[0] = generateWeightedNextRoll(editableNextRolls[0].length);
     isApplyingLocalChange = true;
     renderRolls();
     markUnsaved();
@@ -1017,6 +1189,12 @@ async function loadGame() {
         loadedRoomPath = room.ref.path;
         editableNextRolls = await loadSecureQueue(room.ref, room.type, room.data);
 
+        favorThreeColorRolls = false;
+        if (favorThreeColorRollsCheckbox) {
+            favorThreeColorRollsCheckbox.checked = false;
+            favorThreeColorRollsCheckbox.closest(".colorWeightingToggle")?.removeAttribute("hidden");
+        }
+
         gameStatus.textContent = "Room found.";
         roomType.textContent = room.type;
         renderRolls();
@@ -1094,6 +1272,38 @@ async function saveChanges() {
 searchRoomButton.addEventListener("click", () => {
     loadGame();
 });
+
+if (favorThreeColorRollsCheckbox) {
+    favorThreeColorRollsCheckbox.addEventListener("change", async () => {
+        if (!loadedRoomRef) {
+            favorThreeColorRollsCheckbox.checked = false;
+            return;
+        }
+
+        favorThreeColorRolls = favorThreeColorRollsCheckbox.checked;
+
+        if (loadedGameMode === "dice" && editableNextRolls.length) {
+            // Apply the ON/OFF mode to all currently loaded future rolls (up to 10).
+            // ON = weighted pattern probabilities.
+            // OFF = normal unbiased randomization.
+            editableNextRolls = editableNextRolls.slice(0, 10).map(values =>
+                generateWeightedNextRoll(values.length)
+            );
+
+            markUnsaved();
+            renderRolls();
+
+            // Checking or unchecking automatically saves the updated queue.
+            await saveChanges();
+        }
+
+        showToast(
+            favorThreeColorRolls
+                ? "✓ Weighted patterns enabled and saved"
+                : "✓ Normal randomization restored and saved"
+        );
+    });
+}
 
 
 

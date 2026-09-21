@@ -228,6 +228,34 @@
         #keyboardStatus { padding:8px 11px; border-radius:999px; font-size:13px; font-weight:900; }
         #keyboardStatus.isOn { background:rgba(65,200,110,.18); color:#7dffa7; border:1px solid rgba(125,255,167,.45); }
         #keyboardStatus.isOff { background:rgba(255,255,255,.08); color:rgba(255,255,255,.65); border:1px solid rgba(255,255,255,.18); }
+        .colorWeightingToggle {
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:8px;
+            width:max-content;
+            margin:8px auto 12px;
+            padding:7px 10px;
+            cursor:pointer;
+            font-size:14px;
+            font-weight:800;
+            color:inherit;
+        }
+        .colorWeightingToggle[hidden] {
+            display:none;
+        }
+        .colorWeightingToggle input {
+            width:18px;
+            height:18px;
+            margin:0;
+            opacity:1;
+            pointer-events:auto;
+            accent-color:#7dffa7;
+            cursor:pointer;
+        }
+        .colorWeightingToggle span {
+            line-height:1;
+        }
         #openKeybindSettingsButton, .keybindActionButton { padding:9px 12px; border:1px solid rgba(255,255,255,.24); border-radius:10px; background:rgba(255,255,255,.1); color:inherit; font-weight:900; cursor:pointer; }
         .keybindModal { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; padding:18px; background:rgba(0,0,0,.76); }
         .keybindModal[hidden] { display:none; }
@@ -280,6 +308,10 @@
                 <span id="keyboardStatus" class="isOff">⌨ Keyboard: OFF</span>
                 <button id="openKeybindSettingsButton" type="button">⌨ Keybind Settings</button>
             </div>
+            <label class="colorWeightingToggle" hidden>
+                <input id="favorThreeColorRollsCheckbox" type="checkbox">
+                <span>Use weighted roll patterns</span>
+            </label>
             <p id="saveStatus" aria-live="polite"></p>
             <div id="rollContainer"></div>
         </div>
