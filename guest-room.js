@@ -1696,7 +1696,7 @@ function updateRoomScreen() {
     if (isHost) {
         rollButton.textContent = guestRollingSuspended
             ? "Rolling Suspended"
-            : "Roll Dice";
+            : "Roll";
 
         rollButton.title = guestRollingSuspended
             ? (currentGameData.guestSuspensionReason ||

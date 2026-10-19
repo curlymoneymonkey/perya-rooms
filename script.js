@@ -314,7 +314,10 @@ const guestText = document.getElementById("guestText");
 let currentUser = null;
 let currentRoomId = "";
 let currentRoom = null;
+let pendingDiceCount = null;
 let isHost = false;
+let roomIdRandomizerTimer = null;
+let roomIdGenerationActive = false;
 let isRollingLocally = false;
 let hostAccountControls = {};
 let hostAccountControlsLoaded = false;
@@ -660,6 +663,90 @@ function showGame() {
 
     loadingScreen.hidden = true;
     gameScreen.hidden = false;
+}
+
+// Keep the original room layout visible while a new Room ID is being created.
+// This only temporarily exposes the same existing controls; it does not rebuild
+// or replace any room settings markup.
+function beginRoomIdGeneration() {
+    if (roomIdGenerationActive) return;
+    roomIdGenerationActive = true;
+    showGame();
+
+    if (roomStatus) {
+        roomStatus.hidden = false;
+        roomStatus.style.display = "";
+        roomStatus.textContent = "Generating room ID";
+    }
+
+    if (results) {
+        results.hidden = false;
+        results.style.display = "";
+        showWhiteDice(3);
+    }
+
+    if (gameIdElement) {
+        gameIdElement.classList.add("room-id-randomizing");
+        gameIdElement.textContent = randomRoomIdPreview();
+    }
+
+    // Show the existing host settings and tools during the short generation
+    // phase so the room looks the same before and after the ID is assigned.
+    if (hostSettings) {
+        hostSettings.hidden = false;
+        hostSettings.style.removeProperty("display");
+    }
+    if (hostDiceCountControl) hostDiceCountControl.hidden = false;
+    if (guestDiceSkinControl) {
+        guestDiceSkinControl.hidden = false;
+        guestDiceSkinControl.style.removeProperty("display");
+    }
+    if (guestDiceBlurToolbar) {
+        guestDiceBlurToolbar.hidden = false;
+        guestDiceBlurToolbar.style.removeProperty("display");
+    }
+    if (rollButton) {
+        rollButton.hidden = false;
+        rollButton.disabled = true;
+        rollButton.style.removeProperty("display");
+    }
+    if (waitingText) waitingText.hidden = true;
+
+    if (roomIdRandomizerTimer !== null) {
+        window.clearInterval(roomIdRandomizerTimer);
+    }
+    roomIdRandomizerTimer = window.setInterval(() => {
+        if (gameIdElement && roomIdGenerationActive) {
+            gameIdElement.textContent = randomRoomIdPreview();
+        }
+    }, 75);
+}
+
+function randomRoomIdPreview() {
+    const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, byte => characters[byte % characters.length]).join("");
+}
+
+function finishRoomIdGeneration(roomId) {
+    roomIdGenerationActive = false;
+    if (roomIdRandomizerTimer !== null) {
+        window.clearInterval(roomIdRandomizerTimer);
+        roomIdRandomizerTimer = null;
+    }
+
+    if (gameIdElement) {
+        gameIdElement.textContent = roomId;
+        gameIdElement.classList.remove("room-id-randomizing");
+        // Restart the pop animation when the real ID is ready.
+        gameIdElement.classList.remove("room-id-generated-pop");
+        void gameIdElement.offsetWidth;
+        gameIdElement.classList.add("room-id-generated-pop");
+        window.setTimeout(() => {
+            gameIdElement?.classList.remove("room-id-generated-pop");
+        }, 1050);
+    }
 }
 
 
@@ -1193,8 +1280,7 @@ async function cleanupExpiredRooms() {
 async function createRoom() {
 
     await stopHostPresence(true);
-
-    showLoading("Room Generated!");
+    beginRoomIdGeneration();
 
     let roomId = "";
     let reference = null;
@@ -1231,6 +1317,7 @@ async function createRoom() {
     });
 
     currentRoomId = roomId;
+    finishRoomIdGeneration(roomId);
 
     setRoomInUrl(roomId);
     listenToRoom();
@@ -1561,7 +1648,7 @@ function updateScreen() {
 
     const amount =
         clampDiceCount(
-            currentRoom.diceCount
+            pendingDiceCount ?? currentRoom.diceCount
         );
 
     const latestResult =
@@ -1695,7 +1782,7 @@ function updateScreen() {
             ? "Checking Access..."
             : rollingIsSuspended
                 ? "Rolling Suspended"
-                : "Roll Dice";
+                : "Rock & Roll 🤘";
     }
 
     syncGuestDiceCountDisplay();
@@ -1801,10 +1888,17 @@ function updateScreen() {
         : rollingIsSuspended
             ? `Rolling suspended${suspensionReason ? `: ${suspensionReason}` : "."}`
             : (isHost
-                ? "Ready to roll."
+                ? "Ready to Rock! 🎸"
                 : "Waiting for the room creator to roll.");
 
-    if (latestResult.length > 0) {
+    if (pendingDiceCount !== null) {
+        // A changed dice count is a local preview until Roll is clicked.
+        // Render the selected number immediately without a Firebase write.
+        showWhiteDice(amount);
+        if (currentResultPanel) currentResultPanel.hidden = true;
+        if (currentResult) currentResult.innerHTML = "";
+
+    } else if (latestResult.length > 0) {
 
         showDice(
             results,
@@ -1851,7 +1945,7 @@ async function rollDice() {
     }
 
     isRollingLocally = true;
-    const selectedAmount = clampDiceCount(currentRoom?.diceCount);
+    const selectedAmount = clampDiceCount(pendingDiceCount ?? currentRoom?.diceCount);
     let rollCompleted = false;
 
     updateScreen();
@@ -1861,13 +1955,27 @@ async function rollDice() {
     }
 
     try {
-        // Start the Firebase request first so no network time is wasted.
-        const rollRequest = startSecureRoll({
-    roomType: "guest",
-    roomId: currentRoomId
-});
+        // Save a changed dice count only when the user presses Roll.
+        // The visible dice count has already updated locally without waiting for Firebase.
+        if (pendingDiceCount !== null) {
+            await setSecureDiceCount({
+                roomType: "guest",
+                roomId: currentRoomId,
+                amount: selectedAmount
+            });
+            pendingDiceCount = null;
+            if (currentRoom) {
+                currentRoom = { ...currentRoom, diceCount: selectedAmount };
+            }
+        }
 
-const preparingStartedAt = performance.now();
+        // Start the secure roll after the selected count is saved.
+        const rollRequest = startSecureRoll({
+            roomType: "guest",
+            roomId: currentRoomId
+        });
+
+        const preparingStartedAt = performance.now();
 
 startPreparingRoll();
 
@@ -1910,6 +2018,7 @@ if (preparingRemaining > 0) {
          * Update the local room state immediately. Without this, the browser can
          * keep the old rolling:true snapshot briefly and leave Roll disabled.
          */
+        pendingDiceCount = null;
         if (currentRoom) {
             /*
              * Update only the immediate display state.
@@ -2263,9 +2372,17 @@ if (guestDiceSkinSelect) {
 
 diceCountSelect.addEventListener(
     "change",
-    async () => {
+    () => {
+        const amount = clampDiceCount(diceCountSelect.value);
+        pendingDiceCount = amount;
+
+        // Update the visible dice immediately. Do not contact Firebase here.
+        if (currentRoom) {
+            currentRoom = { ...currentRoom, diceCount: amount };
+        }
+        showWhiteDice(amount);
         syncGuestDiceCountDisplay();
-        await updateDiceCount();
+        updateScreen();
     }
 );
 
@@ -2348,39 +2465,40 @@ window.addEventListener(
 async function startApplication() {
 
     try {
+        const roomIdFromUrl = getRoomFromUrl();
 
-        showLoading(
-            "Generating your Room..."
-        );
+        if (roomIdFromUrl) {
+            showLoading("Entering room...");
+        } else {
+            // For a new room, show the real room interface immediately while
+            // Firebase prepares the Room ID in the existing Room ID position.
+            beginRoomIdGeneration();
+        }
 
-        currentUser =
-            await authReady;
+        currentUser = await authReady;
 
         if (!currentUser?.uid) {
-            throw new Error(
-                "Failed!"
-            );
+            throw new Error("Failed!");
         }
 
 // await cleanupExpiredRooms();
 
         await loadDiceSkins();
 
-        const roomIdFromUrl =
-            getRoomFromUrl();
-
         if (roomIdFromUrl) {
-
-            await joinRoom(
-                roomIdFromUrl
-            );
-
+            await joinRoom(roomIdFromUrl);
         } else {
-
             await createRoom();
         }
 
     } catch (error) {
+
+        roomIdGenerationActive = false;
+        if (roomIdRandomizerTimer !== null) {
+            window.clearInterval(roomIdRandomizerTimer);
+            roomIdRandomizerTimer = null;
+        }
+        if (gameIdElement) gameIdElement.classList.remove("room-id-randomizing");
 
         console.error(
             "Failed!",
