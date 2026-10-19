@@ -373,7 +373,7 @@
 
 <main>
 
-    <section id="loadingScreen" class="card loadingCard" hidden>
+    <section id="loadingScreen" class="card loadingCard">
         <h2 id="loadingMessage" aria-hidden="true">Connecting to your Room...</h2>
         <div id="loadingDisplayMessage" class="loadingDisplayMessage" aria-live="polite"></div>
         <div class="loadingDicePulse" aria-hidden="true">
@@ -383,7 +383,7 @@
         </div>
     </section>
 
-    <section id="gameScreen">
+    <section id="gameScreen" hidden>
         <section id="roomGameSelectorCard"
                  class="formalGameSettingsCard"
                  aria-labelledby="gameSettingsTitle">
@@ -640,7 +640,7 @@
         <div class="bottomPanels guestBottomPanels">
             <section id="diceHistoryBox"
                      class="card historyBox">
-                <h2>History</h2>
+                <h2>Previous Rolls</h2>
                 <div id="history"></div>
             </section>
 
