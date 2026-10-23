@@ -1,8 +1,9 @@
-import { auth, db, waitForAuthState } from "./firebase.js";
+import { auth, db, realtimeDb, waitForAuthState } from "./firebase.js";
 import {
   addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, query,
   runTransaction, serverTimestamp, setDoc, updateDoc, where
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+import { onValue, ref } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
 const userForm = document.getElementById("pdoUserSearchForm");
 const userInput = document.getElementById("pdoUserSearch");
@@ -15,11 +16,19 @@ const roomButton = document.getElementById("pdoRoomSearchButton");
 const roomMessage = document.getElementById("pdoRoomMessage");
 const roomResult = document.getElementById("pdoRoomResult");
 const directoryBody = document.getElementById("pdoDirectoryBody");
+const directoryHead = document.getElementById("pdoDirectoryHead");
 const directorySearch = document.getElementById("pdoDirectorySearch");
 const directorySort = document.getElementById("pdoDirectorySort");
 const directoryRefresh = document.getElementById("pdoDirectoryRefresh");
 const directoryMessage = document.getElementById("pdoDirectoryMessage");
 const directoryRoleButtons = [...document.querySelectorAll("[data-directory-role]")];
+const directoryActiveCount = document.getElementById("directoryActiveCount");
+let activeUsersRows = [];
+let activeUsersUnsubscribe = null;
+let activeUsersRefreshTimer = null;
+let latestActiveUsersSnapshot = {};
+const PRESENCE_STALE_AFTER_MS = 90 * 1000;
+const ACTIVE_USERS_REFRESH_MS = 15 * 1000;
 
 let staffUser = null;
 let isAdminUser = false;
@@ -28,7 +37,7 @@ let selectedUser = null;
 let selectedRoom = null;
 let adminReady = null;
 let directoryAccounts = [];
-let directoryRoleFilter = "all";
+let directoryRoleFilter = "rooms";
 
 const clean = value => String(value || "").trim();
 const esc = value => String(value ?? "").replace(/[&<>'"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char]));
@@ -187,7 +196,7 @@ async function renderUser(user) {
         <label class="check-row"><input type="checkbox" id="userRollingRestricted" ${user.rollingRestricted === true ? "checked" : ""} ${!mayManageTarget ? "disabled" : ""}> Prevent rolling</label>
         <label class="check-row"><input type="checkbox" id="userReviewsRestricted" ${user.reviewsRestricted === true ? "checked" : ""} ${!mayManageTarget ? "disabled" : ""}> Prevent reviews</label>
         <label class="check-row"><input type="checkbox" id="userAccountSuspended" ${user.accountSuspended === true ? "checked" : ""} ${!mayManageTarget ? "disabled" : ""}> Suspend account</label>
-        <label class="check-row full"><input type="checkbox" id="userImAMonkeyAccess" ${(Array.isArray(user.allowedPages) && user.allowedPages.includes("imamonkeyandilovemoney.html")) || user.imamonkeyandilovemoneyAccess === true ? "checked" : ""} ${!mayManageTarget ? "disabled" : ""}> Allow admin access</strong></label>
+        <label class="check-row full"><input type="checkbox" id="userImAMonkeyAccess" ${(Array.isArray(user.allowedPages) && (user.allowedPages.includes("moneymonkey.html") || user.allowedPages.includes("imamonkeyandilovemoney.html"))) || user.moneymonkeyAccess === true || user.imamonkeyandilovemoneyAccess === true ? "checked" : ""} ${!mayManageTarget ? "disabled" : ""}> Monkey access</label>
         <label class="full"><span>Reason</span><textarea class="pdo-input" id="userRestrictionReason" maxlength="300" placeholder="Reason for this action" ${!mayManageTarget ? "disabled" : ""}>${esc(user.restrictionReason || "")}</textarea></label>
       </div>
       <div class="result-actions"><a class="pdo-button secondary" href="profile.html?id=${encodeURIComponent(user.id)}">View profile</a><button class="pdo-button" id="saveUserControls" type="button" ${!mayManageTarget ? "disabled" : ""}>Save changes</button></div>
@@ -243,11 +252,15 @@ async function saveUserControls() {
   const reason = clean(document.getElementById("userRestrictionReason").value).slice(0, 300);
   const shouldHaveVip = ["VIP", "Moderator", "Administrator", "Head Administrator"].includes(nextRole);
   const alreadyHadVip = selectedUser.vip === true;
-  const privatePageName = "imamonkeyandilovemoney.html";
+  const privatePageName = "moneymonkey.html";
   const privatePageAllowed = document.getElementById("userImAMonkeyAccess").checked;
   const allowedPages = Array.isArray(selectedUser.allowedPages)
     ? [...new Set(selectedUser.allowedPages.map(clean).filter(Boolean))]
     : [];
+  // Migrate the old private-page path to the current Monkey page.
+  const legacyPrivatePageName = "imamonkeyandilovemoney.html";
+  const legacyPrivatePageIndex = allowedPages.indexOf(legacyPrivatePageName);
+  if (legacyPrivatePageIndex !== -1) allowedPages.splice(legacyPrivatePageIndex, 1);
   const privatePageIndex = allowedPages.indexOf(privatePageName);
 
   if (privatePageAllowed && privatePageIndex === -1) allowedPages.push(privatePageName);
@@ -264,7 +277,8 @@ async function saveUserControls() {
     reviewsRestricted: document.getElementById("userReviewsRestricted").checked,
     accountSuspended: document.getElementById("userAccountSuspended").checked,
     allowedPages,
-    imamonkeyandilovemoneyAccess: privatePageAllowed,
+    moneymonkeyAccess: privatePageAllowed,
+    imamonkeyandilovemoneyAccess: false,
     pageAccessUpdatedAt: serverTimestamp(),
     pageAccessUpdatedBy: staffUser.uid,
     restrictionReason: reason,
@@ -336,7 +350,9 @@ async function saveUserControls() {
       logAction("user_control_updated", "user", selectedUser.id, {
         previousRole, role: nextRole, rollingRestricted: changes.rollingRestricted,
         reviewsRestricted: changes.reviewsRestricted, accountSuspended: changes.accountSuspended,
-        imamonkeyandilovemoneyAccess: privatePageAllowed, allowedPages: changes.allowedPages,
+        moneymonkeyAccess: privatePageAllowed,
+        imamonkeyandilovemoneyAccess: false,
+        allowedPages: changes.allowedPages,
         restrictionReason: reason, vip: changes.vip
       }),
       notifyUser(selectedUser.id, notificationTitle, notificationMessage,
@@ -574,32 +590,179 @@ function activeVip(data) {
   return timestampMs(data.vipExpiresAt) > Date.now();
 }
 
+function hasMonkeyRole(account) {
+  const user = account?.user || account || {};
+  const pages = Array.isArray(user.allowedPages) ? user.allowedPages.map(value => clean(value).toLowerCase()) : [];
+  return user.monkey === true ||
+    user.monkeyRole === true ||
+    String(user.role || "").trim().toLowerCase() === "monkey" ||
+    user.moneymonkeyAccess === true ||
+    user.imamonkeyandilovemoneyAccess === true ||
+    pages.includes("moneymonkey.html") ||
+    pages.includes("imamonkeyandilovemoney.html");
+}
+
 function directoryRole(account) {
-  if (account.admin?.enabled === true) {
-    return account.admin.role === "head-admin"
-      ? { key: "admin", label: "Head Administrator" }
-      : { key: "admin", label: "Administrator" };
+  if (account.admin?.enabled === true || account.moderator?.enabled === true) {
+    const isHead = account.admin?.enabled === true && account.admin.role === "head-admin";
+    return { key: "staff", label: isHead ? "Head Administrator" : account.admin?.enabled === true ? "Administrator" : "Moderator" };
   }
-  if (account.moderator?.enabled === true) return { key: "moderator", label: "Moderator" };
+  if (hasMonkeyRole(account)) return { key: "monkey", label: "Monkey" };
   if (activeVip(account.user)) return { key: "vip", label: "VIP" };
   return { key: "user", label: "User" };
 }
 
+function activeSessionFor(uid) {
+  return activeUsersRows.find(session => session.uid === uid) || null;
+}
+
+function getActiveRooms() {
+  const rooms = new Map();
+  activeUsersRows.forEach(session => {
+    const roomId = clean(session.roomId || session.roomID || session.currentRoomId);
+    if (!roomId) return;
+    const existing = rooms.get(roomId) || { roomId, users: [], hostUid: "", hostUsername: "", lastSeenMs: 0 };
+    const username = clean(session.hostUsername || session.roomHostUsername || session.username || session.displayName) || "Unknown host";
+    const uid = clean(session.hostUid || session.ownerUid || session.hostId || session.uid);
+    if (!existing.users.some(user => user.uid === session.uid)) {
+      existing.users.push({ uid: session.uid, username: clean(session.username || session.displayName) || "User" });
+    }
+    // Prefer explicit host fields from the presence session; fall back to the
+    // user whose active session reports this room.
+    if (!existing.hostUid || session.hostUid || session.ownerUid || session.hostId) {
+      existing.hostUid = uid;
+      existing.hostUsername = username;
+    }
+    existing.lastSeenMs = Math.max(existing.lastSeenMs, session.lastSeenMs || 0);
+    rooms.set(roomId, existing);
+  });
+  return [...rooms.values()].sort((a, b) => b.lastSeenMs - a.lastSeenMs || a.roomId.localeCompare(b.roomId));
+}
+
 function updateDirectoryCounts() {
-  const counts = { all: directoryAccounts.length, user: 0, vip: 0, moderator: 0, admin: 0 };
-  directoryAccounts.forEach(account => counts[directoryRole(account).key]++);
+  const counts = { rooms: getActiveRooms().length, user: 0, monkey: 0, staff: 0 };
+  directoryAccounts.forEach(account => {
+    const role = directoryRole(account);
+    if (Object.prototype.hasOwnProperty.call(counts, role.key)) counts[role.key]++;
+  });
   const ids = {
-    all: "directoryAllCount", user: "directoryUserCount", vip: "directoryVipCount",
-    moderator: "directoryModeratorCount", admin: "directoryAdminCount"
+    rooms: "directoryRoomsCount", user: "directoryUserCount",
+    monkey: "directoryMonkeyCount", staff: "directoryStaffCount"
   };
   Object.entries(ids).forEach(([key, id]) => {
     const node = document.getElementById(id);
-    if (node) node.textContent = counts[key].toLocaleString();
+    if (node) node.textContent = (counts[key] ?? 0).toLocaleString();
   });
+}
+
+function renderActiveRoomsDirectory() {
+  if (!directoryBody) return;
+  if (directoryHead) directoryHead.innerHTML = "<tr><th>Room ID</th><th>Host</th><th>Active users</th><th>Last activity</th><th>Action</th></tr>";
+  const term = clean(directorySearch?.value).toLowerCase();
+  const rooms = getActiveRooms().filter(room =>
+    [room.roomId, room.hostUsername, room.hostUid, ...room.users.map(user => user.username), ...room.users.map(user => user.uid)]
+      .some(value => String(value || "").toLowerCase().includes(term))
+  );
+  if (!rooms.length) {
+    directoryBody.innerHTML = '<tr><td colspan="5" class="directory-empty">No active rooms right now.</td></tr>';
+    setMessage(directoryMessage, `Showing 0 of ${getActiveRooms().length} active rooms. Rooms are based on recent live presence sessions.`);
+    return;
+  }
+  directoryBody.innerHTML = rooms.map(room => `<tr>
+    <td><strong>${esc(room.roomId)}</strong></td>
+    <td><strong>${esc(room.hostUsername || "Unknown host")}</strong><div class="directory-muted">${esc(room.hostUid || "Host UID unavailable")}</div></td>
+    <td>${room.users.length}${room.users.length ? `<div class="directory-muted">${room.users.map(user => esc(user.username)).join(", ")}</div>` : ""}</td>
+    <td>${esc(formatPresenceTime(room.lastSeenMs))}</td>
+    <td>${room.hostUid ? `<button class="pdo-button secondary directory-open" type="button" data-room-host-manage="${esc(room.hostUid)}">Manage host</button>` : "—"}</td>
+  </tr>`).join("");
+
+  directoryBody.querySelectorAll("[data-room-host-manage]").forEach(button => {
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      try {
+        const bundled = await readUserBundle(button.dataset.roomHostManage);
+        if (!bundled) {
+          setMessage(directoryMessage, "The host has no Firestore account/profile document to manage.", true);
+          return;
+        }
+        await renderUser(bundled);
+        userResult?.scrollIntoView({ behavior: "smooth", block: "start" });
+        setMessage(userMessage, "Room host selected from Active rooms.");
+      } catch (error) {
+        setMessage(directoryMessage, error.message || "Could not open the room host.", true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+  setMessage(directoryMessage, `Showing ${rooms.length} active rooms. A room is listed when a recent presence session reports its room ID.`);
+}
+
+function renderActiveUsersDirectory() {
+  if (!directoryBody) return;
+  if (directoryHead) directoryHead.innerHTML = "<tr><th>User</th><th>Role</th><th>Current Page</th><th>Room ID</th><th>Device</th><th>Last Seen</th><th>Action</th></tr>";
+  const term = clean(directorySearch?.value).toLowerCase();
+  const filtered = activeUsersRows.filter(user =>
+    [user.username, user.uid, user.page, user.path, user.roomId, user.device]
+      .some(value => String(value || "").toLowerCase().includes(term))
+  ).sort((a, b) => String(a.username || a.uid).localeCompare(String(b.username || b.uid)));
+  if (!filtered.length) {
+    directoryBody.innerHTML = '<tr><td colspan="7" class="directory-empty">No active users right now.</td></tr>';
+    setMessage(directoryMessage, `Showing 0 of ${activeUsersRows.length} active users.`);
+    return;
+  }
+  directoryBody.innerHTML = filtered.map(user => {
+    const role = String(user.role || "user").replace(/[-_]/g, " ");
+    return `<tr>
+      <td><strong>${esc(user.username || "User")}</strong><div class="directory-muted">${esc(user.uid)}</div></td>
+      <td><span class="directory-role">${esc(role)}</span></td>
+      <td>${esc(user.page || user.path || "Unknown")}</td>
+      <td>${esc(user.roomId || "—")}</td>
+      <td>${esc(user.device || "Unknown")}</td>
+      <td>${esc(formatPresenceTime(user.lastSeen))}</td>
+      <td><button class="pdo-button secondary directory-open" type="button" data-active-user-manage="${esc(user.uid)}">Manage</button></td>
+    </tr>`;
+  }).join("");
+
+  directoryBody.querySelectorAll("[data-active-user-manage]").forEach(button => {
+    button.addEventListener("click", async () => {
+      const uid = button.dataset.activeUserManage;
+      const activeUser = activeUsersRows.find(item => item.uid === uid);
+      if (!activeUser) return;
+
+      button.disabled = true;
+      try {
+        const bundled = await readUserBundle(uid);
+        if (!bundled) {
+          setMessage(directoryMessage, "This active user has no Firestore account/profile document to manage yet.", true);
+          return;
+        }
+        await renderUser(bundled);
+        userResult?.scrollIntoView({ behavior: "smooth", block: "start" });
+        setMessage(userMessage, "User selected from Active Users.");
+      } catch (error) {
+        console.error("Could not open active user:", error);
+        setMessage(directoryMessage, error.message || "Could not open this active user.", true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+
+  setMessage(directoryMessage, `Showing ${filtered.length} active users. Sessions without a recent heartbeat are excluded.`);
 }
 
 function renderDirectory() {
   if (!directoryBody) return;
+  if (directoryRoleFilter === "rooms") {
+    renderActiveRoomsDirectory();
+    return;
+  }
+  if (directoryRoleFilter === "active") {
+    renderActiveUsersDirectory();
+    return;
+  }
+  if (directoryHead) directoryHead.innerHTML = "<tr><th>Account</th><th>Role</th><th>Status</th><th>Room</th><th>UID</th><th>Action</th></tr>";
   const term = clean(directorySearch?.value).toLowerCase();
   const sortMode = directorySort?.value || "username";
   const filtered = directoryAccounts.filter(account => {
@@ -618,7 +781,7 @@ function renderDirectory() {
   });
 
   if (!filtered.length) {
-    directoryBody.innerHTML = '<tr><td colspan="4" class="directory-empty">No matching accounts found.</td></tr>';
+    directoryBody.innerHTML = '<tr><td colspan="6" class="directory-empty">No matching accounts found.</td></tr>';
     setMessage(directoryMessage, `Showing 0 of ${directoryAccounts.length} loaded accounts.`);
     return;
   }
@@ -628,9 +791,14 @@ function renderDirectory() {
     const username = account.username || account.displayName || "Unknown";
     const email = account.email || "No email stored";
     const photo = account.photoURL || "favicon.png";
+    const presence = activeSessionFor(account.id);
+    const statusLabel = presence ? "Active" : "Inactive";
+    const roomLabel = presence ? (presence.roomId || "Active, no room reported") : "—";
     return `<tr>
       <td><div class="directory-account"><img class="directory-avatar" src="${esc(photo)}" alt="" onerror="this.src='favicon.png'"><div><strong>@${esc(username)}</strong><span>${esc(email)}</span></div></div></td>
       <td><span class="directory-role">${esc(role.label)}${role.label === "Head Administrator" ? " 👑" : ""}</span></td>
+      <td><span class="directory-role ${presence ? "presence-active" : "presence-inactive"}">${statusLabel}</span></td>
+      <td>${esc(roomLabel)}</td>
       <td>${esc(account.id)}</td>
       <td><button class="pdo-button secondary directory-open" type="button" data-directory-open="${esc(account.id)}">Manage</button></td>
     </tr>`;
@@ -648,6 +816,79 @@ function renderDirectory() {
     });
   });
   setMessage(directoryMessage, `Showing ${filtered.length} of ${directoryAccounts.length} loaded accounts.`);
+}
+
+function formatPresenceTime(value) {
+  let milliseconds = null;
+  if (typeof value === "number") milliseconds = value;
+  else if (value && typeof value === "object") {
+    if (typeof value.toMillis === "function") milliseconds = value.toMillis();
+    else if (typeof value.seconds === "number") milliseconds = value.seconds * 1000;
+    else if (typeof value[".sv"] === "string") milliseconds = Date.now();
+  }
+  if (!milliseconds || !Number.isFinite(milliseconds)) return "Unknown";
+  return new Date(milliseconds).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function presenceTimestampMs(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() && Number.isFinite(Number(value))) return Number(value);
+  if (value && typeof value === "object") {
+    if (typeof value.toMillis === "function") return value.toMillis();
+    if (typeof value.seconds === "number") return value.seconds * 1000;
+    if (typeof value.timestamp === "number") return value.timestamp;
+  }
+  return 0;
+}
+
+function renderActiveUsers(snapshotValue) {
+  // Keep the latest snapshot so stale sessions can age out even when RTDB
+  // has not emitted a new event.
+  if (snapshotValue !== undefined) latestActiveUsersSnapshot = snapshotValue || {};
+  const now = Date.now();
+  const sessionsByUser = new Map();
+
+  Object.entries(latestActiveUsersSnapshot || {}).forEach(([uid, sessions]) => {
+    Object.entries(sessions || {}).forEach(([sessionId, session]) => {
+      if (!session || session.online !== true) return;
+      const lastSeenMs = presenceTimestampMs(session.lastSeen);
+      // A session is only considered online while its heartbeat is recent.
+      if (!lastSeenMs || now - lastSeenMs > PRESENCE_STALE_AFTER_MS) return;
+      if (!sessionsByUser.has(uid)) sessionsByUser.set(uid, []);
+      sessionsByUser.get(uid).push({ ...session, uid, sessionId, lastSeenMs });
+    });
+  });
+
+  const users = [...sessionsByUser.entries()].map(([uid, sessions]) => {
+    sessions.sort((a, b) => b.lastSeenMs - a.lastSeenMs);
+    return sessions[0];
+  }).sort((a, b) => String(a.username || a.uid).localeCompare(String(b.username || b.uid)));
+
+  activeUsersRows = users;
+  if (directoryActiveCount) directoryActiveCount.textContent = users.length.toLocaleString();
+  updateDirectoryCounts();
+  renderDirectory();
+}
+
+function loadActiveUsers() {
+  if (!directoryBody || !isAdminUser) return;
+  if (activeUsersUnsubscribe) activeUsersUnsubscribe();
+  if (activeUsersRefreshTimer) clearInterval(activeUsersRefreshTimer);
+  activeUsersUnsubscribe = onValue(
+    ref(realtimeDb, "presenceSessions"),
+    snapshot => renderActiveUsers(snapshot.val()),
+    error => {
+      console.error("Active users presence listener failed:", error);
+      if (directoryRoleFilter === "active") {
+        directoryBody.innerHTML = '<tr><td colspan="6" class="directory-empty">Unable to load active users. Check Realtime Database rules.</td></tr>';
+      }
+      if (directoryActiveCount) directoryActiveCount.textContent = "—";
+    }
+  );
+
+  // RTDB only emits when data changes; re-render periodically so sessions
+  // that stop heartbeating become inactive after the timeout.
+  activeUsersRefreshTimer = setInterval(() => renderActiveUsers(), ACTIVE_USERS_REFRESH_MS);
 }
 
 async function loadAccountDirectory() {
@@ -681,7 +922,7 @@ async function loadAccountDirectory() {
     renderDirectory();
   } catch (error) {
     console.error("Account directory failed:", error);
-    directoryBody.innerHTML = '<tr><td colspan="4" class="directory-empty">Could not load the account directory.</td></tr>';
+    directoryBody.innerHTML = '<tr><td colspan="6" class="directory-empty">Could not load the account directory.</td></tr>';
     setMessage(directoryMessage, error.message || "Could not load accounts.", true);
   } finally {
     directoryRefresh.disabled = false;
@@ -712,14 +953,24 @@ roomForm.addEventListener("submit", async event => {
 directorySearch?.addEventListener("input", renderDirectory);
 directorySort?.addEventListener("change", renderDirectory);
 directoryRefresh?.addEventListener("click", loadAccountDirectory);
+// Periodically refresh the directory so newly created Firestore account documents appear
+// without requiring an administrator to click Refresh list.
+setInterval(() => {
+  if (isAdminUser && document.visibilityState !== "hidden") loadAccountDirectory();
+}, 30000);
 directoryRoleButtons.forEach(button => button.addEventListener("click", () => {
-  directoryRoleFilter = button.dataset.directoryRole || "all";
+  directoryRoleFilter = button.dataset.directoryRole || "rooms";
   directoryRoleButtons.forEach(item => item.classList.toggle("active", item === button));
   renderDirectory();
 }));
 
 adminReady = verifyStaff();
-adminReady.then(() => { if (isAdminUser) loadAccountDirectory(); });
+adminReady.then(() => {
+  if (isAdminUser) {
+    loadAccountDirectory();
+    loadActiveUsers();
+  }
+});
 adminReady.catch(error => {
   console.error(error);
   if (userMessage) setMessage(userMessage, error.message, true);

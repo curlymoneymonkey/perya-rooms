@@ -74,6 +74,44 @@
         .accountLoginSuccess {
             font-weight: 800;
         }
+
+        .accountUsernameForm {
+            display: grid;
+            gap: 10px;
+            margin-top: 18px;
+            text-align: left;
+        }
+
+        .accountUsernameForm label {
+            font-weight: 800;
+        }
+
+        .accountUsernameForm input {
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 0;
+            padding: 13px 14px;
+            border: 1px solid var(--border-color, rgba(255,255,255,.22));
+            border-radius: 10px;
+            background: var(--input-bg, rgba(0,0,0,.18));
+            color: inherit;
+            font: inherit;
+        }
+
+        .accountUsernameForm small {
+            opacity: .78;
+            line-height: 1.5;
+        }
+
+        .accountUsernameForm button {
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        #accountUsernameComplete[hidden],
+        #accountUsernameSetup[hidden] {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -99,11 +137,38 @@
             </div>
 
             <div id="accountLoginSignedIn" class="accountLoginSignedIn" hidden>
-                <h1>Creator Account</h1>
-                <p>Signed in as <strong id="accountLoginName">Creator</strong></p>
+                <h1>Create Your Username</h1>
+                <p>Signed in with Google as <strong id="accountLoginName">Creator</strong></p>
+
+                <div id="accountUsernameSetup">
+                    <p>Choose a unique username to finish setting up your Perya Dice creator account.</p>
+                    <form id="accountUsernameForm" class="accountUsernameForm">
+                        <label for="accountUsernameInput">Username</label>
+                        <input
+                            id="accountUsernameInput"
+                            name="username"
+                            type="text"
+                            minlength="3"
+                            maxlength="20"
+                            pattern="[A-Za-z0-9_]{3,20}"
+                            autocomplete="username"
+                            autocapitalize="none"
+                            spellcheck="false"
+                            placeholder="Choose a username"
+                            required
+                        >
+                        <small>Use 3–20 letters, numbers, or underscores. Usernames are not case-sensitive.</small>
+                        <button id="accountUsernameSubmit" type="submit">Create Username</button>
+                    </form>
+                </div>
+
+                <div id="accountUsernameComplete" hidden>
+                    <p id="accountUsernameCompleteMessage" class="accountLoginSuccess"></p>
+                    <p>Your creator account is ready. You can return to Perya Dice whenever you like.</p>
+                </div>
 
                 <div class="accountLoginActions">
-                    <button id="accountLoginDashboardButton" type="button">Open Dashboard</button>
+                    <button id="accountLoginBackButton" type="button">Start Rolling</button>
                     <button id="accountLoginSignOutButton" class="secondaryButton" type="button">Sign Out</button>
                 </div>
             </div>
@@ -111,7 +176,7 @@
             <p id="accountLoginStatus" class="accountLoginStatus" aria-live="polite"></p>
 
             <div class="accountLoginBack">
-                <a href="index.html">← Back to Perya Dice</a>
+                <a href="index.html">← Start Rolling</a>
             </div>
         </section>
     </main>
@@ -126,7 +191,9 @@
 
         import {
             doc,
-            getDoc
+            getDoc,
+            runTransaction,
+            serverTimestamp
         } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
         import {
@@ -136,19 +203,19 @@
         const signedOut = document.getElementById("accountLoginSignedOut");
         const signedIn = document.getElementById("accountLoginSignedIn");
         const googleButton = document.getElementById("accountLoginGoogleButton");
-        const dashboardButton = document.getElementById("accountLoginDashboardButton");
         const signOutButton = document.getElementById("accountLoginSignOutButton");
+        const backButton = document.getElementById("accountLoginBackButton");
         const accountName = document.getElementById("accountLoginName");
         const status = document.getElementById("accountLoginStatus");
+        const usernameSetup = document.getElementById("accountUsernameSetup");
+        const usernameComplete = document.getElementById("accountUsernameComplete");
+        const usernameCompleteMessage = document.getElementById("accountUsernameCompleteMessage");
+        const usernameForm = document.getElementById("accountUsernameForm");
+        const usernameInput = document.getElementById("accountUsernameInput");
+        const usernameSubmit = document.getElementById("accountUsernameSubmit");
 
-        async function routeGoogleUser(user) {
-            const userSnapshot = await getDoc(doc(db, "users", user.uid));
-            const username = userSnapshot.exists()
-                ? String(userSnapshot.data().username || "").trim()
-                : "";
-
-            window.location.href = username ? "dashboard.html" : "username.html";
-        }
+        let activeUser = null;
+        let accountLoadVersion = 0;
 
         function isGoogleUser(user) {
             return Boolean(
@@ -158,75 +225,222 @@
             );
         }
 
-        function renderAuthState(user) {
-            const signedInAsGoogle = isGoogleUser(user);
+        function setStatus(message, type = "") {
+            status.className = "accountLoginStatus";
+            if (type) status.classList.add(type);
+            status.textContent = message;
+        }
 
-            signedOut.hidden = signedInAsGoogle;
-            signedIn.hidden = !signedInAsGoogle;
+        function showUsernameSetup() {
+            usernameSetup.hidden = false;
+            usernameComplete.hidden = true;
+            usernameInput.disabled = false;
+            usernameSubmit.disabled = false;
+        }
 
-            if (signedInAsGoogle) {
-                accountName.textContent = user.displayName || user.email || "Creator";
-            } else {
-                status.textContent = "";
+        function showUsernameComplete(username) {
+            usernameSetup.hidden = true;
+            usernameComplete.hidden = false;
+            usernameCompleteMessage.textContent = `Your username is @${username}.`;
+        }
+
+        async function loadAccountState(user) {
+            const version = ++accountLoadVersion;
+            activeUser = user;
+            signedOut.hidden = true;
+            signedIn.hidden = false;
+            accountName.textContent = user.displayName || user.email || "Creator";
+            showUsernameSetup();
+            usernameInput.value = "";
+            setStatus("Checking your creator account...");
+
+            try {
+                const userSnapshot = await getDoc(doc(db, "users", user.uid));
+                if (version !== accountLoadVersion || activeUser?.uid !== user.uid) return;
+
+                const savedUsername = userSnapshot.exists()
+                    ? String(userSnapshot.data().username || "").trim()
+                    : "";
+
+                if (savedUsername) {
+                    showUsernameComplete(savedUsername);
+                    setStatus("Your creator account is ready.", "accountLoginSuccess");
+                } else {
+                    setStatus("Choose a username to finish creating your account.");
+                    usernameInput.focus();
+                }
+            } catch (error) {
+                console.error("Could not load creator account:", error);
+                if (version !== accountLoadVersion) return;
+                setStatus("Could not check your account. Please refresh and try again.", "accountLoginError");
             }
         }
 
-        googleButton.addEventListener("click", async () => {
+        async function handleGoogleSignIn() {
             googleButton.disabled = true;
-            status.className = "accountLoginStatus";
-            status.textContent = "Opening Google sign-in...";
+            setStatus("Opening Google sign-in...");
 
             try {
                 const user = await signInWithGoogle();
                 if (!isGoogleUser(user)) {
                     throw new Error("Google sign-in did not return a registered account.");
                 }
-
-                status.className = "accountLoginStatus accountLoginSuccess";
-                status.textContent = "Signed in successfully.";
-                await routeGoogleUser(user);
+                await loadAccountState(user);
             } catch (error) {
                 console.error("Google sign-in failed:", error);
-                status.className = "accountLoginStatus accountLoginError";
-                status.textContent = error?.code === "auth/popup-closed-by-user"
+                setStatus(error?.code === "auth/popup-closed-by-user"
                     ? "Google sign-in was cancelled."
-                    : "Could not sign in with Google. Please try again.";
+                    : "Could not sign in with Google. Please try again.", "accountLoginError");
+            } finally {
                 googleButton.disabled = false;
+            }
+        }
+
+        usernameForm.addEventListener("submit", async event => {
+            event.preventDefault();
+
+            const user = activeUser || auth.currentUser;
+            if (!isGoogleUser(user)) {
+                setStatus("Please sign in with Google first.", "accountLoginError");
+                return;
+            }
+
+            const username = usernameInput.value.trim();
+            const usernameLower = username.toLowerCase();
+
+            if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
+                setStatus("Use 3–20 characters: letters, numbers, or underscores only.", "accountLoginError");
+                usernameInput.focus();
+                return;
+            }
+
+            usernameSubmit.disabled = true;
+            usernameInput.disabled = true;
+            setStatus("Creating your username...");
+
+            const userRef = doc(db, "users", user.uid);
+            const profileRef = doc(db, "publicProfiles", user.uid);
+            const usernameRef = doc(db, "usernames", usernameLower);
+
+            try {
+                await runTransaction(db, async transaction => {
+                    const [userSnap, profileSnap, usernameSnap] = await Promise.all([
+                        transaction.get(userRef),
+                        transaction.get(profileRef),
+                        transaction.get(usernameRef)
+                    ]);
+
+                    const existingUser = userSnap.exists() ? userSnap.data() : {};
+                    const existingProfile = profileSnap.exists() ? profileSnap.data() : {};
+                    const mappedUid = usernameSnap.exists() ? usernameSnap.data().uid : null;
+
+                    if (mappedUid && mappedUid !== user.uid) {
+                        throw new Error("That username is already taken. Please choose another one.");
+                    }
+
+                    const existingUsername = String(existingUser.username || "").trim();
+                    if (existingUsername && existingUsername.toLowerCase() !== usernameLower) {
+                        throw new Error(`This account already has the username @${existingUsername}. Please sign out and sign back in.`);
+                    }
+
+                    const createdAt = existingUser.createdAt || existingProfile.createdAt || serverTimestamp();
+                    const displayName = user.displayName || existingUser.displayName || "";
+                    const photoURL = user.photoURL || existingUser.photoURL || "";
+                    const publicAccountData = {
+                        uid: user.uid,
+                        username: existingUsername || username,
+                        usernameLower,
+                        displayName,
+                        photoURL,
+                        bio: typeof existingProfile.bio === "string" ? existingProfile.bio : "",
+                        createdAt,
+                        updatedAt: serverTimestamp()
+                    };
+
+                    transaction.set(userRef, {
+                        username: existingUsername || username,
+                        usernameLower,
+                        email: user.email || existingUser.email || "",
+                        displayName,
+                        photoURL,
+                        createdAt,
+                        updatedAt: serverTimestamp()
+                    }, { merge: true });
+
+                    // Firestore rules make username/usernameLower/createdAt immutable
+                    // on publicProfiles updates. Create it only when it does not exist.
+                    if (!profileSnap.exists()) {
+                        transaction.set(profileRef, publicAccountData);
+                    }
+
+                    // The rules allow username mapping creation but not updates.
+                    // If this account already owns the mapping, leave it untouched.
+                    if (!usernameSnap.exists()) {
+                        transaction.set(usernameRef, {
+                            uid: user.uid,
+                            username: existingUsername || username,
+                            usernameLower,
+                            createdAt: serverTimestamp()
+                        });
+                    }
+                });
+
+                const savedSnap = await getDoc(userRef);
+                const savedUsername = String(savedSnap.data()?.username || username).trim();
+                showUsernameComplete(savedUsername);
+                setStatus("Username created successfully. Your account is now listed in the account directory.", "accountLoginSuccess");
+            } catch (error) {
+                console.error("Username creation failed:", error);
+                const message = error?.message || "";
+                if (message.includes("already taken") || message.includes("already has the username")) {
+                    setStatus(message, "accountLoginError");
+                } else if (error?.code === "permission-denied") {
+                    setStatus("Firestore denied account creation. Check your Firestore security rules for users, publicProfiles, and usernames.", "accountLoginError");
+                } else {
+                    setStatus("Could not create your username. Please try again.", "accountLoginError");
+                }
+                usernameInput.disabled = false;
+                usernameSubmit.disabled = false;
+                usernameInput.focus();
             }
         });
 
-        dashboardButton.addEventListener("click", async () => {
-            const user = auth.currentUser;
-            if (!isGoogleUser(user)) return;
+        googleButton.addEventListener("click", handleGoogleSignIn);
 
-            dashboardButton.disabled = true;
-            try {
-                await routeGoogleUser(user);
-            } catch (error) {
-                console.error("Could not open dashboard:", error);
-                status.className = "accountLoginStatus accountLoginError";
-                status.textContent = "Could not open the dashboard.";
-                dashboardButton.disabled = false;
-            }
+        backButton.addEventListener("click", () => {
+            window.location.href = "index.html";
         });
 
         signOutButton.addEventListener("click", async () => {
             signOutButton.disabled = true;
-            status.className = "accountLoginStatus";
-            status.textContent = "Signing out...";
+            setStatus("Signing out...");
 
             try {
                 await logOut();
-                status.textContent = "Signed out.";
+                activeUser = null;
+                signedIn.hidden = true;
+                signedOut.hidden = false;
+                setStatus("Signed out.");
             } catch (error) {
                 console.error("Sign out failed:", error);
-                status.className = "accountLoginStatus accountLoginError";
-                status.textContent = "Could not sign out.";
+                setStatus("Could not sign out. Please try again.", "accountLoginError");
+            } finally {
                 signOutButton.disabled = false;
             }
         });
 
-        onAuthStateChanged(auth, renderAuthState);
+        onAuthStateChanged(auth, user => {
+            if (isGoogleUser(user)) {
+                void loadAccountState(user);
+            } else {
+                accountLoadVersion++;
+                activeUser = null;
+                signedIn.hidden = true;
+                signedOut.hidden = false;
+                googleButton.disabled = false;
+                setStatus("");
+            }
+        });
     </script>
 </body>
 </html>

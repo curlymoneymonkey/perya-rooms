@@ -634,8 +634,21 @@ function permanentRoomIdReference(diceId) {
 
 function setRoomInUrl(roomId) {
 
+    const cleanedRoomId = cleanRoomId(roomId);
+
+    // Share the latest room with other same-origin tabs, including moneymonkey.html.
+    // The admin viewer listens for this key and switches immediately when the room changes.
+    if (cleanedRoomId) {
+        try {
+            localStorage.setItem("peryaActiveRoomId", cleanedRoomId);
+            localStorage.setItem("peryaActiveRoomChangedAt", String(Date.now()));
+        } catch (error) {
+            console.warn("Could not share the active room with the admin viewer:", error);
+        }
+    }
+
     const url = new URL(window.location.href);
-    url.searchParams.set("id", roomId);
+    url.searchParams.set("id", cleanedRoomId);
 
     window.history.replaceState({}, "", url);
 }
@@ -1370,6 +1383,15 @@ async function joinRoom(roomId) {
     );
 
     if (permanentSnapshot.exists()) {
+
+        // Publish the destination before navigating to the permanent-room page,
+        // so the admin viewer can switch without waiting for roomPresence polling.
+        try {
+            localStorage.setItem("peryaActiveRoomId", cleanedRoomId);
+            localStorage.setItem("peryaActiveRoomChangedAt", String(Date.now()));
+        } catch (error) {
+            console.warn("Could not share the active room with the admin viewer:", error);
+        }
 
         window.location.href =
             `room.html?id=${encodeURIComponent(cleanedRoomId)}`;

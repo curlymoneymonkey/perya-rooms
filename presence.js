@@ -121,27 +121,45 @@ export async function startPresence() {
   };
 
   let heartbeatId = null;
+  let stopped = false;
+
+  const heartbeat = () => {
+    if (stopped) return Promise.resolve();
+    return update(sessionRef, {
+      page: getPageLabel(),
+      path: location.pathname,
+      roomId: getRoomId(),
+      lastSeen: serverTimestamp(),
+      online: true
+    }).catch((error) => console.warn('Presence heartbeat failed:', error));
+  };
+
+  const onVisibilityChange = () => {
+    // Background tabs can have throttled timers. Refresh immediately when the
+    // user returns so the admin's active-user list sees a fresh heartbeat.
+    if (document.visibilityState === 'visible') heartbeat();
+  };
+  document.addEventListener('visibilitychange', onVisibilityChange);
+
   const unsubscribe = onValue(connectedRef, async (snapshot) => {
+    if (stopped) return;
     if (snapshot.val() !== true) return;
 
     await onDisconnect(sessionRef).remove();
     await set(sessionRef, baseData);
 
     clearInterval(heartbeatId);
-    heartbeatId = setInterval(() => {
-      update(sessionRef, {
-        page: getPageLabel(),
-        path: location.pathname,
-        roomId: getRoomId(),
-        lastSeen: serverTimestamp(),
-        online: true
-      }).catch((error) => console.warn('Presence heartbeat failed:', error));
-    }, HEARTBEAT_MS);
+    // Refresh immediately after reconnect, then keep the regular heartbeat.
+    heartbeat();
+    heartbeatId = setInterval(heartbeat, HEARTBEAT_MS);
   });
 
   const stop = async () => {
+    if (stopped) return;
+    stopped = true;
     clearInterval(heartbeatId);
     unsubscribe();
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     try { await set(sessionRef, null); } catch (_) {}
   };
 

@@ -8,6 +8,10 @@
   <link rel="icon" href="favicon.png">
   <link rel="stylesheet" href="staff.css">
   <link rel="stylesheet" href="pdo_control.css">
+  <style>
+    .presence-active { color: #087443; background: rgba(16,185,129,.12); }
+    .presence-inactive { color: #747b87; background: rgba(120,130,145,.12); }
+  </style>
 </head>
 <body class="pdo-page">
 <div class="pdo-app">
@@ -41,23 +45,23 @@
       <section class="pdo-card pdo-panel pdo-span-12" data-admin-only>
         <div class="pdo-panel-head directory-head"><div><h2>📋 Account Directory</h2><p>Browse and search users by role. Select an account to open it in User Management.</p></div><button class="pdo-button secondary" id="pdoDirectoryRefresh" type="button">Refresh list</button></div>
         <div class="directory-stats" id="pdoDirectoryStats" aria-live="polite">
-          <button class="directory-stat active" type="button" data-directory-role="all"><strong id="directoryAllCount">—</strong><span>All</span></button>
+          <button class="directory-stat" type="button" data-directory-role="active"><strong id="directoryActiveCount">—</strong><span>Active Users</span></button>
+          <button class="directory-stat active" type="button" data-directory-role="rooms"><strong id="directoryRoomsCount">—</strong><span>Active rooms</span></button>
           <button class="directory-stat" type="button" data-directory-role="user"><strong id="directoryUserCount">—</strong><span>Users</span></button>
-          <button class="directory-stat" type="button" data-directory-role="vip"><strong id="directoryVipCount">—</strong><span>VIP</span></button>
-          <button class="directory-stat" type="button" data-directory-role="moderator"><strong id="directoryModeratorCount">—</strong><span>Moderators</span></button>
-          <button class="directory-stat" type="button" data-directory-role="admin"><strong id="directoryAdminCount">—</strong><span>Admins</span></button>
+          <button class="directory-stat" type="button" data-directory-role="monkey"><strong id="directoryMonkeyCount">—</strong><span>Monkeys</span></button>
+          <button class="directory-stat" type="button" data-directory-role="staff"><strong id="directoryStaffCount">—</strong><span>Staff</span></button>
         </div>
         <div class="directory-tools">
-          <input class="pdo-input" id="pdoDirectorySearch" type="search" placeholder="Search username, email, or UID" autocomplete="off">
+          <input class="pdo-input" id="pdoDirectorySearch" type="search" placeholder="Search room ID, host, username, or UID" autocomplete="off">
           <select class="pdo-input" id="pdoDirectorySort" aria-label="Sort accounts"><option value="username">Username A–Z</option><option value="role">Role</option><option value="newest">Newest first</option></select>
         </div>
         <p class="pdo-message" id="pdoDirectoryMessage" aria-live="polite"></p>
         <div class="directory-table-wrap">
-          <table class="directory-table"><thead><tr><th>Account</th><th>Role</th><th>UID</th><th>Action</th></tr></thead><tbody id="pdoDirectoryBody"><tr><td colspan="4" class="directory-empty">Loading accounts…</td></tr></tbody></table>
+          <table class="directory-table"><thead id="pdoDirectoryHead"><tr><th>Account</th><th>Role</th><th>Status</th><th>Room</th><th>UID</th><th>Action</th></tr></thead><tbody id="pdoDirectoryBody"><tr><td colspan="6" class="directory-empty">Loading accounts…</td></tr></tbody></table>
         </div>
       </section>
       <section class="pdo-card pdo-panel pdo-span-6" data-admin-only>
-        <div class="pdo-panel-head"><div><h2>👥 User Management</h2><p>Search by username, UID, or email. Administrators can manage roles, restrictions, Room Access, and private-page permissions.</p></div></div>
+        <div class="pdo-panel-head"><div><h2>👥 User Management</h2><p>Search by username, UID, or email. Administrators can manage roles, restrictions, Room Access, and private-page permissions, including Monkey access.</p></div></div>
         <form class="pdo-search" id="pdoUserSearchForm"><input class="pdo-input" id="pdoUserSearch" placeholder="Username, UID, or email" autocomplete="off"><button class="pdo-button" id="pdoUserSearchButton" type="submit">Search</button></form>
         <p class="pdo-message" id="pdoUserMessage" aria-live="polite"></p>
         <div id="pdoUserResult" hidden></div>

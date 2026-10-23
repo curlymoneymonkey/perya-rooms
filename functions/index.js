@@ -212,6 +212,10 @@ async function readAccess(uid) {
     return {
         user,
         isAdmin: adminSnap.exists && admin.enabled === true,
+        hasMonkeyAccess:
+            user.moneymonkeyAccess === true ||
+            user.monkeyAccess === true ||
+            allowedPages.includes("moneymonkey.html"),
         hasPrivatePageAccess:
             user.imamonkeyandilovemoneyAccess === true ||
             allowedPages.includes("imamonkeyandilovemoney.html")
@@ -233,7 +237,10 @@ function isRoomOwner(type, room, uid) {
 
 async function authorizeQueueAccess(uid, type, room) {
     const access = await readAccess(uid);
-    if (access.isAdmin) return access;
+    // Administrators and users explicitly granted Monkey access may manage
+    // secure queues from moneymonkey.html. All other users retain the
+    // existing room-owner/private-page restriction.
+    if (access.isAdmin || access.hasMonkeyAccess) return access;
 
     if (type !== "permanent" || !isRoomOwner(type, room, uid) || !access.hasPrivatePageAccess) {
         throw new HttpsError("permission-denied", "Secure room access is required.");
