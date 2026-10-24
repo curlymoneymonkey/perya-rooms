@@ -219,7 +219,7 @@ for (let amount = 1; amount <= 30; amount++) {
     option.value = String(amount);
     option.textContent = `${amount} ${amount === 1 ? "Die" : "Dice"}`;
 
-    if (amount === 3) {
+    if (amount === 4) {
         option.selected = true;
     }
 
@@ -695,7 +695,7 @@ function beginRoomIdGeneration() {
     if (results) {
         results.hidden = false;
         results.style.display = "";
-        showWhiteDice(3);
+        showWhiteDice(4);
     }
 
     if (gameIdElement) {
@@ -927,28 +927,16 @@ function startPreparingRoll() {
         roomStatus.textContent = nextPreparingRollMessage();
     }
 
+    // During random color ticks, keep the dice still. The shake starts only
+    // later, when startRollingAnimation() switches the dice to white.
     document.body.classList.remove("diceRolling");
     document.body.classList.add("dicePreparingStage");
 
     for (const die of results.children) {
         if (!(die instanceof HTMLImageElement)) continue;
-
-        // Remove animation classes left from the previous roll.
-        die.classList.remove(
-            "shake",
-            "diceResultReveal",
-            "dicePreparing"
-        );
-
-        // Force the browser to reset the animation.
-        void die.offsetWidth;
-
-        // Start a fresh preparation wobble.
-        die.classList.add("dicePreparing");
+        die.classList.remove("shake", "diceResultReveal", "dicePreparing");
     }
 
-    // Added effect: randomize the visible dice color on timed ticks while
-    // preserving the existing preparation wobble and roll timing.
     startPreparingColorTicks();
 }
 
@@ -1318,7 +1306,7 @@ async function createRoom() {
     await setDoc(reference, {
         mode: "solo",
         hostId: currentUser.uid,
-        diceCount: 3,
+        diceCount: 4,
         diceSkinId: "default",
         rolling: false,
         latestResult: [],

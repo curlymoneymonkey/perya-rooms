@@ -363,6 +363,32 @@
 }
 </style>
 
+
+<style>
+/* Map addition: deliberately scoped so the existing Perya Dice theme remains intact. */
+.guestDiceBlurToolbar { display:flex; justify-content:flex-end; align-items:center; gap:18px; flex-wrap:wrap; }
+.guestDiceBlurToolbar .hostDiceBlurControl { margin:0; }
+.guestDiceBlurToolbar label { display:inline-flex; align-items:center; gap:6px; cursor:pointer; white-space:nowrap; }
+.guestDiceBlurToolbar input[type="checkbox"] { accent-color:#168eea; }
+.guestBottomPanels { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.guestBottomPanels.mapModeEnabled { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.guestBottomPanels .diceMapBox { width:100%; min-width:0; height:400px; margin:0; display:flex; flex-direction:column; background:#000 !important; backdrop-filter:none; }
+.diceMapBox[hidden] { display:none !important; }
+.diceMapBox h2 { margin-bottom:8px; }
+.diceMapId { text-align:center; font-size:clamp(10px, 1.3vw, 14px); font-weight:700; margin:0 0 10px; }
+.diceMapTiles { flex:1; min-height:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr)); gap:8px; padding:0 10px 10px; background:#000; }
+.diceMapTile { min-width:0; min-height:0; background:#000; transition:background-color 45ms linear; }
+.diceMapTile.is-dark { background:#000 !important; }
+.diceMapTile.skin-image { background-size:cover; background-position:center; }
+.guestBottomPanels.mapModeEnabled .guestJoinBox { grid-column:1 / -1; }
+@media(max-width:700px) {
+ .guestBottomPanels, .guestBottomPanels.mapModeEnabled { grid-template-columns:minmax(0,1fr); }
+ .guestBottomPanels .diceMapBox { height:320px; }
+ .guestBottomPanels.mapModeEnabled .guestJoinBox { grid-column:auto; }
+ .guestDiceBlurToolbar { justify-content:flex-end; gap:14px; }
+}
+</style>
+
 </head>
 
 <body>
@@ -377,6 +403,7 @@
         <h2 id="loadingMessage" aria-hidden="true">Connecting to your Room...</h2>
         <div id="loadingDisplayMessage" class="loadingDisplayMessage" aria-live="polite"></div>
         <div class="loadingDicePulse" aria-hidden="true">
+            <img src="images/white.png" alt="">
             <img src="images/white.png" alt="">
             <img src="images/white.png" alt="">
             <img src="images/white.png" alt="">
@@ -423,8 +450,8 @@
                         <select id="diceCount" aria-label="Number of dice">
                             <option value="1">1 Die</option>
                             <option value="2">2 Dice</option>
-                            <option value="3" selected>3 Dice</option>
-                            <option value="4">4 Dice</option>
+                            <option value="3">3 Dice</option>
+                            <option value="4" selected>4 Dice</option>
                             <option value="5">5 Dice</option>
                             <option value="6">6 Dice</option>
                             <option value="7">7 Dice</option>
@@ -624,15 +651,17 @@
             </section>
         </section>
 
-        <div id="guestDiceBlurToolbar"
-             class="hostHistoryToolbar guestDiceBlurToolbar"
-             hidden>
-            <div id="guestDiceBlurControl"
-                 class="hostDiceBlurControl">
+        <div id="guestDiceBlurToolbar" class="hostHistoryToolbar guestDiceBlurToolbar" hidden>
+            <div id="guestMapControl" class="hostDiceBlurControl guestMapControl">
+                <label for="guestMapCheckbox">
+                    <input id="guestMapCheckbox" type="checkbox" checked>
+                    <span>Map</span>
+                </label>
+            </div>
+            <div id="guestDiceBlurControl" class="hostDiceBlurControl">
                 <label for="guestDiceBlurCheckbox">
-                    <input id="guestDiceBlurCheckbox"
-                           type="checkbox">
-                    <span id="guestBlurModeLabel">Blur (Anti-Restriction Mode)</span>
+                    <input id="guestDiceBlurCheckbox" type="checkbox">
+                    <span id="guestBlurModeLabel">Blur</span>
                 </label>
             </div>
         </div>
@@ -642,6 +671,17 @@
                      class="card historyBox">
                 <h2>History</h2>
                 <div id="history"></div>
+            </section>
+
+            <section id="diceMapBox" class="card diceMapBox" aria-label="Map" hidden>
+                <h2>Map</h2>
+                <div class="diceMapId">ID: <span id="diceMapRoomId"></span></div>
+                <div id="diceMapTiles" class="diceMapTiles" aria-live="off">
+                    <div class="diceMapTile" data-map-index="0"></div>
+                    <div class="diceMapTile" data-map-index="1"></div>
+                    <div class="diceMapTile" data-map-index="2"></div>
+                    <div class="diceMapTile" data-map-index="3"></div>
+                </div>
             </section>
 
             <section id="ballDropHistoryBox"
@@ -711,6 +751,80 @@
 
 
 
+
+
+<script>
+(() => {
+  const mapToggle = document.getElementById('guestMapCheckbox');
+  const mapControl = document.getElementById('guestMapControl');
+  const blurToggle = document.getElementById('guestDiceBlurCheckbox');
+  const mapBox = document.getElementById('diceMapBox');
+  const toolbar = document.getElementById('guestDiceBlurToolbar');
+  const panels = document.querySelector('.guestBottomPanels');
+  const tiles = Array.from(document.querySelectorAll('.diceMapTile'));
+  const roomIdTarget = document.getElementById('diceMapRoomId');
+  const diceCount = document.getElementById('diceCount');
+  const results = document.getElementById('results');
+  const whiteNames = /(?:^|\/)white(?:\.[a-z0-9]+)?(?:[?#].*)?$/i;
+  const palette = {red:'#f21f2c', blue:'#00a4e8', green:'#20b84a', yellow:'#fff000', purple:'#9b59d0', orange:'#ff812b'};
+  function isWhite(src) { return whiteNames.test(String(src || '').split('/').pop()) || /white\.png(?:[?#].*)?$/i.test(String(src||'')); }
+  function colorFor(src) {
+    const s=String(src||'').toLowerCase();
+    if (isWhite(s)) return '#ffffff';
+    for (const [name,color] of Object.entries(palette)) if (s.includes(name)) return color;
+    return '#000000';
+  }
+  function updateMap() {
+    if (!mapBox || !mapToggle || !diceCount || !results) return;
+    const fourDice = Number(diceCount.value) === 4;
+    // Hide the Map checkbox entirely unless exactly four dice are selected.
+    if (mapControl) mapControl.hidden = !fourDice;
+    mapToggle.disabled = !fourDice;
+    if (!fourDice) mapToggle.checked = false;
+    mapBox.hidden = !(fourDice && mapToggle.checked);
+    panels?.classList.toggle('mapModeEnabled', !mapBox.hidden);
+    const roomId = document.getElementById('gameId')?.textContent?.trim() || document.getElementById('permanentDiceId')?.textContent?.trim() || '';
+    if (roomIdTarget) roomIdTarget.textContent = roomId.replace(/^Room ID:\s*/i,'').replace(/^ID:\s*/i,'');
+    const dice = Array.from(results.querySelectorAll('img')).slice(0,4);
+    tiles.forEach((tile,i) => {
+      tile.classList.remove('skin-image');
+      const src = dice[i]?.getAttribute('src') || '';
+      // Keep the tiles black during initial room loading, but mirror white dice
+      // during the actual rolling phase. Shake only while the dice are white.
+      const whiteRollPhase = Boolean(dice[i] && isWhite(src) && document.body.classList.contains('diceRolling'));
+      if (!dice[i]) {
+        tile.classList.remove('is-white-rolling', 'is-dark');
+        tile.style.backgroundColor = '#000000';
+        tile.style.backgroundImage = 'none';
+      } else if (whiteRollPhase) {
+        tile.classList.remove('is-dark');
+        tile.classList.add('is-white-rolling');
+        tile.style.backgroundImage = 'none';
+        tile.style.backgroundColor = '#ffffff';
+      } else {
+        tile.classList.remove('is-dark', 'is-white-rolling');
+        tile.style.backgroundImage = 'none';
+        tile.style.backgroundColor = colorFor(src);
+      }
+    });
+  }
+  mapToggle?.addEventListener('change', updateMap);
+  diceCount?.addEventListener('change', updateMap);
+  const observer = new MutationObserver(updateMap);
+  if (results) observer.observe(results,{childList:true,subtree:true,attributes:true,attributeFilter:['src','class']});
+  if (document.body) observer.observe(document.body,{attributes:true,attributeFilter:['class']});
+  const idObserver = new MutationObserver(updateMap);
+  ['gameId','permanentDiceId'].forEach(id => { const el=document.getElementById(id); if(el) idObserver.observe(el,{childList:true,subtree:true,characterData:true}); });
+  // Keep the checkbox group visible when the existing host toolbar is enabled.
+  if (toolbar && mapToggle && blurToggle) {
+    mapToggle.checked = true;
+    toolbar.style.gap = '18px';
+  }
+  updateMap();
+  document.addEventListener('DOMContentLoaded',updateMap);
+  window.addEventListener('load',updateMap);
+})();
+</script>
 
 </body>
 </html>
