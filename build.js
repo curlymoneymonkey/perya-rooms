@@ -164,7 +164,7 @@ fs.rmSync(tempCSS, {
 async function build() {
 console.log("");
 console.log("========================================");
-console.log("       PERYA DICE ONLINE BUILD");
+console.log("       Tile Dice ONLINE BUILD");
 console.log("========================================");
 console.log("");
 

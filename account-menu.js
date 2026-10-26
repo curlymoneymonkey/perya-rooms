@@ -33,7 +33,7 @@ async function initializeAccountMenu() {
         console.warn("Could not load account menu profile:", error);
     }
 
-    avatar.src = profile.photoURL || user.photoURL || "favicon.png";
+    avatar.src = profile.photoURL || user.photoURL || ".png";
     avatar.alt = `${profile.username || user.displayName || "User"} profile picture`;
     usernameText.textContent = `@${profile.username || user.displayName || "user"}`;
     profileLink.href = `profile.html?id=${encodeURIComponent(user.uid)}`;

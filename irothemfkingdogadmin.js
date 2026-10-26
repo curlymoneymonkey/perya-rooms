@@ -1,5 +1,5 @@
 /* ==================================
-   PERYA DICE ADMIN VIEWER
+   Tile Dice ADMIN VIEWER
 ================================== */
 
 import { authReady, db, functions } from "./firebase.js";

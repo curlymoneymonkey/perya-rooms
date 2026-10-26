@@ -203,17 +203,23 @@ window.addEventListener("keydown", unlockRollAudio, { once: true, capture: true 
 prepareRollAudio();
 
 function playRollSound() {
-    // Called once by the actual roll-start path. Prefer a pre-decoded buffer so
-    // playback starts immediately and is not delayed by resetting currentTime.
-    if (rollSoundActive) return;
+    // Every accepted roll gets a fresh playback attempt. Do not skip a roll
+    // just because the previous sound is still marked as active.
     rollSoundActive = true;
 
     const context = getRollAudioContext();
+
+    // Use the decoded buffer when it is ready and the browser audio context is
+    // already unlocked. Stop the previous source so rapid consecutive rolls
+    // restart cleanly instead of being silently ignored.
     if (context && rollAudioBuffer && rollAudioUnlocked && context.state === "running") {
         try {
             if (activeRollBufferSource) {
+                activeRollBufferSource.onended = null;
                 try { activeRollBufferSource.stop(); } catch (_) {}
+                activeRollBufferSource = null;
             }
+
             const source = context.createBufferSource();
             const gain = context.createGain();
             source.buffer = rollAudioBuffer;
@@ -228,19 +234,29 @@ function playRollSound() {
             source.start(0);
             return;
         } catch (error) {
-            console.warn("Web Audio playback failed; using HTML audio fallback.", error);
+            console.warn("Web Audio playback failed; trying HTML audio.", error);
         }
     }
 
+    // Reliable fallback while the decoded buffer is loading or Web Audio is
+    // unavailable. Reset the element for each roll and report rejected playback.
     try {
         rollSound.pause();
         rollSound.currentTime = 0;
+        rollSound.muted = false;
+        rollSound.volume = 0.6;
         const playPromise = rollSound.play();
         if (playPromise && typeof playPromise.catch === "function") {
-            playPromise.catch(() => { rollSoundActive = false; });
+            playPromise.catch(error => {
+                rollSoundActive = false;
+                console.warn("Dice roll sound could not play:", error);
+                // Try preparing/unlocking again for the next user interaction.
+                prepareRollAudio();
+            });
         }
     } catch (error) {
         rollSoundActive = false;
+        console.warn("Dice roll sound could not start:", error);
     }
 }
 
@@ -1025,14 +1041,18 @@ function startPreparingRoll() {
         roomStatus.textContent = nextPreparingRollMessage();
     }
 
-    // During random color ticks, keep the dice still. The shake starts only
-    // later, when startRollingAnimation() switches the dice to white.
+    // Start a gentle shake during the random-color ticks on every accepted roll.
+    // CSS applies a slow wobble to the dice while this stage is active.
     document.body.classList.remove("diceRolling");
     document.body.classList.add("dicePreparingStage");
 
     for (const die of results.children) {
         if (!(die instanceof HTMLImageElement)) continue;
-        die.classList.remove("shake", "diceResultReveal", "dicePreparing");
+        die.classList.remove("shake", "diceResultReveal");
+        // Apply the dedicated preparation animation directly to each die.
+        // This avoids relying only on a parent selector that may not match
+        // if the room markup changes, and makes the wobble visible every roll.
+        die.classList.add("dicePreparing");
     }
 
     startPreparingColorTicks();

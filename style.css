@@ -188,6 +188,20 @@ select {
     animation: shake 0.35s infinite;
 }
 
+/* Gentle slow wobble while the dice cycle through random colors before each roll. */
+body.dicePreparingStage .results .dice {
+    animation: slowDiceWobble 1.25s ease-in-out infinite;
+    transform-origin: center center;
+    will-change: transform;
+}
+
+@keyframes slowDiceWobble {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    20% { transform: translateY(-2px) rotate(-2deg); }
+    45% { transform: translateY(1px) rotate(1.5deg); }
+    70% { transform: translateY(-1px) rotate(-1deg); }
+}
+
 /* 1-second roll: random colors stay fully visible until 0.75s, fade to white from 0.75s to 0.99s, then reveal the final result at 1.00s. */
 .diceTransitionSlot {
     position: relative;
@@ -1866,7 +1880,7 @@ select {
 
 
 /* =========================================================
-   PERYA DICE — EDIT PROFILE PAGE OVERRIDES
+   Tile Dice — EDIT PROFILE PAGE OVERRIDES
    Uses the existing style.css only.
 ========================================================= */
 
@@ -5185,4 +5199,31 @@ body {
 @keyframes mapWhiteToBlack {
   from { background-color: #fff; }
   to { background-color: #000; }
+}
+
+/* Blur mode: visibly obscure Map Mode colors as well as the dice results. */
+.guestDiceBlurEnabled .diceMapTile {
+    position: relative;
+    filter: blur(16px) brightness(0.55) saturate(0.65) !important;
+    transform: scale(0.96);
+    transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+/* The translucent cover makes solid-color tiles visibly concealed too. */
+.guestDiceBlurEnabled .diceMapTile::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.48);
+    pointer-events: none;
+}
+
+/* Hovering a tile reveals its color, matching the existing dice blur behavior. */
+.guestDiceBlurEnabled .diceMapTile:hover {
+    filter: blur(0) brightness(1) saturate(1) !important;
+    transform: scale(1);
+}
+
+.guestDiceBlurEnabled .diceMapTile:hover::after {
+    background: transparent;
 }

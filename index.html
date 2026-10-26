@@ -8,9 +8,8 @@
     <link rel="preconnect" href="https://asia-southeast1-peryadice.cloudfunctions.net" crossorigin>
     <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="//asia-southeast1-peryadice.cloudfunctions.net">
-    <title>PERYA DICE</title>
-    <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="preload" as="image" href="images/PERYA.png">
+    <title>TileDice.com</title>
+    <link rel="icon" type="image/png" href="fav-icon.png">
     <link rel="stylesheet" href="dist/styles.css">
 
 <style>
@@ -365,11 +364,22 @@
 
 
 <style>
-/* Map addition: deliberately scoped so the existing Perya Dice theme remains intact. */
+/* Map addition: deliberately scoped so the existing Tile Dice theme remains intact. */
 .guestDiceBlurToolbar { display:flex; justify-content:flex-end; align-items:center; gap:18px; flex-wrap:wrap; }
 .guestDiceBlurToolbar .hostDiceBlurControl { margin:0; }
 .guestDiceBlurToolbar label { display:inline-flex; align-items:center; gap:6px; cursor:pointer; white-space:nowrap; }
 .guestDiceBlurToolbar input[type="checkbox"] { accent-color:#168eea; }
+
+/* Blur mode: keep each tile's actual dice-matching color unchanged. */
+body.guestDiceBlurEnabled #diceMapTiles .diceMapTile {
+    filter: blur(4px) !important;
+    transform: scale(.99);
+    transition: filter .15s ease, transform .15s ease;
+}
+body.guestDiceBlurEnabled #diceMapTiles .diceMapTile:hover {
+    filter: blur(0) !important;
+    transform: scale(1);
+}
 .guestBottomPanels { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .guestBottomPanels.mapModeEnabled { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .guestBottomPanels .diceMapBox { width:100%; min-width:0; height:400px; margin:0; display:flex; flex-direction:column; background:#000 !important; backdrop-filter:none; }
@@ -395,9 +405,6 @@
 </head>
 
 <body>
-    <header class="siteHeader">
-        <img class="logo" src="images/PERYA.png" alt="PERYA DICE" decoding="async" fetchpriority="high">
-    </header>
 
 
 <main>
@@ -515,11 +522,11 @@
         </section>
 
         <div id="hostSettings" class="hostSettings" hidden>
-            <div class="hostWebsiteBrand diceSkinHeaderBar" aria-label="Perya Dice website">
+            <div class="hostWebsiteBrand diceSkinHeaderBar" aria-label="Tile Dice website">
                 <div id="roomGameBrand"
                      class="diceSkinBrandText"
                      aria-live="polite">
-                    <strong id="roomGameBrandPrimary">🌐 perya-dice.com</strong>
+                    <strong id="roomGameBrandPrimary">🌐 TileDice.com</strong>
                 </div>
 
                 <strong id="roomGameBrandSecondary"
@@ -655,7 +662,7 @@
             <div id="guestMapControl" class="hostDiceBlurControl guestMapControl">
                 <label for="guestMapCheckbox">
                     <input id="guestMapCheckbox" type="checkbox" checked>
-                    <span>Map</span>
+                    <span>Tiles</span>
                 </label>
             </div>
             <div id="guestDiceBlurControl" class="hostDiceBlurControl">
@@ -673,8 +680,8 @@
                 <div id="history"></div>
             </section>
 
-            <section id="diceMapBox" class="card diceMapBox" aria-label="Map" hidden>
-                <h2>Map</h2>
+            <section id="diceMapBox" class="card diceMapBox" aria-label="Tiles" hidden>
+                <h2>Tiles</h2>
                 <div class="diceMapId">ID: <span id="diceMapRoomId"></span></div>
                 <div id="diceMapTiles" class="diceMapTiles" aria-live="off">
                     <div class="diceMapTile" data-map-index="0"></div>
@@ -738,7 +745,7 @@
         </section>
 
         <section class="card about guestAbout">
-            <h2>Welcome to Perya Dice Online!</h2>
+            <h2>Welcome to Tile Dice!</h2>
             <p>Enjoy a <strong>100% ad-free</strong> online dice roller.</p>
             <p>Share your Room ID so other people can watch every roll live.</p>
         </section>
@@ -850,6 +857,13 @@
       }
     });
   }
+  // Apply blur mode from the actual checkbox in this page's inline map controller.
+  function syncMapBlur() {
+    document.body.classList.toggle('guestDiceBlurEnabled', Boolean(blurToggle && blurToggle.checked));
+  }
+  blurToggle?.addEventListener('change', syncMapBlur);
+  syncMapBlur();
+
   mapToggle?.addEventListener('change', updateMap);
   diceCount?.addEventListener('change', updateMap);
   const observer = new MutationObserver(updateMap);
