@@ -5171,12 +5171,18 @@ body {
 .guestBottomPanels .diceMapBox { width:100%; min-width:0; height:400px; margin:0; display:flex; flex-direction:column; background:#000 !important; backdrop-filter:none; }
 .diceMapBox[hidden] { display:none !important; }
 .diceMapId { text-align:center; font-size:clamp(10px,1.3vw,14px); font-weight:700; margin:0 0 10px; }
-.diceMapTiles { flex:1; min-height:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr)); gap:8px; padding:0 10px 10px; background:#000; }
+.diceMapTiles { flex:1; min-height:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:repeat(var(--map-rows,2),minmax(0,1fr)); gap:8px; padding:0 10px 10px; background:#000; }
 .diceMapTile { min-width:0; min-height:0; background:#000; transition:background-color 45ms linear; }
+
+.diceMapTile.is-centered-odd { grid-column:1 / -1; width:50%; justify-self:center; }
 .diceMapTile.is-dark { background:#000 !important; }
 .guestBottomPanels.mapModeEnabled .guestJoinBox { grid-column:1/-1; }
 @media(max-width:700px){.guestBottomPanels{grid-template-columns:minmax(0,1fr)}.guestBottomPanels .diceMapBox{height:320px}.guestBottomPanels.mapModeEnabled .guestJoinBox{grid-column:auto}}
 
 
 /* Map tiles mirror the white dice only during the white rolling phase. */
-.diceMapTile.is-white-rolling { background-color: #fff !important; animation: shake .35s infinite; transform-origin: center; }
+.diceMapTile.is-white-rolling { background-color: #fff !important; animation: shake .35s infinite, mapWhiteToBlack 1.25s ease-in forwards; transform-origin: center; }
+@keyframes mapWhiteToBlack {
+  from { background-color: #fff; }
+  to { background-color: #000; }
+}

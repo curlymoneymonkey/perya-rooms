@@ -376,8 +376,11 @@
 .diceMapBox[hidden] { display:none !important; }
 .diceMapBox h2 { margin-bottom:8px; }
 .diceMapId { text-align:center; font-size:clamp(10px, 1.3vw, 14px); font-weight:700; margin:0 0 10px; }
-.diceMapTiles { flex:1; min-height:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr)); gap:8px; padding:0 10px 10px; background:#000; }
+.diceMapTiles { flex:1; min-height:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:repeat(var(--map-rows,2),minmax(0,1fr)); gap:8px; padding:0 10px 10px; background:#000; }
 .diceMapTile { min-width:0; min-height:0; background:#000; transition:background-color 45ms linear; }
+/* Fade white Map tiles to black only while the actual dice roll is running. */
+.diceMapTile.is-fading-to-black { animation: diceMapWhiteToBlack 1.25s linear forwards; }
+@keyframes diceMapWhiteToBlack { from { background-color:#fff; } to { background-color:#000; } }
 .diceMapTile.is-dark { background:#000 !important; }
 .diceMapTile.skin-image { background-size:cover; background-position:center; }
 .guestBottomPanels.mapModeEnabled .guestJoinBox { grid-column:1 / -1; }
@@ -403,9 +406,6 @@
         <h2 id="loadingMessage" aria-hidden="true">Connecting to your Room...</h2>
         <div id="loadingDisplayMessage" class="loadingDisplayMessage" aria-live="polite"></div>
         <div class="loadingDicePulse" aria-hidden="true">
-            <img src="images/white.png" alt="">
-            <img src="images/white.png" alt="">
-            <img src="images/white.png" alt="">
             <img src="images/white.png" alt="">
         </div>
     </section>
@@ -767,42 +767,84 @@
   const results = document.getElementById('results');
   const whiteNames = /(?:^|\/)white(?:\.[a-z0-9]+)?(?:[?#].*)?$/i;
   const palette = {red:'#f21f2c', blue:'#00a4e8', green:'#20b84a', yellow:'#fff000', purple:'#9b59d0', orange:'#ff812b'};
+  const paletteColors = Object.values(palette);
   function isWhite(src) { return whiteNames.test(String(src || '').split('/').pop()) || /white\.png(?:[?#].*)?$/i.test(String(src||'')); }
   function colorFor(src) {
-    const s=String(src||'').toLowerCase();
+    const raw = String(src || '');
+    const s = raw.toLowerCase();
     if (isWhite(s)) return '#ffffff';
     for (const [name,color] of Object.entries(palette)) if (s.includes(name)) return color;
+    // Custom dice skins often use Firebase URLs without color names in the URL.
+    // Match the image against the active skin's red/blue/green/yellow/purple/orange order.
+    const activeImages = Array.isArray(window.diceImages) ? window.diceImages : [];
+    const normalized = value => { try { return new URL(String(value || ''), document.baseURI).href; } catch { return String(value || ''); } };
+    const sourceUrl = normalized(raw);
+    const skinIndex = activeImages.findIndex(value => normalized(value) === sourceUrl);
+    if (skinIndex >= 0) return paletteColors[skinIndex % paletteColors.length];
     return '#000000';
   }
   function updateMap() {
     if (!mapBox || !mapToggle || !diceCount || !results) return;
-    const fourDice = Number(diceCount.value) === 4;
-    // Hide the Map checkbox entirely unless exactly four dice are selected.
-    if (mapControl) mapControl.hidden = !fourDice;
-    mapToggle.disabled = !fourDice;
-    if (!fourDice) mapToggle.checked = false;
-    mapBox.hidden = !(fourDice && mapToggle.checked);
+    // Map mode is available for every dice count, not only four dice.
+    if (mapControl) mapControl.hidden = false;
+    mapToggle.disabled = false;
+    mapBox.hidden = !mapToggle.checked;
     panels?.classList.toggle('mapModeEnabled', !mapBox.hidden);
     const roomId = document.getElementById('gameId')?.textContent?.trim() || document.getElementById('permanentDiceId')?.textContent?.trim() || '';
     if (roomIdTarget) roomIdTarget.textContent = roomId.replace(/^Room ID:\s*/i,'').replace(/^ID:\s*/i,'');
-    const dice = Array.from(results.querySelectorAll('img')).slice(0,4);
+    // Only direct children represent actual dice; querySelectorAll('img') can
+    // accidentally count nested animation layers as extra dice.
+    const dice = Array.from(results.children).filter(element => element instanceof HTMLImageElement);
+    const desiredTileCount = Math.max(1, Number(diceCount.value) || dice.length || 4);
+    while (tiles.length < desiredTileCount) {
+      const tile = document.createElement('div');
+      tile.className = 'diceMapTile';
+      tile.dataset.mapIndex = String(tiles.length);
+      document.getElementById('diceMapTiles')?.appendChild(tile);
+      tiles.push(tile);
+    }
+    while (tiles.length > desiredTileCount) {
+      tiles.pop()?.remove();
+    }
+    const mapRows = Math.ceil(desiredTileCount / 2);
+    const tileGrid = document.getElementById('diceMapTiles');
+    tileGrid?.style.setProperty('--map-rows', String(mapRows));
+    if (tileGrid) tileGrid.style.gridTemplateRows = `repeat(${mapRows}, minmax(0, 1fr))`;
     tiles.forEach((tile,i) => {
-      tile.classList.remove('skin-image');
+      tile.classList.remove('skin-image', 'is-centered-odd');
+      tile.style.gridRow = '';
+      tile.style.gridColumn = '';
+      tile.style.width = '';
+      tile.style.justifySelf = '';
+      // Odd counts: keep pairs on each row, then center the final tile
+      // in the middle of its own final row (e.g. 2 on top, 1 centered below).
+      if (desiredTileCount % 2 === 1 && i === desiredTileCount - 1) {
+        tile.classList.add('is-centered-odd');
+        tile.style.gridRow = String(mapRows);
+        tile.style.gridColumn = '1 / -1';
+        tile.style.width = '50%';
+        tile.style.justifySelf = 'center';
+      }
       const src = dice[i]?.getAttribute('src') || '';
       // Keep the tiles black during initial room loading, but mirror white dice
       // during the actual rolling phase. Shake only while the dice are white.
       const whiteRollPhase = Boolean(dice[i] && isWhite(src) && document.body.classList.contains('diceRolling'));
       if (!dice[i]) {
-        tile.classList.remove('is-white-rolling', 'is-dark');
+        tile.classList.remove('is-white-rolling', 'is-fading-to-black', 'is-dark');
         tile.style.backgroundColor = '#000000';
         tile.style.backgroundImage = 'none';
       } else if (whiteRollPhase) {
-        tile.classList.remove('is-dark');
-        tile.classList.add('is-white-rolling');
+        // Start the fade only once when a white tile enters the actual rolling
+        // stage. MutationObserver updates must not restart the animation.
+        if (!tile.classList.contains('is-white-rolling')) {
+          tile.classList.remove('is-dark', 'is-fading-to-black');
+          tile.classList.add('is-white-rolling', 'is-fading-to-black');
+        }
         tile.style.backgroundImage = 'none';
-        tile.style.backgroundColor = '#ffffff';
+        // Do not set backgroundColor here: that would override the keyframe.
       } else {
-        tile.classList.remove('is-dark', 'is-white-rolling');
+        // When rolling ends, stop the fade and reveal the result immediately.
+        tile.classList.remove('is-dark', 'is-white-rolling', 'is-fading-to-black');
         tile.style.backgroundImage = 'none';
         tile.style.backgroundColor = colorFor(src);
       }

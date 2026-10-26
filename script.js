@@ -126,22 +126,118 @@ function preloadDiceImages(sources) {
 const rollSound = new Audio("sounds/dice-roll.mp3");
 rollSound.preload = "auto";
 rollSound.volume = 0.6;
+rollSound.load();
 
+// Prepare a decoded Web Audio buffer ahead of time. Playing a decoded buffer
+// avoids the occasional delay caused by seeking/restarting an HTMLAudioElement.
+let rollAudioContext = null;
+let rollAudioBuffer = null;
+let rollAudioBufferLoading = null;
+let rollAudioUnlocked = false;
+let activeRollBufferSource = null;
+
+function getRollAudioContext() {
+    if (rollAudioContext) return rollAudioContext;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+    try {
+        rollAudioContext = new AudioContextClass();
+    } catch (error) {
+        console.warn("Web Audio is unavailable; using HTML audio fallback.", error);
+    }
+    return rollAudioContext;
+}
+
+async function prepareRollAudio() {
+    if (rollAudioBuffer) return rollAudioBuffer;
+    if (rollAudioBufferLoading) return rollAudioBufferLoading;
+
+    const context = getRollAudioContext();
+    if (!context) return null;
+
+    rollAudioBufferLoading = (async () => {
+        try {
+            const response = await fetch(new URL("sounds/dice-roll.mp3", document.baseURI), { cache: "force-cache" });
+            if (!response.ok) throw new Error(`Audio request failed (${response.status})`);
+            const audioData = await response.arrayBuffer();
+            rollAudioBuffer = await context.decodeAudioData(audioData);
+            return rollAudioBuffer;
+        } catch (error) {
+            console.warn("Could not pre-decode dice-roll.mp3; using HTML audio fallback.", error);
+            return null;
+        } finally {
+            rollAudioBufferLoading = null;
+        }
+    })();
+    return rollAudioBufferLoading;
+}
+
+async function unlockRollAudio() {
+    const context = getRollAudioContext();
+    if (context) {
+        try {
+            if (context.state !== "running") await context.resume();
+            rollAudioUnlocked = context.state === "running";
+        } catch (error) {
+            rollAudioUnlocked = false;
+        }
+    }
+    // Also prime the HTML audio fallback during the user's gesture, then stop it.
+    try {
+        rollSound.muted = true;
+        const promise = rollSound.play();
+        if (promise && typeof promise.then === "function") await promise;
+        rollSound.pause();
+        rollSound.currentTime = 0;
+        rollSound.muted = false;
+    } catch (error) {
+        rollSound.muted = false;
+    }
+    prepareRollAudio();
+}
+
+// Browsers commonly require a user gesture before audio can be resumed.
+// Capture the first gesture early so the sound is ready before the first roll.
+window.addEventListener("pointerdown", unlockRollAudio, { once: true, capture: true });
+window.addEventListener("keydown", unlockRollAudio, { once: true, capture: true });
+prepareRollAudio();
 
 function playRollSound() {
-    // This function is called only by the animation-start lock. A new roll
-    // deliberately restarts the sound; repeated Firebase renders never reach it.
+    // Called once by the actual roll-start path. Prefer a pre-decoded buffer so
+    // playback starts immediately and is not delayed by resetting currentTime.
+    if (rollSoundActive) return;
     rollSoundActive = true;
+
+    const context = getRollAudioContext();
+    if (context && rollAudioBuffer && rollAudioUnlocked && context.state === "running") {
+        try {
+            if (activeRollBufferSource) {
+                try { activeRollBufferSource.stop(); } catch (_) {}
+            }
+            const source = context.createBufferSource();
+            const gain = context.createGain();
+            source.buffer = rollAudioBuffer;
+            gain.gain.value = 0.6;
+            source.connect(gain);
+            gain.connect(context.destination);
+            activeRollBufferSource = source;
+            source.onended = () => {
+                if (activeRollBufferSource === source) activeRollBufferSource = null;
+                rollSoundActive = false;
+            };
+            source.start(0);
+            return;
+        } catch (error) {
+            console.warn("Web Audio playback failed; using HTML audio fallback.", error);
+        }
+    }
 
     try {
         rollSound.pause();
         rollSound.currentTime = 0;
-
         const playPromise = rollSound.play();
         if (playPromise && typeof playPromise.catch === "function") {
-            playPromise.catch(() => {
-                rollSoundActive = false;
-            });
+            playPromise.catch(() => { rollSoundActive = false; });
         }
     } catch (error) {
         rollSoundActive = false;
@@ -219,7 +315,7 @@ for (let amount = 1; amount <= 30; amount++) {
     option.value = String(amount);
     option.textContent = `${amount} ${amount === 1 ? "Die" : "Dice"}`;
 
-    if (amount === 4) {
+    if (amount === 3) {
         option.selected = true;
     }
 
@@ -528,6 +624,8 @@ function applyDiceSkin(skinId) {
     const images = normalizedSkinImages(skin);
     diceImages = images || [...defaultDiceImages];
     currentDiceSkinId = images ? cleanedId : "default";
+    // Expose the active ordered skin image list for the Map panel's color matching.
+    window.diceImages = diceImages;
 
     // Begin downloading and decoding the selected skin immediately.
     preloadDiceImages(diceImages).catch(() => {});
@@ -695,7 +793,7 @@ function beginRoomIdGeneration() {
     if (results) {
         results.hidden = false;
         results.style.display = "";
-        showWhiteDice(4);
+        showWhiteDice(3);
     }
 
     if (gameIdElement) {
@@ -1306,7 +1404,7 @@ async function createRoom() {
     await setDoc(reference, {
         mode: "solo",
         hostId: currentUser.uid,
-        diceCount: 4,
+        diceCount: 3,
         diceSkinId: "default",
         rolling: false,
         latestResult: [],
@@ -2064,6 +2162,11 @@ if (preparingRemaining > 0) {
             rollSound.pause();
             rollSound.currentTime = 0;
             rollSound.playbackRate = 1;
+            if (activeRollBufferSource) {
+                try { activeRollBufferSource.stop(); } catch (_) {}
+                activeRollBufferSource = null;
+            }
+            rollSoundActive = false;
             stopRollingAnimation();
         }
 
