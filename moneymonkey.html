@@ -101,19 +101,20 @@
         }
 
         .allowedColorsRow {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(3, 120px);
+            grid-template-rows: repeat(2, 120px);
             justify-content: center;
             align-items: center;
-            flex-wrap: wrap;
             gap: 9px;
         }
 
         .allowedColorButton {
             display: grid;
             place-items: center;
-            width: 48px;
-            height: 48px;
-            padding: 5px;
+            width: 120px;
+            height: 120px;
+            padding: 10px;
             border: 2px solid rgba(255, 255, 255, 0.72);
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.09);
@@ -140,28 +141,62 @@
         }
 
         .allowedColorButton img {
-            width: 36px;
-            height: 36px;
+            width: 90px;
+            height: 90px;
             object-fit: contain;
             pointer-events: none;
         }
 
         .futureRollRow {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: row;
             flex-wrap: wrap;
-            gap: 9px;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 10px;
             padding: 12px 10px;
             border: 1px solid rgba(255, 255, 255, 0.16);
             border-radius: 13px;
             background: rgba(0, 0, 0, 0.24);
         }
 
+        .futureRollHeader {
+            display: flex;
+            flex: 0 0 100%;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
         .futureRollNumber {
-            min-width: 76px;
             font-weight: 900;
             color: #ffd95a;
+        }
+
+        .futureDiceCountEditor {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 7px;
+            color: #e8eaf5;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .futureDiceCountSelect {
+            width: 88px;
+            max-width: 100%;
+            padding: 7px 5px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 800;
+        }
+
+        .futureDiceCountSelect:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
         }
 
         .futureDieEditor {
@@ -172,16 +207,36 @@
         }
 
         .futureDieEditor img {
-            width: 48px;
-            height: 48px;
+            width: 84px;
+            height: 84px;
             object-fit: contain;
         }
 
-        .futureDieEditor select {
-            min-width: 88px;
-            padding: 6px 7px;
-            border-radius: 8px;
-            text-align: center;
+        .futureDieColorButton {
+            display: grid;
+            place-items: center;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 9px;
+        }
+
+        .futureDieColorButton:focus-visible {
+            outline: 3px solid #ffd95a;
+            outline-offset: 3px;
+        }
+
+        .futureDieColorButton img {
+            cursor: pointer;
+        }
+
+        .futureDieColorSelect {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
         }
 
         @media (max-width: 520px) {
@@ -198,18 +253,23 @@
             }
 
             .allowedColorsRow {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                grid-template-rows: repeat(2, auto);
                 gap: 6px;
             }
 
             .allowedColorButton {
-                width: 42px;
-                height: 42px;
-                padding: 4px;
+                width: 100%;
+                height: auto;
+                aspect-ratio: 1 / 1;
+                padding: 5px;
             }
 
             .allowedColorButton img {
-                width: 32px;
-                height: 32px;
+                width: 100%;
+                height: 100%;
+                max-width: 90px;
+                max-height: 90px;
             }
 
             .futureRollRow {
@@ -217,8 +277,8 @@
                 gap: 7px;
             }
 
-            .futureRollNumber {
-                width: 100%;
+            .futureRollHeader {
+                gap: 8px;
             }
 
             .futureDieEditor img {
@@ -226,10 +286,7 @@
                 height: 42px;
             }
 
-            .futureDieEditor select {
-                min-width: 78px;
-                font-size: 12px;
-            }
+
         }
 
         .keyboardTools { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:9px; margin:8px 0 12px; }

@@ -48,6 +48,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-functions.js";
 
 const startSecureRoll = httpsCallable(functions, "startSecureRoll");
+const enableOneToSixDiceMode = httpsCallable(functions, "enableOneToSixDiceMode");
 const setSecureDiceCount = httpsCallable(functions, "setSecureDiceCount");
 const setSecureBallDropCount = httpsCallable(functions, "setSecureBallDropCount");
 
@@ -67,7 +68,14 @@ let currentDiceSkinId = "default";
 let currentDiceSkinUserData = {};
 
 const whiteDiceImage = "images/white.png";
-
+const countDiceImages = [
+    "images/1.png",
+    "images/2.png",
+    "images/3.png",
+    "images/4.png",
+    "images/5.png",
+    "images/6.png"
+];
 const resolvedAssetUrlCache = new Map();
 function resolvedAssetUrl(source) {
     const key = String(source || "");
@@ -122,6 +130,9 @@ function preloadDiceImages(sources) {
         [...new Set((sources || []).filter(Boolean))].map(preloadDiceImage)
     );
 }
+
+// Start preloading only after diceImagePreloadCache and its helper are initialized.
+preloadDiceImages(countDiceImages).catch(() => {});
 
 const rollSound = new Audio("sounds/dice-roll.mp3");
 rollSound.preload = "auto";
@@ -325,6 +336,12 @@ if (toggleHostControls) {
 
 diceCountSelect.innerHTML = "";
 
+// Keep the special random-count option at the very top of the list.
+const oneToSixOption = document.createElement("option");
+oneToSixOption.value = "oneToSix";
+oneToSixOption.textContent = "1 to 6 Dice";
+diceCountSelect.appendChild(oneToSixOption);
+
 for (let amount = 1; amount <= 30; amount++) {
     const option = document.createElement("option");
 
@@ -356,6 +373,7 @@ async function setGuestDiceCount(nextAmount) {
     }
 
     const amount = clampDiceCount(nextAmount);
+    oneToSixDiceModeSelected = false;
 
     if (String(amount) === diceCountSelect.value) {
         syncGuestDiceCountDisplay();
@@ -427,6 +445,9 @@ let currentUser = null;
 let currentRoomId = "";
 let currentRoom = null;
 let pendingDiceCount = null;
+let oneToSixDiceModeSelected = false;
+let oneToSixQueueInitializing = false;
+let oneToSixIntermissionActive = false;
 let isHost = false;
 let roomIdRandomizerTimer = null;
 let roomIdGenerationActive = false;
@@ -779,17 +800,19 @@ function getRoomFromUrl() {
 
 
 function showLoading(message) {
-
-    loadingMessage.textContent = message;
-    loadingScreen.hidden = false;
-    gameScreen.hidden = true;
+    // No separate loading screen: keep the room UI visible while joining.
+    showGame();
+    if (roomStatus && message) {
+        roomStatus.hidden = false;
+        roomStatus.style.display = "";
+        roomStatus.textContent = message;
+    }
 }
 
 
 function showGame() {
-
-    loadingScreen.hidden = true;
-    gameScreen.hidden = false;
+    if (loadingScreen) loadingScreen.hidden = true;
+    if (gameScreen) gameScreen.hidden = false;
 }
 
 // Keep the original room layout visible while a new Room ID is being created.
@@ -902,6 +925,10 @@ function createDiceImage(source, className, altText) {
 
 
 function updateDiceElements(container, sources, className, altText) {
+    // Count-mode uses a standalone # element. Remove it whenever the container
+    // is rendered as actual dice so it cannot remain beside color results.
+    container.querySelectorAll(".oneToSixCountDie").forEach(element => element.remove());
+
     const existing = Array.from(container.children).filter(
         element => element instanceof HTMLImageElement
     );
@@ -1066,7 +1093,10 @@ function stopPreparingRoll() {
     }
 }
 
-function startRollingAnimation(amount, { playSound = true } = {}) {
+function startRollingAnimation(
+    amount,
+    { playSound = true, preserveExistingDice = false } = {}
+) {
     stopPreparingRoll();
     // The secure request is started first by the host roll handler. Then the
     // sound begins, followed by the visible Rolling state and white dice.
@@ -1089,7 +1119,21 @@ function startRollingAnimation(amount, { playSound = true } = {}) {
         roomStatus.textContent = "🎲 Rolling...";
     }
 
-    showWhiteDice(amount);
+    // Reuse the white dice already on screen after the 1-to-6 multiplication
+    // animation. Rebuilding them here caused a visible duplicate/flash.
+    const existingDiceMatch =
+        preserveExistingDice &&
+        results &&
+        results.children.length === amount &&
+        [...results.children].every(die =>
+            die instanceof HTMLImageElement &&
+            (die.getAttribute("src") || "").includes("white.png")
+        );
+
+    if (!existingDiceMatch) {
+        showWhiteDice(amount);
+    }
+
     document.body.classList.add("diceRolling");
 
     for (const die of results.children) {
@@ -1118,7 +1162,7 @@ let previousRenderedHistorySignature = null;
 function renderHistory(room) {
 
     const sourceHistory = Array.isArray(room?.history) ? room.history : [];
-    const historySignature = JSON.stringify(sourceHistory);
+    const historySignature = `${currentRoomId || room?.roomId || room?.id || ""}:${JSON.stringify(sourceHistory)}`;
     if (historySignature === previousRenderedHistorySignature) return;
     previousRenderedHistorySignature = historySignature;
 
@@ -1571,6 +1615,15 @@ function listenToRoom() {
 
             currentRoom = snapshot.data();
 
+            // The persisted room mode is authoritative after refresh and on every
+            // live snapshot. A completed 1-to-6 roll may set diceCount to the
+            // result length (for example 3 or 4), but that must never change the
+            // selector away from the random-count mode.
+            oneToSixDiceModeSelected = currentRoom.oneToSixDiceMode === true;
+            if (oneToSixDiceModeSelected) {
+                pendingDiceCount = null;
+            }
+
             isHost =
                 currentRoom.hostId ===
                 currentUser.uid;
@@ -1863,8 +1916,9 @@ function updateScreen() {
         }
     }
 
-    diceCountSelect.value =
-        String(amount);
+    diceCountSelect.value = oneToSixDiceModeSelected
+        ? "oneToSix"
+        : String(amount);
 
     syncGuestDiceCountDisplay();
     updateGuestBlurVisibility();
@@ -1889,6 +1943,7 @@ function updateScreen() {
         gameMode !== "dice" ||
         roomIsRolling ||
         isRollingLocally ||
+        oneToSixQueueInitializing ||
         rollingIsSuspended ||
         checkingHostControls;
 
@@ -2026,8 +2081,22 @@ function updateScreen() {
         if (currentResultPanel) currentResultPanel.hidden = true;
         if (currentResult) currentResult.innerHTML = "";
 
+    } else if (oneToSixIntermissionActive) {
+        // Keep the numbered count die visible between the two secure rolls.
+        if (currentResultPanel) currentResultPanel.hidden = true;
+
+    } else if (oneToSixDiceModeSelected) {
+        // In 1-to-6 mode, selecting the option must immediately preview six white dice,
+        // even when a previous completed color result is still stored in the room.
+        showWhiteDice(6);
+        if (currentResult) currentResult.innerHTML = "";
+        if (currentResultPanel) currentResultPanel.hidden = true;
+
     } else if (latestResult.length > 0) {
 
+        // Keep the last completed color result visible while 1-to-6 mode is idle.
+        // The six white pre-roll dice are shown explicitly when the next roll starts,
+        // not as a side effect of the screen refresh after a result is revealed.
         showDice(
             results,
             latestResult,
@@ -2046,7 +2115,12 @@ function updateScreen() {
 
     } else {
 
-        showWhiteDice(amount);
+        if (oneToSixDiceModeSelected) {
+            // In 1-to-6 mode, show six plain white dice while idle; never show a # die.
+            showWhiteDice(6);
+        } else {
+            showWhiteDice(amount);
+        }
 
         if (currentResult) {
             currentResult.innerHTML = "";
@@ -2059,11 +2133,253 @@ function updateScreen() {
 }
 
 
+function showCountDie(number = "#") {
+    if (!results) return;
+    results.replaceChildren();
+
+    if (number !== "#") {
+        const face = Math.min(6, Math.max(1, Number(number)));
+        const die = document.createElement("img");
+        die.className = "oneToSixCountDie oneToSixCountDieImage";
+        die.src = countDiceImages[face - 1];
+        die.alt = `Dice count ${face}`;
+        die.setAttribute("role", "img");
+        die.draggable = false;
+        results.appendChild(die);
+    } else {
+        const die = document.createElement("div");
+        die.className = "oneToSixCountDie";
+        die.setAttribute("role", "img");
+        die.setAttribute("aria-label", "Random dice count");
+        die.textContent = "#";
+        results.appendChild(die);
+    }
+
+    if (currentResultPanel) currentResultPanel.hidden = true;
+}
+
+
+function installDiceMultiplicationStyle() {
+    if (document.getElementById("oneToSixDiceMultiplyStyle")) return;
+    const style = document.createElement("style");
+    style.id = "oneToSixDiceMultiplyStyle";
+    style.textContent = `
+        .oneToSixMultiplyDie {
+            opacity: 0;
+            transform: translateX(-24px) scale(.72);
+            animation: oneToSixMultiplySlide 420ms cubic-bezier(.2,.8,.2,1) forwards;
+            will-change: transform, opacity;
+        }
+        @keyframes oneToSixMultiplySlide {
+            0% { opacity: 0; transform: translateX(-24px) scale(.72); }
+            65% { opacity: 1; transform: translateX(4px) scale(1.06); }
+            100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .oneToSixMultiplyDie { animation-duration: 1ms; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function installOneToSixPreRollFadeStyle() {
+    if (document.getElementById("oneToSixPreRollFadeStyle")) return;
+    const style = document.createElement("style");
+    style.id = "oneToSixPreRollFadeStyle";
+    style.textContent = `
+        .oneToSixPreRollDie {
+            transition: opacity 260ms ease-in-out;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .oneToSixPreRollDie { transition: none; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+async function runOneToSixPreRollFade(durationMs) {
+    if (!results) return;
+
+    installOneToSixPreRollFadeStyle();
+    stopPreparingRoll();
+    stopRollingAnimation();
+    document.body.classList.remove("diceRolling");
+    document.body.classList.add("dicePreparingStage");
+    if (roomStatus) roomStatus.textContent = "✨ Will luck be on your side?";
+    results.replaceChildren();
+    // Let the Tiles panel mirror the same one-by-one fade without changing
+    // the existing six-dice animation or its timing.
+    // Show six plain white dice during the pre-roll. Their faces never change.
+    // Randomly order the dice, then fade each one completely out in sequence
+    // so the display is empty before the selected count reappears.
+    const dice = Array.from({ length: 6 }, (_, index) => {
+        const die = createDiceImage(whiteDiceImage, "dice dicePreparing oneToSixPreRollDie", `Pre-roll die ${index + 1}`);
+        die.style.opacity = "1";
+        results.appendChild(die);
+        return die;
+    });
+
+    // Keep all six dice fully visible for one second before beginning the
+    // one-by-one fade sequence.
+    await wait(1000);
+
+    const order = dice.map((_, index) => index);
+    for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+    }
+
+    // Give the Tiles panel the exact same randomized order as the dice.
+    document.dispatchEvent(new CustomEvent("oneToSixPreRollTilesStart", {
+        detail: { durationMs, dieCount: 6, order: [...order] }
+    }));
+
+    // Spread the six individual fades across the pre-roll duration, but always
+    // finish with every die invisible. The next phase replaces them with the
+    // selected number of white dice using the existing slide animation.
+    const fadeStepMs = Math.max(260, Math.floor(durationMs / dice.length));
+    for (let step = 0; step < order.length; step++) {
+        const index = order[step];
+        dice[index].style.opacity = "0";
+        document.dispatchEvent(new CustomEvent("oneToSixPreRollTileFadeStep", {
+            detail: { step, total: order.length, index, fadeMs: 260 }
+        }));
+        await wait(fadeStepMs);
+    }
+    document.dispatchEvent(new CustomEvent("oneToSixPreRollTilesEnd"));
+
+    dice.forEach(die => {
+        die.classList.remove("dicePreparing");
+        die.setAttribute("aria-hidden", "true");
+    });
+    document.body.classList.remove("dicePreparingStage");
+}
+
+async function animateDiceMultiplication(amount) {
+    if (!results || amount < 1) return;
+
+    installDiceMultiplicationStyle();
+
+    // Replace the count-face with the first white die, then slide the remaining
+    // white dice into place one after another to create a multiplying effect.
+    results.replaceChildren();
+    const dice = [];
+    for (let index = 0; index < amount; index++) {
+        const die = createDiceImage(whiteDiceImage, "dice oneToSixMultiplyDie", "White rolling die");
+        die.style.animationDelay = `${index * 85}ms`;
+        die.style.opacity = "0";
+        results.appendChild(die);
+        dice.push(die);
+    }
+
+    // Force layout so each newly-created die reliably runs its slide animation.
+    void results.offsetWidth;
+    const totalDuration = 420 + (amount - 1) * 85;
+    await wait(totalDuration);
+    dice.forEach(die => {
+        die.style.removeProperty("animation-delay");
+        die.style.removeProperty("opacity");
+        die.classList.remove("oneToSixMultiplyDie");
+        // Keep the multiplied white dice still during the transition. The
+        // second startRollingAnimation call adds .shake when "Rolling..."
+        // actually begins, preventing the premature shake before that phase.
+        die.classList.remove("shake");
+    });
+}
+
+async function executeSecureAnimatedRoll(
+    amount,
+    {
+        skipPreparing = false,
+        preserveWhiteDice = false,
+        startVisualImmediately = false
+    } = {}
+) {
+    const rollRequest = startSecureRoll({
+        roomType: "guest",
+        roomId: currentRoomId,
+        // In one-to-six mode, the count die determines how many color dice
+        // the following result must contain. The backend preserves any
+        // predetermined colors and fills/truncates to this requested count.
+        ...(startVisualImmediately ? { requestedDiceCount: clampDiceCount(amount, 1, 6) } : {})
+    });
+    const preparingStartedAt = performance.now();
+    let colorRollStartedAt = null;
+    if (!skipPreparing) startPreparingRoll();
+
+    // In 1-to-6 mode, don't leave a dead pause while waiting for the secure
+    // color-roll response. The selected white dice begin the second roll as
+    // soon as the request is sent; the server result is still authoritative.
+    if (startVisualImmediately) {
+        if (roomStatus) roomStatus.textContent = "🎲 Rolling...";
+        startRollingAnimation(amount, {
+            playSound: false,
+            preserveExistingDice: preserveWhiteDice
+        });
+        // Start the reveal timing from the exact moment the roll music starts,
+        // not after the Firebase response arrives. This prevents network latency
+        // from adding an extra pause after the music/animation has finished.
+        colorRollStartedAt = performance.now();
+        playRollSound();
+    }
+
+    const response = await rollRequest;
+    if (!skipPreparing) {
+        const preparingElapsed = performance.now() - preparingStartedAt;
+        const preparingRemaining = PREPARING_WOBBLE_DURATION_MS - preparingElapsed;
+        if (preparingRemaining > 0) await wait(preparingRemaining);
+    }
+
+    const finalResult = Array.isArray(response.data?.result)
+        ? response.data.result.map(Number)
+        : [];
+    if (finalResult.length === 0) {
+        throw new Error("The server did not return a dice result.");
+    }
+
+    // The secure queue is authoritative: a queued result may contain a
+    // different number of dice than the room's current default. Make sure
+    // the rolling animation uses the queued result's actual dice count too.
+    const actualDiceCount = finalResult.length;
+    if (results && results.children.length !== actualDiceCount) {
+        stopRollingAnimation();
+        startRollingAnimation(actualDiceCount, {
+            playSound: false,
+            preserveExistingDice: false
+        });
+    }
+
+    // Standard rolls begin their visible rolling phase after the secure response.
+    // The 1-to-6 path already started it immediately above.
+    if (!startVisualImmediately) {
+        if (roomStatus) roomStatus.textContent = "🎲 Rolling...";
+        startRollingAnimation(actualDiceCount, {
+            playSound: false,
+            preserveExistingDice: preserveWhiteDice
+        });
+        colorRollStartedAt = performance.now();
+        playRollSound();
+    }
+
+    // Keep the result reveal synchronized to the roll music's intended duration.
+    // If Firebase responds late, wait only for the remaining time (or none),
+    // instead of starting a fresh full delay after the response.
+    const elapsedSinceColorRollStarted = colorRollStartedAt === null
+        ? RESULT_REVEAL_AFTER_SOUND_MS
+        : performance.now() - colorRollStartedAt;
+    const revealTimeRemaining = RESULT_REVEAL_AFTER_SOUND_MS - elapsedSinceColorRollStarted;
+    if (revealTimeRemaining > 0) await wait(revealTimeRemaining);
+    stopRollingAnimation();
+    showDice(results, finalResult, "dice");
+    return finalResult;
+}
+
 async function rollDice() {
     if (
         !isHost ||
         !currentRoomId ||
         isRollingLocally ||
+        oneToSixQueueInitializing ||
         currentRoom?.rolling === true ||
         currentRoom?.rollingSuspended === true ||
         hostAccountControlsLoaded !== true ||
@@ -2083,87 +2399,89 @@ async function rollDice() {
     }
 
     try {
-        // Save a changed dice count only when the user presses Roll.
-        // The visible dice count has already updated locally without waiting for Firebase.
-        if (pendingDiceCount !== null) {
-            await setSecureDiceCount({
-                roomType: "guest",
-                roomId: currentRoomId,
-                amount: selectedAmount
-            });
+        if (oneToSixDiceModeSelected) {
+            // Keep the existing six-white-dice pre-roll/fade animation.
+            // The secure queue entry now contains the exact final colors; its
+            // length determines the number of dice, so no second queue entry is consumed.
             pendingDiceCount = null;
-            if (currentRoom) {
-                currentRoom = { ...currentRoom, diceCount: selectedAmount };
+            showWhiteDice(6);
+
+            const queuedRollPromise = startSecureRoll({
+                roomType: "guest",
+                roomId: currentRoomId
+            });
+            const [queuedResponse] = await Promise.all([
+                queuedRollPromise,
+                runOneToSixPreRollFade(PREPARING_WOBBLE_DURATION_MS)
+            ]);
+            const finalResult = Array.isArray(queuedResponse.data?.result)
+                ? queuedResponse.data.result.map(Number)
+                : [];
+            if (finalResult.length < 1 || finalResult.length > 6 ||
+                finalResult.some(value => !Number.isInteger(value) || value < 0 || value > 5)) {
+                throw new Error("The server did not return a valid 1 to 6 dice result.");
             }
+
+            const selectedCount = finalResult.length;
+            oneToSixIntermissionActive = false;
+            stopRollingAnimation();
+            if (roomStatus) roomStatus.textContent = `${selectedCount} DICE! 🎲`;
+            await animateDiceMultiplication(selectedCount);
+
+            // Reveal the exact colors from the same predetermined queue entry.
+            if (roomStatus) roomStatus.textContent = "🎲 Rolling...";
+            startRollingAnimation(selectedCount, {
+                playSound: false,
+                preserveExistingDice: true
+            });
+            playRollSound();
+            await wait(RESULT_REVEAL_AFTER_SOUND_MS);
+            stopRollingAnimation();
+            showDice(results, finalResult, "dice");
+
+            if (currentResult && currentResultPanel) {
+                showDice(currentResult, finalResult, "currentResultDice");
+                currentResultPanel.hidden = false;
+            }
+            if (currentRoom) {
+                currentRoom = {
+                    ...currentRoom,
+                    rolling: false,
+                    pendingResult: [],
+                    oneToSixDiceMode: true,
+                    diceCount: selectedCount,
+                    latestResult: finalResult
+                };
+            }
+            rollCompleted = true;
+        } else {
+            // Existing fixed-count behavior remains unchanged.
+            if (pendingDiceCount !== null) {
+                await setSecureDiceCount({
+                    roomType: "guest",
+                    roomId: currentRoomId,
+                    amount: selectedAmount
+                });
+                pendingDiceCount = null;
+                if (currentRoom) currentRoom = { ...currentRoom, diceCount: selectedAmount };
+            }
+
+            const finalResult = await executeSecureAnimatedRoll(selectedAmount);
+            if (currentResult && currentResultPanel) {
+                showDice(currentResult, finalResult, "currentResultDice");
+                currentResultPanel.hidden = false;
+            }
+            if (currentRoom) {
+                currentRoom = {
+                    ...currentRoom,
+                    rolling: false,
+                    pendingResult: [],
+                    diceCount: finalResult.length,
+                    latestResult: finalResult
+                };
+            }
+            rollCompleted = true;
         }
-
-        // Start the secure roll after the selected count is saved.
-        const rollRequest = startSecureRoll({
-            roomType: "guest",
-            roomId: currentRoomId
-        });
-
-        const preparingStartedAt = performance.now();
-
-startPreparingRoll();
-
-const response = await rollRequest;
-
-const preparingElapsed =
-    performance.now() - preparingStartedAt;
-
-const preparingRemaining =
-    PREPARING_WOBBLE_DURATION_MS - preparingElapsed;
-
-if (preparingRemaining > 0) {
-    await wait(preparingRemaining);
-}
-
-
-        const finalResult = Array.isArray(response.data?.result)
-            ? response.data.result.map(Number)
-            : [];
-
-        if (finalResult.length === 0) {
-            throw new Error("The server did not return a dice result.");
-        }
-
-        // Firebase has returned the secure result. This is the real roll stage:
-        // show white shaking dice and start the sound together, then reveal.
-        if (roomStatus) roomStatus.textContent = "🎲 Rolling...";
-        startRollingAnimation(selectedAmount, { playSound: false });
-        playRollSound();
-        await wait(RESULT_REVEAL_AFTER_SOUND_MS);
-        stopRollingAnimation();
-        showDice(results, finalResult, "dice");
-
-        if (currentResult && currentResultPanel) {
-            showDice(currentResult, finalResult, "currentResultDice");
-            currentResultPanel.hidden = false;
-        }
-
-        /*
-         * Update the local room state immediately. Without this, the browser can
-         * keep the old rolling:true snapshot briefly and leave Roll disabled.
-         */
-        pendingDiceCount = null;
-        if (currentRoom) {
-            /*
-             * Update only the immediate display state.
-             * Do not append to history here because the Cloud Function already
-             * saves the roll in Firestore. The onSnapshot listener will receive
-             * that authoritative history update. Appending here as well can add
-             * the same roll twice when the snapshot arrives before this response.
-             */
-            currentRoom = {
-                ...currentRoom,
-                rolling: false,
-                pendingResult: [],
-                latestResult: finalResult
-            };
-        }
-
-        rollCompleted = true;
     } catch (error) {
         console.error("Roll failed:", error);
 
@@ -2176,6 +2494,7 @@ if (preparingRemaining > 0) {
 
         alert(message);
     } finally {
+        oneToSixIntermissionActive = false;
         isRollingLocally = false;
 
         if (!rollCompleted) {
@@ -2505,14 +2824,79 @@ if (guestDiceSkinSelect) {
 
 diceCountSelect.addEventListener(
     "change",
-    () => {
+    async () => {
+        if (diceCountSelect.value === "oneToSix") {
+            const modeWasAlreadyEnabled = currentRoom?.oneToSixDiceMode === true;
+            oneToSixDiceModeSelected = true;
+            pendingDiceCount = null;
+
+            // When switching from a fixed-count mode, initialize a fresh secure
+            // queue whose ten entries each have an independently randomized
+            // count (1-6) and colors. Later rolls consume these saved entries;
+            // the admin panel can edit any entry without roll-time rerandomizing.
+            if (isHost && currentRoomId && !modeWasAlreadyEnabled) {
+                oneToSixQueueInitializing = true;
+                syncGuestDiceCountDisplay();
+                updateScreen();
+                try {
+                    await enableOneToSixDiceMode({
+                        roomType: "guest",
+                        roomId: currentRoomId
+                    });
+                    if (currentRoom) {
+                        currentRoom = { ...currentRoom, oneToSixDiceMode: true };
+                    }
+                } catch (error) {
+                    console.error("Could not initialize 1 to 6 Dice mode:", error);
+                    alert(error?.message || "Could not initialize 1 to 6 Dice mode.");
+                    oneToSixDiceModeSelected = false;
+                    if (currentRoom) {
+                        currentRoom = { ...currentRoom, oneToSixDiceMode: false };
+                        diceCountSelect.value = String(clampDiceCount(currentRoom.diceCount));
+                    }
+                } finally {
+                    oneToSixQueueInitializing = false;
+                }
+            } else if (isHost && currentRoomId && modeWasAlreadyEnabled) {
+                // Keep the current admin-controlled queue intact when reselecting
+                // an already-enabled mode; do not overwrite saved future rolls.
+                updateDoc(roomReference(currentRoomId), {
+                    oneToSixDiceMode: true,
+                    updatedAt: serverTimestamp()
+                }).catch(error => console.error("Could not save 1 to 6 Dice mode:", error));
+            }
+            syncGuestDiceCountDisplay();
+            updateScreen();
+            // Explicitly restore the six-white-dice preview after updateScreen().
+            showWhiteDice(6);
+            if (currentResult) currentResult.innerHTML = "";
+            if (currentResultPanel) currentResultPanel.hidden = true;
+            return;
+        }
+
+        oneToSixDiceModeSelected = false;
         const amount = clampDiceCount(diceCountSelect.value);
         pendingDiceCount = amount;
 
-        // Update the visible dice immediately. Do not contact Firebase here.
+        // Immediately switch the room out of random-count mode and persist the
+        // chosen fixed count. The secure dice-count callable is still invoked
+        // when Roll is clicked, preserving the existing secure-roll flow.
         if (currentRoom) {
-            currentRoom = { ...currentRoom, diceCount: amount };
+            currentRoom = {
+                ...currentRoom,
+                oneToSixDiceMode: false,
+                diceCount: amount
+            };
         }
+        if (isHost && currentRoomId) {
+            updateDoc(roomReference(currentRoomId), {
+                oneToSixDiceMode: false,
+                diceCount: amount,
+                updatedAt: serverTimestamp()
+            }).catch(error => console.error("Could not save fixed dice mode and count:", error));
+        }
+
+        // Keep the chosen fixed count visible as a preview until Roll is clicked.
         showWhiteDice(amount);
         syncGuestDiceCountDisplay();
         updateScreen();

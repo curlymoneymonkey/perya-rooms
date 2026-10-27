@@ -197,6 +197,25 @@ function normalizeQueue(rawRolls, amount) {
     return output;
 }
 
+// In 1-to-6 mode, each queued roll has its own count and exact color sequence.
+// Keep this separate from normalizeQueue so fixed-count rooms are unaffected.
+function randomOneToSixRoll() {
+    return randomRoll(randomInt(1, 7));
+}
+
+function normalizeOneToSixQueue(rawRolls) {
+    const output = [];
+    if (Array.isArray(rawRolls)) {
+        for (const raw of rawRolls) {
+            const decoded = decodeRoll(raw);
+            if (decoded && decoded.length >= 1 && decoded.length <= 6) output.push(decoded);
+            if (output.length >= QUEUE_SIZE) break;
+        }
+    }
+    while (output.length < QUEUE_SIZE) output.push(randomOneToSixRoll());
+    return output;
+}
+
 async function readAccess(uid) {
     const [userSnap, adminSnap] = await Promise.all([
         db.collection("users").doc(uid).get(),
@@ -260,21 +279,39 @@ exports.getSecureRollQueue = onCall(async request => {
     const room = roomSnap.data();
     await authorizeQueueAccess(uid, type, room);
 
+    const oneToSixMode = room.oneToSixDiceMode === true;
     const amount = Math.min(MAX_DICE, Math.max(MIN_DICE, Number(room.diceCount || 3)));
     const queueSnap = await queueRef.get();
-    const rolls = normalizeQueue(queueSnap.exists ? queueSnap.data()?.rolls : [], amount);
+    const storedRolls = queueSnap.exists ? queueSnap.data()?.rolls : [];
+    const storedQueueMode = queueSnap.exists ? queueSnap.data()?.queueMode : null;
+    // Preserve legacy fixed-count queues that predate the queueMode marker.
+    const queueModeMatches = queueSnap.exists && (
+        oneToSixMode
+            ? storedQueueMode === "oneToSix"
+            : (storedQueueMode == null || storedQueueMode === "fixed")
+    );
+    const rolls = oneToSixMode
+        ? (queueModeMatches
+            ? normalizeOneToSixQueue(storedRolls)
+            : Array.from({ length: QUEUE_SIZE }, () => randomOneToSixRoll()))
+        : (queueModeMatches
+            ? normalizeQueue(storedRolls, amount)
+            : makeQueue(amount));
+    const encodedRolls = rolls.map(encodeRoll);
 
-    if (!queueSnap.exists || JSON.stringify(queueSnap.data()?.rolls || []) !== JSON.stringify(rolls.map(encodeRoll))) {
+    if (!queueSnap.exists || JSON.stringify(storedRolls || []) !== JSON.stringify(encodedRolls) ||
+        (oneToSixMode && queueSnap.data()?.queueMode !== "oneToSix")) {
         await queueRef.set({
             roomType: type,
             roomId,
-            diceCount: amount,
-            rolls: rolls.map(encodeRoll),
+            diceCount: oneToSixMode ? null : amount,
+            queueMode: oneToSixMode ? "oneToSix" : "fixed",
+            rolls: encodedRolls,
             updatedAt: FieldValue.serverTimestamp()
         }, { merge: true });
     }
 
-    return { rolls: rolls.map(encodeRoll) };
+    return { rolls: encodedRolls, oneToSixDiceMode: oneToSixMode };
 });
 
 exports.setSecureRollQueue = onCall(async request => {
@@ -292,23 +329,95 @@ exports.setSecureRollQueue = onCall(async request => {
     const room = roomSnap.data();
     await authorizeQueueAccess(uid, type, room);
 
+    const oneToSixMode = room.oneToSixDiceMode === true;
     const amount = Math.min(MAX_DICE, Math.max(MIN_DICE, Number(room.diceCount || 3)));
-    const rolls = submitted.map(value => decodeRoll(value, amount));
+    const rolls = oneToSixMode
+        ? submitted.map(value => {
+            const decoded = decodeRoll(value);
+            return decoded && decoded.length >= 1 && decoded.length <= 6 ? decoded : null;
+        })
+        : submitted.map(value => decodeRoll(value, amount));
     if (rolls.some(value => !value)) {
-        throw new HttpsError("invalid-argument", "Every roll must match the room dice count and use colors 0 through 5.");
+        throw new HttpsError(
+            "invalid-argument",
+            oneToSixMode
+                ? "Every 1 to 6 Dice roll must contain 1 to 6 dice, with colors numbered 0 through 5."
+                : "Every roll must match the room dice count and use colors 0 through 5."
+        );
     }
-    while (rolls.length < QUEUE_SIZE) rolls.push(randomRoll(amount));
+    while (rolls.length < QUEUE_SIZE) {
+        rolls.push(oneToSixMode ? randomOneToSixRoll() : randomRoll(amount));
+    }
+    const encodedRolls = rolls.map(encodeRoll);
 
     await queueRefFor(type, roomId).set({
         roomType: type,
         roomId,
-        diceCount: amount,
-        rolls: rolls.map(encodeRoll),
+        diceCount: oneToSixMode ? null : amount,
+        queueMode: oneToSixMode ? "oneToSix" : "fixed",
+        rolls: encodedRolls,
         updatedBy: uid,
         updatedAt: FieldValue.serverTimestamp()
     }, { merge: true });
 
-    return { ok: true, rolls: rolls.map(encodeRoll) };
+    return { ok: true, rolls: encodedRolls, oneToSixDiceMode: oneToSixMode };
+});
+
+// Enable 1-to-6 Dice mode and seed a variable-count queue only when switching
+// into the mode. Once enabled, admin-saved queue entries are preserved.
+exports.enableOneToSixDiceMode = onCall(async request => {
+    const uid = requireFirebaseAuth(request);
+    const type = cleanRoomType(request.data?.roomType);
+    const roomId = cleanRoomId(request.data?.roomId);
+    const roomRef = roomRefFor(type, roomId);
+    const queueRef = queueRefFor(type, roomId);
+
+    const seededRolls = Array.from({ length: QUEUE_SIZE }, () => randomOneToSixRoll());
+
+    const result = await db.runTransaction(async transaction => {
+        const [roomSnap, userSnap, queueSnap] = await Promise.all([
+            transaction.get(roomRef),
+            transaction.get(db.collection("users").doc(uid)),
+            transaction.get(queueRef)
+        ]);
+        if (!roomSnap.exists) throw new HttpsError("not-found", "Room not found.");
+        const room = roomSnap.data();
+        if (!isRoomOwner(type, room, uid)) {
+            throw new HttpsError("permission-denied", "Only the room creator can change the dice mode.");
+        }
+        assertAccountCanRoll(userSnap.exists ? userSnap.data() : {});
+        if (room.rolling === true) {
+            throw new HttpsError("failed-precondition", "Wait for the current roll to finish.");
+        }
+        if (room.rollingSuspended === true || room.guestRollingSuspended === true) {
+            throw new HttpsError("failed-precondition", "Rolling is suspended for this room.");
+        }
+
+        // Do not replace an already-enabled queue: its counts/colors may have
+        // been intentionally configured in irothemfkingdogadmin.html.
+        if (room.oneToSixDiceMode === true && queueSnap.exists &&
+            queueSnap.data()?.queueMode === "oneToSix") {
+            return { seeded: false, rolls: queueSnap.data()?.rolls || [] };
+        }
+
+        const encodedRolls = seededRolls.map(encodeRoll);
+        transaction.set(queueRef, {
+            roomType: type,
+            roomId,
+            diceCount: null,
+            queueMode: "oneToSix",
+            rolls: encodedRolls,
+            updatedAt: FieldValue.serverTimestamp()
+        }, { merge: true });
+        transaction.update(roomRef, {
+            oneToSixDiceMode: true,
+            diceCount: seededRolls[0].length,
+            updatedAt: FieldValue.serverTimestamp()
+        });
+        return { seeded: true, rolls: encodedRolls };
+    });
+
+    return { ok: true, ...result };
 });
 
 exports.startSecureRoll = onCall(async request => {
@@ -340,10 +449,25 @@ exports.startSecureRoll = onCall(async request => {
             throw new HttpsError("failed-precondition", "A roll is already in progress.");
         }
 
+        const oneToSixMode = room.oneToSixDiceMode === true;
         const amount = Math.min(MAX_DICE, Math.max(MIN_DICE, Number(room.diceCount || 3)));
-        const queue = normalizeQueue(queueSnap.exists ? queueSnap.data()?.rolls : [], amount);
-        const selected = queue.shift() || randomRoll(amount);
-        queue.push(randomRoll(amount));
+        const storedQueue = queueSnap.exists ? queueSnap.data()?.rolls : [];
+        const storedQueueMode = queueSnap.exists ? queueSnap.data()?.queueMode : null;
+        // Preserve legacy fixed-count queues that predate the queueMode marker.
+        const queueModeMatches = queueSnap.exists && (
+            oneToSixMode
+                ? storedQueueMode === "oneToSix"
+                : (storedQueueMode == null || storedQueueMode === "fixed")
+        );
+        const queue = oneToSixMode
+            ? (queueModeMatches
+                ? normalizeOneToSixQueue(storedQueue)
+                : Array.from({ length: QUEUE_SIZE }, () => randomOneToSixRoll()))
+            : (queueModeMatches
+                ? normalizeQueue(storedQueue, amount)
+                : makeQueue(amount));
+        const selected = queue.shift() || (oneToSixMode ? randomOneToSixRoll() : randomRoll(amount));
+        queue.push(oneToSixMode ? randomOneToSixRoll() : randomRoll(amount));
 
         const oldHistory = Array.isArray(room.history) ? room.history : [];
         const history = [...oldHistory, encodeRoll(selected)].slice(-MAX_HISTORY);
@@ -352,12 +476,13 @@ exports.startSecureRoll = onCall(async request => {
         transaction.set(queueRef, {
             roomType: type,
             roomId,
-            diceCount: amount,
+            diceCount: oneToSixMode ? null : amount,
+            queueMode: oneToSixMode ? "oneToSix" : "fixed",
             rolls: queue.map(encodeRoll),
             updatedAt: FieldValue.serverTimestamp()
         }, { merge: true });
 
-        transaction.update(roomRef, {
+        const roomUpdate = {
             rolling: false,
             pendingResult: [],
             latestResult: selected,
@@ -365,7 +490,9 @@ exports.startSecureRoll = onCall(async request => {
             rollNumber: nextRollNumber,
             lastRollAt: FieldValue.serverTimestamp(),
             updatedAt: FieldValue.serverTimestamp()
-        });
+        };
+        if (oneToSixMode) roomUpdate.diceCount = selected.length;
+        transaction.update(roomRef, roomUpdate);
 
         return selected;
     });

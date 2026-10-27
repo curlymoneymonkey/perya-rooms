@@ -182,6 +182,7 @@ function renderBallDropRolls() {
                     `ballDropAdminPreview ${ballDropColorNames[newValue].toLowerCase()}`;
                 isApplyingLocalChange = true;
                 markUnsaved();
+                if (typeof scheduleAutoSave === "function") scheduleAutoSave();
             });
 
             editorCell.append(preview, select);
@@ -233,6 +234,7 @@ let loadedRoomType = "";
 let loadedRoomPath = "";
 let editableNextRolls = [];
 let loadedGameMode = "dice";
+let loadedOneToSixDiceMode = false;
 let loadedBallDropCount = 3;
 let allowedNextOneColors = new Set(ALL_COLOR_INDEXES);
 let unsubscribeRoomListener = null;
@@ -244,7 +246,7 @@ let keybinds = { ...DEFAULT_KEYBINDS };
 let keyboardShortcutsEnabled = true;
 let keybindBeingEdited = null;
 let toastTimer = null;
-let extraRollsVisible = false;
+let extraRollsVisible = true;
 let favorThreeColorRolls = false;
 
 
@@ -364,7 +366,7 @@ function clearLoadedRoom() {
     loadedRoomPath = "";
     editableNextRolls = [];
     allowedNextOneColors = new Set(ALL_COLOR_INDEXES);
-    extraRollsVisible = false;
+    extraRollsVisible = true;
     favorThreeColorRolls = false;
 
     if (favorThreeColorRollsCheckbox) {
@@ -387,6 +389,20 @@ function markUnsaved() {
     setSavingStatus("🟡 Unsaved Changes");
     saveStatus.style.color = "#ffd95a";
     getSaveChangesButton()?.removeAttribute("disabled");
+}
+
+function scheduleAutoSave() {
+    if (saveTimer !== null) {
+        clearTimeout(saveTimer);
+    }
+
+    // Wait briefly so quick consecutive edits are saved together.
+    saveTimer = setTimeout(() => {
+        saveTimer = null;
+        if (isApplyingLocalChange && loadedRoomRef && loadedRoomPath) {
+            saveChanges();
+        }
+    }, 650);
 }
 
 function createInlineSaveButton() {
@@ -578,6 +594,7 @@ function randomizeNextRoll() {
 
     editableNextRolls[0] = generateWeightedNextRoll(editableNextRolls[0].length);
     markUnsaved();
+    if (typeof scheduleAutoSave === "function") scheduleAutoSave();
     renderRolls();
 
     if (loadedGameMode === "ballDrop") {
@@ -676,6 +693,7 @@ function setAllColorsEnabled({ regenerate = true, notify = true } = {}) {
         isApplyingLocalChange = true;
         renderRolls();
         markUnsaved();
+        if (typeof scheduleAutoSave === "function") scheduleAutoSave();
     } else {
         renderRolls();
     }
@@ -692,6 +710,7 @@ function toggleAllColors() {
             isApplyingLocalChange = true;
             renderRolls();
             markUnsaved();
+            if (typeof scheduleAutoSave === "function") scheduleAutoSave();
         } else {
             renderRolls();
         }
@@ -896,6 +915,7 @@ function toggleAllowedColor(colorIndex) {
     isApplyingLocalChange = true;
     renderRolls();
     markUnsaved();
+    if (typeof scheduleAutoSave === "function") scheduleAutoSave();
     return true;
 }
 
@@ -920,6 +940,45 @@ function createColorSelect(rollIndex, dieIndex, selectedValue) {
     });
 
     return select;
+}
+
+function createDiceCountSelect(rollIndex, diceCount) {
+    const wrap = document.createElement("label");
+    wrap.className = "futureDiceCountEditor";
+    const select = document.createElement("select");
+    select.className = "futureDiceCountSelect";
+    select.setAttribute("aria-label", `Dice count for roll ${rollIndex + 1}`);
+
+    const maxCount = loadedOneToSixDiceMode ? 6 : 30;
+    for (let count = 1; count <= maxCount; count++) {
+        const option = document.createElement("option");
+        option.value = String(count);
+        option.textContent = String(count);
+        option.selected = count === diceCount;
+        select.appendChild(option);
+    }
+
+    select.addEventListener("change", () => {
+        const newCount = Number(select.value);
+        if (loadedOneToSixDiceMode) {
+            // In 1 to 6 Dice mode, changing the count generates a fresh possible color result.
+            editableNextRolls[rollIndex] = generateWeightedNextRoll(newCount);
+        } else {
+            // Preserve the existing behavior for every other dice mode.
+            const current = editableNextRolls[rollIndex] || [];
+            const fallbackColor = current[0] ?? randomAllowedColor();
+            editableNextRolls[rollIndex] = current.slice(0, newCount);
+            while (editableNextRolls[rollIndex].length < newCount) {
+                editableNextRolls[rollIndex].push(fallbackColor);
+            }
+        }
+        markUnsaved();
+        renderRolls();
+        if (typeof scheduleAutoSave === "function") scheduleAutoSave();
+    });
+
+    wrap.append(select);
+    return wrap;
 }
 
 function normalizeNextRolls(nextRolls) {
@@ -967,6 +1026,7 @@ function renderRolls() {
             rollIndex === 0
                 ? "Next Roll"
                 : `Next #${rollIndex + 1}`;
+        row.appendChild(createDiceCountSelect(rollIndex, diceValues.length));
         row.appendChild(number);
 
         diceValues.forEach((value, dieIndex) => {
@@ -986,6 +1046,7 @@ function renderRolls() {
 
                 isApplyingLocalChange = true;
                 markUnsaved();
+                if (typeof scheduleAutoSave === "function") scheduleAutoSave();
             });
 
             dieEditor.appendChild(image);
@@ -1078,6 +1139,7 @@ function secureRoomType(type) {
 
 async function loadSecureQueue(roomRef, type, roomData = null) {
     loadedGameMode = normalizeGameMode(roomData);
+    loadedOneToSixDiceMode = roomData?.oneToSixDiceMode === true;
     if (loadedGameMode === "ballDrop") {
         const response = await getSecureBallDropQueue({
             roomType: secureRoomType(type),
@@ -1091,6 +1153,8 @@ async function loadSecureQueue(roomRef, type, roomData = null) {
         roomType: secureRoomType(type),
         roomId: roomRef.id
     });
+    // Each 1-to-6 queue entry retains its exact count and colors.
+    // Fixed-count modes keep the existing backend validation and queue behavior.
     return normalizeNextRolls(response.data?.rolls);
 }
 
@@ -1119,6 +1183,9 @@ function startRoomListener(roomRef, type) {
             roomType.textContent = type;
 
             const snapshotRoom = snapshot.data() || {};
+            const previousOneToSixMode = loadedOneToSixDiceMode;
+            loadedOneToSixDiceMode = snapshotRoom.oneToSixDiceMode === true;
+            const oneToSixModeChanged = previousOneToSixMode !== loadedOneToSixDiceMode;
             const currentMode = normalizeGameMode(snapshotRoom);
             const rollNumber = currentMode === "ballDrop"
                 ? Number(snapshotRoom.ballDropRound || 0)
@@ -1127,7 +1194,7 @@ function startRoomListener(roomRef, type) {
                 lastRollNumber = rollNumber;
                 return;
             }
-            if (rollNumber === lastRollNumber || isApplyingLocalChange) return;
+            if ((rollNumber === lastRollNumber && !oneToSixModeChanged) || isApplyingLocalChange) return;
             lastRollNumber = rollNumber;
 
             try {
@@ -1218,6 +1285,10 @@ async function loadGame() {
 ================================== */
 
 async function saveChanges() {
+    if (saveTimer !== null) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+    }
     if (!loadedRoomRef || !loadedRoomPath || editableNextRolls.length === 0) {
         showToast("No room is loaded.", true);
         return;
@@ -1291,6 +1362,7 @@ if (favorThreeColorRollsCheckbox) {
             );
 
             markUnsaved();
+            if (typeof scheduleAutoSave === "function") scheduleAutoSave();
             renderRolls();
 
             // Checking or unchecking automatically saves the updated queue.

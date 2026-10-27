@@ -5195,7 +5195,14 @@ body {
 
 
 /* Map tiles mirror the white dice only during the white rolling phase. */
-.diceMapTile.is-white-rolling { background-color: #fff !important; animation: shake .35s infinite, mapWhiteToBlack 1.25s ease-in forwards; transform-origin: center; }
+.diceMapTile.is-white-rolling {
+  background-color: #fff !important;
+  animation: shake .35s infinite, mapWhiteToBlack 1.25s ease-in forwards;
+  transform-origin: center;
+}
+.diceMapTile.is-white-rolling.is-fading-to-black {
+  background-color: #fff !important;
+}
 @keyframes mapWhiteToBlack {
   from { background-color: #fff; }
   to { background-color: #000; }
@@ -5227,3 +5234,51 @@ body {
 .guestDiceBlurEnabled .diceMapTile:hover::after {
     background: transparent;
 }
+
+
+/* TileDice room panels: Tiles is the left-hand panel in both game modes. */
+.guestBottomPanels {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "tiles history" "join join";
+    gap: 16px;
+}
+.guestBottomPanels #diceMapBox { grid-area: tiles; }
+.guestBottomPanels #diceHistoryBox { grid-area: history; }
+.guestBottomPanels #ballDropHistoryBox { grid-area: history; }
+.guestBottomPanels .guestJoinBox { grid-area: join; }
+body[data-room-game-mode="ballDrop"] .guestBottomPanels {
+    grid-template-areas: "tiles history" "join join";
+}
+@media (max-width: 700px) {
+    .guestBottomPanels {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "tiles" "history" "join";
+    }
+    body[data-room-game-mode="ballDrop"] .guestBottomPanels {
+        grid-template-areas: "tiles" "history" "join";
+    }
+}
+
+
+/* TileDice panel placement correction */
+.guestBottomPanels {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  grid-template-areas:"history tiles" "join join";
+  gap:16px;
+}
+.guestBottomPanels #diceHistoryBox { grid-area:history; }
+.guestBottomPanels #diceMapBox { grid-area:tiles; }
+.guestBottomPanels #ballDropHistoryBox { grid-area:history; }
+.guestBottomPanels .guestJoinBox { grid-area:join; }
+body[data-room-game-mode="ballDrop"] .guestBottomPanels { grid-template-areas:"tiles history" "join join"; }
+@media(max-width:700px) {
+ .guestBottomPanels { grid-template-columns:minmax(0,1fr); grid-template-areas:"history" "tiles" "join"; }
+ body[data-room-game-mode="ballDrop"] .guestBottomPanels { grid-template-areas:"tiles" "history" "join"; }
+}
+
+/* Numbered die shown between the two rolls in 1 to 6 Dice mode. */
+.oneToSixCountDie{width:clamp(58px,9vw,92px);height:clamp(58px,9vw,92px);display:grid;place-items:center;border-radius:14px;background:#fff;color:#111;border:3px solid #d7d7d7;box-shadow:inset 0 -5px 0 #dedede,0 5px 16px #0008;font-size:clamp(30px,5vw,48px);font-weight:900;line-height:1}
+.diceMapTile.is-fading-to-black{animation:diceMapWhiteToBlack 1.25s linear forwards!important}
+@keyframes diceMapWhiteToBlack{from{background-color:#fff}to{background-color:#000}}

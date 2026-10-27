@@ -282,87 +282,6 @@
 <style>
 </style>
 
-
-<style>
-/* Loading screen: keep the game's loadingMessage hook, but render a separate visible message. */
-#loadingScreen.loadingCard {
-    position: relative;
-    min-height: 260px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-    text-align: center;
-    overflow: hidden;
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-}
-
-#loadingScreen #loadingMessage {
-    display: none !important;
-}
-
-.loadingDisplayMessage {
-    margin: 0;
-    font-size: 18px;
-    line-height: 1.2;
-    font-weight: 800;
-    letter-spacing: .01em;
-    text-align: center;
-    color: #fff;
-}
-
-.loadingDicePulse {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-.loadingDicePulse img {
-    width: 56px;
-    height: 56px;
-    object-fit: contain;
-    display: block;
-    user-select: none;
-    pointer-events: none;
-    filter: drop-shadow(0 6px 12px rgba(0,0,0,.24));
-    transform-origin: center;
-    animation: loadingDiceBreathe 2.2s ease-in-out infinite;
-    will-change: transform, opacity;
-}
-
-@keyframes loadingDiceBreathe {
-    0% {
-        transform: translateY(0) scale(.95);
-        opacity: .9;
-    }
-    50% {
-        transform: translateY(0) scale(1.02);
-        opacity: 1;
-    }
-    100% {
-        transform: translateY(0) scale(.95);
-        opacity: .9;
-    }
-}
-
-@media (max-width: 520px) {
-    #loadingScreen.loadingCard { min-height: 220px; }
-    .loadingDisplayMessage { font-size: 16px; }
-    .loadingDicePulse { gap: 8px; }
-    .loadingDicePulse img { width: 48px; height: 48px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .loadingDicePulse img { animation: none; }
-}
-</style>
-
-
 <style>
 /* Map addition: deliberately scoped so the existing Tile Dice theme remains intact. */
 .guestDiceBlurToolbar { display:flex; justify-content:flex-end; align-items:center; gap:18px; flex-wrap:wrap; }
@@ -392,6 +311,7 @@ body.guestDiceBlurEnabled #diceMapTiles .diceMapTile:hover {
 .diceMapTile.is-fading-to-black { animation: diceMapWhiteToBlack 1.25s linear forwards; }
 @keyframes diceMapWhiteToBlack { from { background-color:#fff; } to { background-color:#000; } }
 .diceMapTile.is-dark { background:#000 !important; }
+.oneToSixCountDie { width:clamp(58px,9vw,92px); height:clamp(58px,9vw,92px); display:grid; place-items:center; border-radius:14px; background:#fff; color:#111; border:3px solid #d7d7d7; box-shadow:inset 0 -5px 0 #dedede,0 5px 16px #0008; font-size:clamp(30px,5vw,48px); font-weight:900; line-height:1; }
 .diceMapTile.skin-image { background-size:cover; background-position:center; }
 .guestBottomPanels.mapModeEnabled .guestJoinBox { grid-column:1 / -1; }
 @media(max-width:700px) {
@@ -402,20 +322,53 @@ body.guestDiceBlurEnabled #diceMapTiles .diceMapTile:hover {
 }
 </style>
 
+
+<style id="tiledice-tiles-layout-fix">
+/* Color Dice: History + Tiles; Enter a Room spans below them.
+   If Tiles are off, Enter a Room fills the space beside History.
+   Color Balls: Previous Drops + Enter a Room side by side. */
+.guestBottomPanels {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  grid-template-areas: "history tiles" "join join" !important;
+  gap: 16px;
+  align-items: stretch;
+}
+.guestBottomPanels #diceMapBox { grid-area: tiles !important; min-width: 0; }
+.guestBottomPanels #diceHistoryBox,
+.guestBottomPanels #ballDropHistoryBox { grid-area: history !important; min-width: 0; }
+.guestBottomPanels .guestJoinBox { grid-area: join !important; min-width: 0; }
+.guestBottomPanels.tiles-off { grid-template-areas: "history join" !important; }
+.guestBottomPanels.tiles-off .guestJoinBox { grid-area: join !important; }
+body[data-room-game-mode="ballDrop"] #diceMapBox,
+body[data-room-game-mode="ballDrop"] #guestMapControl {
+  display: none !important;
+}
+body[data-room-game-mode="ballDrop"] .guestBottomPanels {
+  grid-template-areas: "history join" !important;
+}
+body[data-room-game-mode="ballDrop"] .guestBottomPanels .guestJoinBox {
+  grid-area: join !important;
+}
+@media (max-width: 700px) {
+  .guestBottomPanels,
+  .guestBottomPanels.tiles-off,
+  body[data-room-game-mode="ballDrop"] .guestBottomPanels {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .guestBottomPanels { grid-template-areas: "history" "tiles" "join" !important; }
+  .guestBottomPanels.tiles-off,
+  body[data-room-game-mode="ballDrop"] .guestBottomPanels {
+    grid-template-areas: "history" "join" !important;
+  }
+}
+</style>
 </head>
 
 <body>
 
 
 <main>
-
-    <section id="loadingScreen" class="card loadingCard">
-        <h2 id="loadingMessage" aria-hidden="true">Connecting to your Room...</h2>
-        <div id="loadingDisplayMessage" class="loadingDisplayMessage" aria-live="polite"></div>
-        <div class="loadingDicePulse" aria-hidden="true">
-            <img src="images/white.png" alt="">
-        </div>
-    </section>
 
     <section id="gameScreen" hidden>
         <section id="roomGameSelectorCard"
@@ -659,7 +612,7 @@ body.guestDiceBlurEnabled #diceMapTiles .diceMapTile:hover {
         </section>
 
         <div id="guestDiceBlurToolbar" class="hostHistoryToolbar guestDiceBlurToolbar" hidden>
-            <div id="guestMapControl" class="hostDiceBlurControl guestMapControl">
+            <div id="guestMapControl" class="hostDiceBlurControl">
                 <label for="guestMapCheckbox">
                     <input id="guestMapCheckbox" type="checkbox" checked>
                     <span>Tiles</span>
@@ -772,6 +725,8 @@ body.guestDiceBlurEnabled #diceMapTiles .diceMapTile:hover {
   const roomIdTarget = document.getElementById('diceMapRoomId');
   const diceCount = document.getElementById('diceCount');
   const results = document.getElementById('results');
+  const ballDropResults = document.getElementById('ballDropResults');
+  const ballDropCount = document.getElementById('ballDropCountDisplay');
   const whiteNames = /(?:^|\/)white(?:\.[a-z0-9]+)?(?:[?#].*)?$/i;
   const palette = {red:'#f21f2c', blue:'#00a4e8', green:'#20b84a', yellow:'#fff000', purple:'#9b59d0', orange:'#ff812b'};
   const paletteColors = Object.values(palette);
@@ -791,18 +746,25 @@ body.guestDiceBlurEnabled #diceMapTiles .diceMapTile:hover {
     return '#000000';
   }
   function updateMap() {
-    if (!mapBox || !mapToggle || !diceCount || !results) return;
-    // Map mode is available for every dice count, not only four dice.
-    if (mapControl) mapControl.hidden = false;
-    mapToggle.disabled = false;
-    mapBox.hidden = !mapToggle.checked;
+    if (!mapBox || !results) return;
+    const ballMode = document.body.dataset.roomGameMode === 'ballDrop';
+    // Tiles are enabled by default for Color Dice; Color Balls hides them.
+    // The Tiles checkbox is available only in Color Dice mode.
+    if (mapControl) mapControl.hidden = ballMode;
+    if (mapToggle) mapToggle.disabled = ballMode;
+    mapBox.hidden = ballMode || (mapToggle ? !mapToggle.checked : false);
+    mapBox.style.removeProperty('display');
     panels?.classList.toggle('mapModeEnabled', !mapBox.hidden);
+    panels?.classList.toggle('tiles-off', ballMode || mapBox.hidden);
     const roomId = document.getElementById('gameId')?.textContent?.trim() || document.getElementById('permanentDiceId')?.textContent?.trim() || '';
     if (roomIdTarget) roomIdTarget.textContent = roomId.replace(/^Room ID:\s*/i,'').replace(/^ID:\s*/i,'');
-    // Only direct children represent actual dice; querySelectorAll('img') can
-    // accidentally count nested animation layers as extra dice.
     const dice = Array.from(results.children).filter(element => element instanceof HTMLImageElement);
-    const desiredTileCount = Math.max(1, Number(diceCount.value) || dice.length || 4);
+    const ballResults = ballDropResults ? Array.from(ballDropResults.children).filter(element => {
+      return !element.classList.contains('waiting') && !element.textContent.trim().includes('?');
+    }) : [];
+    const desiredTileCount = ballMode
+      ? Math.max(1, Number(ballDropCount?.value) || ballResults.length || 3)
+      : Math.max(1, Number(diceCount?.value) || dice.length || 4);
     while (tiles.length < desiredTileCount) {
       const tile = document.createElement('div');
       tile.className = 'diceMapTile';
@@ -832,31 +794,80 @@ body.guestDiceBlurEnabled #diceMapTiles .diceMapTile:hover {
         tile.style.width = '50%';
         tile.style.justifySelf = 'center';
       }
-      const src = dice[i]?.getAttribute('src') || '';
-      // Keep the tiles black during initial room loading, but mirror white dice
-      // during the actual rolling phase. Shake only while the dice are white.
-      const whiteRollPhase = Boolean(dice[i] && isWhite(src) && document.body.classList.contains('diceRolling'));
-      if (!dice[i]) {
-        tile.classList.remove('is-white-rolling', 'is-fading-to-black', 'is-dark');
-        tile.style.backgroundColor = '#000000';
+      if (ballMode) {
+        const ball = ballResults[i];
+        tile.classList.remove('is-white-rolling', 'is-fading-to-black', 'is-dark', 'skin-image');
         tile.style.backgroundImage = 'none';
-      } else if (whiteRollPhase) {
-        // Start the fade only once when a white tile enters the actual rolling
-        // stage. MutationObserver updates must not restart the animation.
-        if (!tile.classList.contains('is-white-rolling')) {
-          tile.classList.remove('is-dark', 'is-fading-to-black');
-          tile.classList.add('is-white-rolling', 'is-fading-to-black');
+        if (!ball) {
+          tile.style.backgroundColor = '#000000';
+        } else {
+          const computed = getComputedStyle(ball);
+          const inlineBg = ball.style.backgroundColor || '';
+          const bg = computed.backgroundColor;
+          const fg = computed.color;
+          const candidate = inlineBg || bg;
+          const isTransparent = !candidate || candidate === 'transparent' || candidate === 'rgba(0, 0, 0, 0)';
+          // Ball result components may encode their color as a background or text color.
+          tile.style.backgroundColor = isTransparent ? (fg && fg !== 'rgba(0, 0, 0, 0)' ? fg : '#000000') : candidate;
         }
-        tile.style.backgroundImage = 'none';
-        // Do not set backgroundColor here: that would override the keyframe.
       } else {
-        // When rolling ends, stop the fade and reveal the result immediately.
-        tile.classList.remove('is-dark', 'is-white-rolling', 'is-fading-to-black');
-        tile.style.backgroundImage = 'none';
-        tile.style.backgroundColor = colorFor(src);
+        const src = dice[i]?.getAttribute('src') || '';
+        // Keep tiles black during initial loading, but mirror the dice results and white rolling phase.
+        const whiteRollPhase = Boolean(dice[i] && isWhite(src) && document.body.classList.contains('diceRolling'));
+        if (!dice[i]) {
+          tile.classList.remove('is-white-rolling', 'is-fading-to-black', 'is-dark');
+          tile.style.backgroundColor = '#000000';
+          tile.style.backgroundImage = 'none';
+        } else if (whiteRollPhase) {
+          if (!tile.classList.contains('is-white-rolling')) {
+            tile.classList.remove('is-dark', 'is-fading-to-black');
+            tile.style.backgroundColor = '#ffffff';
+            tile.classList.add('is-white-rolling');
+            // Restart the fade on every new roll so the white phase is visible.
+            void tile.offsetWidth;
+            tile.classList.add('is-fading-to-black');
+          }
+          tile.style.backgroundImage = 'none';
+        } else {
+          tile.classList.remove('is-dark', 'is-white-rolling', 'is-fading-to-black');
+          tile.style.backgroundImage = 'none';
+          tile.style.backgroundColor = colorFor(src);
+        }
       }
     });
   }
+  // Mirror the 1-to-6 pre-roll fade on the map tiles in the exact same
+  // randomized order and timing as the six white dice.
+  document.addEventListener('oneToSixPreRollTilesStart', event => {
+    updateMap();
+    const count = Number(event.detail?.dieCount) || 6;
+    for (let i = 0; i < count; i++) {
+      const tile = tiles[i];
+      if (!tile) continue;
+      tile.classList.remove('is-white-rolling', 'is-fading-to-black', 'is-dark');
+      tile.style.transition = 'opacity 260ms ease-in-out, background-color 45ms linear';
+      tile.style.opacity = '1';
+      tile.style.backgroundImage = 'none';
+      tile.style.backgroundColor = '#ffffff';
+    }
+  });
+  document.addEventListener('oneToSixPreRollTileFadeStep', event => {
+    const index = Number(event.detail?.index);
+    const tile = Number.isInteger(index) ? tiles[index] : null;
+    if (!tile) return;
+    tile.style.transition = `opacity ${Number(event.detail?.fadeMs) || 260}ms ease-in-out`;
+    tile.style.opacity = '0';
+  });
+  document.addEventListener('oneToSixPreRollTilesEnd', () => {
+    // The next phase draws the selected number of white dice, so return tiles
+    // to full visibility and let updateMap mirror the current dice state.
+    tiles.forEach(tile => {
+      tile.style.opacity = '1';
+      tile.style.transition = '';
+    });
+    updateMap();
+  });
+
   // Apply blur mode from the actual checkbox in this page's inline map controller.
   function syncMapBlur() {
     document.body.classList.toggle('guestDiceBlurEnabled', Boolean(blurToggle && blurToggle.checked));
@@ -867,13 +878,13 @@ body.guestDiceBlurEnabled #diceMapTiles .diceMapTile:hover {
   mapToggle?.addEventListener('change', updateMap);
   diceCount?.addEventListener('change', updateMap);
   const observer = new MutationObserver(updateMap);
-  if (results) observer.observe(results,{childList:true,subtree:true,attributes:true,attributeFilter:['src','class']});
-  if (document.body) observer.observe(document.body,{attributes:true,attributeFilter:['class']});
+  if (results) observer.observe(results,{childList:true,subtree:true,attributes:true,attributeFilter:['src','class','style']});
+  if (ballDropResults) observer.observe(ballDropResults,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});
+  if (document.body) observer.observe(document.body,{attributes:true,attributeFilter:['class','data-room-game-mode']});
   const idObserver = new MutationObserver(updateMap);
   ['gameId','permanentDiceId'].forEach(id => { const el=document.getElementById(id); if(el) idObserver.observe(el,{childList:true,subtree:true,characterData:true}); });
   // Keep the checkbox group visible when the existing host toolbar is enabled.
   if (toolbar && mapToggle && blurToggle) {
-    mapToggle.checked = true;
     toolbar.style.gap = '18px';
   }
   updateMap();
@@ -881,6 +892,72 @@ body.guestDiceBlurEnabled #diceMapTiles .diceMapTile:hover {
   window.addEventListener('load',updateMap);
 })();
 </script>
+
+
+<script>
+(function(){
+  const mode = document.getElementById('roomGameModeSelect');
+  const mapBox = document.getElementById('diceMapBox');
+  const mapToggle = document.getElementById('guestMapCheckbox');
+  const mapControl = document.getElementById('guestMapControl');
+  const mapTiles = Array.from(document.querySelectorAll('#diceMapTiles .diceMapTile'));
+  const diceHistory = document.getElementById('diceHistoryBox');
+  const ballHistory = document.getElementById('ballDropHistoryBox');
+  const diceResults = document.getElementById('results');
+  const ballResults = document.getElementById('ballDropResults');
+  const panels = document.querySelector('.guestBottomPanels');
+  if (!mapBox || !mapTiles.length) return;
+  function colorFromNode(node){
+    if(!node) return null;
+    const img = node.matches && node.matches('img') ? node : (node.querySelector ? node.querySelector('img') : null);
+    if(img){
+      const src=(img.currentSrc||img.src||'').toLowerCase();
+      for(const c of ['red','blue','green','yellow','purple','orange']) if(src.includes('/'+c+'.')||src.includes(c)) return c;
+      const alt=(img.alt||'').toLowerCase();
+      for(const c of ['red','blue','green','yellow','purple','orange']) if(alt.includes(c)) return c;
+    }
+    const style=getComputedStyle(node);
+    const bg=style.backgroundColor;
+    if(bg && bg!=='rgba(0, 0, 0, 0)' && bg!=='transparent') return bg;
+    const txt=(node.textContent||'').trim().toLowerCase();
+    for(const c of ['red','blue','green','yellow','purple','orange']) if(txt===c || txt.includes(c)) return c;
+    return null;
+  }
+  function refresh(){
+    const balls=!!(mode && mode.value==='ballDrop');
+    document.body.dataset.roomGameMode=balls?'ballDrop':'dice';
+    if(mapControl) mapControl.hidden=balls;
+    mapBox.hidden=balls || (mapToggle ? !mapToggle.checked : false); mapBox.style.removeProperty('display');
+    if(diceHistory){ diceHistory.hidden=balls; diceHistory.style.display=balls?'none':''; }
+    if(ballHistory){ ballHistory.hidden=!balls; ballHistory.style.display=balls?'':'none'; }
+    if(panels) {
+      panels.classList.toggle('mapModeEnabled',!balls && !mapBox.hidden);
+      panels.classList.toggle('tiles-off',balls || mapBox.hidden);
+    }
+    // The primary map controller mirrors Color Dice tiles, including the
+    // white Rolling... fade and the synchronized 1-to-6 pre-roll fade.
+    // Do not clear its animation classes or repaint its tiles here.
+    if (!balls) return;
+
+    const source=ballResults;
+    const nodes=source?Array.from(source.children).filter(n=>!n.classList.contains('waiting')):[];
+    mapTiles.forEach((tile,i)=>{
+      tile.classList.remove('skin-image','is-dark','is-fading-to-black','is-white-rolling');
+      tile.style.backgroundImage='none';
+      const color=colorFromNode(nodes[i]);
+      const palette={red:'#e53935',blue:'#2196f3',green:'#35c759',yellow:'#ffd600',purple:'#9c27b0',orange:'#ff8c00'};
+      tile.style.backgroundColor=color?(palette[color]||color):'#000';
+    });
+  }
+  if(mode) mode.addEventListener('change',refresh);
+  if(mapToggle) mapToggle.addEventListener('change',refresh);
+  if(diceResults && window.MutationObserver) new MutationObserver(refresh).observe(diceResults,{childList:true,subtree:true,attributes:true,attributeFilter:['src','class']});
+  if(ballResults && window.MutationObserver) new MutationObserver(refresh).observe(ballResults,{childList:true,subtree:true,attributes:true,attributeFilter:['src','class']});
+  refresh();
+})();
+</script>
+
+
 
 </body>
 </html>

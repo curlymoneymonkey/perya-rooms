@@ -156,6 +156,28 @@
             color: #ffd95a;
         }
 
+
+        .futureDiceCountEditor {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            min-width: 100px;
+            color: #e8eaf5;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .futureDiceCountSelect {
+            width: 100px;
+            max-width: 100%;
+            padding: 7px 5px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 800;
+        }
+
         .futureDieEditor {
             display: flex;
             flex-direction: column;
@@ -272,7 +294,94 @@
         .adminToast { position:fixed; right:18px; bottom:18px; z-index:11000; max-width:min(340px,calc(100% - 36px)); padding:10px 14px; border-radius:10px; background:#171717; border:1px solid rgba(255,255,255,.2); opacity:0; pointer-events:none; transition:opacity 150ms ease; }
         .adminToast.isVisible { opacity:1; }
         .adminToast.isError { border-color:rgba(255,100,100,.6); }
-    </style>
+    
+        /* Requested admin-panel sizing: 3x color buttons in a 2-row x 3-column grid,
+           and a 2x dice-count selector. */
+        .allowedColorsRow {
+            display: grid;
+            grid-template-columns: repeat(3, 144px);
+            grid-template-rows: repeat(2, 144px);
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+        }
+        .allowedColorButton {
+            width: 144px;
+            height: 144px;
+            padding: 10px;
+        }
+        .allowedColorButton img {
+            width: 108px;
+            height: 108px;
+        }
+        .futureDiceCountSelect {
+            width: 200px;
+            max-width: 100%;
+            min-height: 2.2em;
+            padding: 14px 10px;
+            font-size: 2em;
+        }
+        @media (max-width: 520px) {
+            .allowedColorsRow {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                grid-template-rows: repeat(2, auto);
+                gap: 8px;
+            }
+            .allowedColorButton {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 1 / 1;
+                padding: 6px;
+            }
+            .allowedColorButton img {
+                width: 100%;
+                height: 100%;
+                max-width: 108px;
+                max-height: 108px;
+            }
+        }
+
+
+        /* Future roll layout: compact count selector, left-aligned label, six dice in one row. */
+        .futureRollRow {
+            justify-content: flex-start;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            overflow-y: hidden;
+            text-align: left;
+        }
+        .futureDiceCountEditor {
+            min-width: 0;
+            width: 80px;
+            flex: 0 0 80px;
+            align-items: flex-start;
+            justify-content: flex-start;
+            text-align: left;
+        }
+        .futureDiceCountSelect {
+            width: 80px;
+            min-width: 0;
+            max-width: 80px;
+            min-height: 54px;
+            box-sizing: border-box;
+            padding: 10px 6px;
+            text-align: left;
+            font-size: 1.5em;
+            font-weight: 900;
+        }
+        .futureRollNumber {
+            flex: 0 0 auto;
+            text-align: left;
+            white-space: nowrap;
+        }
+        .futureDieEditor {
+            flex: 0 0 auto;
+        }
+        .futureDieEditor img {
+            flex: 0 0 auto;
+        }
+
+</style>
 </head>
 <body>
     <main id="adminAccessChecking" class="reviewQueueNotice">

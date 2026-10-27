@@ -245,6 +245,7 @@ let loadedRoomType = "";
 let loadedRoomPath = "";
 let editableNextRolls = [];
 let loadedGameMode = "dice";
+let loadedOneToSixDiceMode = false;
 let loadedBallDropCount = 3;
 let allowedNextOneColors = new Set(ALL_COLOR_INDEXES);
 let unsubscribeRoomListener = null;
@@ -258,7 +259,7 @@ let keybinds = { ...DEFAULT_KEYBINDS };
 let keyboardShortcutsEnabled = true;
 let keybindBeingEdited = null;
 let toastTimer = null;
-let extraRollsVisible = false;
+let extraRollsVisible = true;
 let favorThreeColorRolls = false;
 
 
@@ -380,7 +381,7 @@ function clearLoadedRoom() {
     loadedRoomPath = "";
     editableNextRolls = [];
     allowedNextOneColors = new Set(ALL_COLOR_INDEXES);
-    extraRollsVisible = false;
+    extraRollsVisible = true;
     favorThreeColorRolls = false;
 
     if (favorThreeColorRollsCheckbox) {
@@ -950,6 +951,51 @@ function createColorSelect(rollIndex, dieIndex, selectedValue) {
     return select;
 }
 
+function createDiceCountSelect(rollIndex, diceCount) {
+    const wrap = document.createElement("label");
+    wrap.className = "futureDiceCountEditor";
+    const label = document.createElement("span");
+    label.textContent = "Dice count";
+    const select = document.createElement("select");
+    select.className = "futureDiceCountSelect";
+    select.setAttribute("aria-label", `Predetermined dice count for roll ${rollIndex + 1}`);
+
+    // Only allow changing the predetermined count when the room is configured
+    // to use the 1-to-6 dice mode. In other modes, show the count read-only.
+    const maxCount = loadedOneToSixDiceMode ? 6 : Math.max(6, diceCount);
+    for (let count = 1; count <= maxCount; count++) {
+        const option = document.createElement("option");
+        option.value = String(count);
+        option.textContent = String(count);
+        option.selected = count === diceCount;
+        select.appendChild(option);
+    }
+    select.disabled = !loadedOneToSixDiceMode;
+    select.title = loadedOneToSixDiceMode
+        ? "Choose how many dice the next roll will contain"
+        : 'Dice count can only be changed in "1 to 6 dice" mode';
+
+    select.addEventListener("change", () => {
+        if (!loadedOneToSixDiceMode) {
+            select.value = String(diceCount);
+            return;
+        }
+        const newCount = Math.min(6, Math.max(1, Number(select.value) || diceCount));
+        const current = editableNextRolls[rollIndex] || [];
+        const fallbackColor = current[0] ?? randomAllowedColor();
+        editableNextRolls[rollIndex] = current.slice(0, newCount);
+        while (editableNextRolls[rollIndex].length < newCount) {
+            editableNextRolls[rollIndex].push(fallbackColor);
+        }
+        markUnsaved();
+        renderRolls();
+        if (typeof scheduleAutoSave === "function") scheduleAutoSave();
+    });
+
+    wrap.append(label, select);
+    return wrap;
+}
+
 function normalizeNextRolls(nextRolls) {
     return Array.isArray(nextRolls)
         ? nextRolls
@@ -995,7 +1041,15 @@ function renderRolls() {
             rollIndex === 0
                 ? "Next Roll"
                 : `Next #${rollIndex + 1}`;
-        row.appendChild(number);
+        const header = document.createElement("div");
+        header.className = "futureRollHeader";
+        header.appendChild(number);
+        // Only show the dice-count selector while the room is configured for
+        // the dedicated 1-to-6 dice mode. In all other modes, hide it entirely.
+        if (loadedOneToSixDiceMode) {
+            header.appendChild(createDiceCountSelect(rollIndex, diceValues.length));
+        }
+        row.appendChild(header);
 
         diceValues.forEach((value, dieIndex) => {
             const dieEditor = document.createElement("label");
@@ -1004,21 +1058,42 @@ function renderRolls() {
             const image = createDiceImage(value);
             image.alt = `${diceColorNames[value]} future die`;
 
+            // The die itself is the color picker trigger; no visible select box.
+            const colorButton = document.createElement("button");
+            colorButton.type = "button";
+            colorButton.className = "futureDieColorButton";
+            colorButton.setAttribute("aria-label", `Choose color for Next ${rollIndex + 1}, die ${dieIndex + 1}`);
+            colorButton.title = `Click to change color (${diceColorNames[value]})`;
+            colorButton.appendChild(image);
+
             const select = createColorSelect(rollIndex, dieIndex, value);
+            select.classList.add("futureDieColorSelect");
+
+            colorButton.addEventListener("click", () => {
+                // showPicker opens the native color-choice list from the die click.
+                if (typeof select.showPicker === "function") {
+                    try { select.showPicker(); }
+                    catch (_) { select.click(); }
+                } else {
+                    select.focus();
+                    select.click();
+                }
+            });
 
             select.addEventListener("change", () => {
                 const newValue = Number(select.value);
                 editableNextRolls[rollIndex][dieIndex] = newValue;
                 image.src = diceImages[newValue];
                 image.alt = `${diceColorNames[newValue]} future die`;
+                colorButton.title = `Click to change color (${diceColorNames[newValue]})`;
+                colorButton.setAttribute("aria-label", `Choose color for Next ${rollIndex + 1}, die ${dieIndex + 1}; current color ${diceColorNames[newValue]}`);
 
                 isApplyingLocalChange = true;
                 markUnsaved();
                 scheduleAutoSave();
             });
 
-            dieEditor.appendChild(image);
-            dieEditor.appendChild(select);
+            dieEditor.append(colorButton, select);
             row.appendChild(dieEditor);
         });
 
@@ -1144,6 +1219,7 @@ function secureRoomType(type) {
 
 async function loadSecureQueue(roomRef, type, roomData = null) {
     loadedGameMode = normalizeGameMode(roomData);
+    loadedOneToSixDiceMode = roomData?.oneToSixDiceMode === true;
     if (loadedGameMode === "ballDrop") {
         const response = await getSecureBallDropQueue({
             roomType: secureRoomType(type),
@@ -1157,6 +1233,8 @@ async function loadSecureQueue(roomRef, type, roomData = null) {
         roomType: secureRoomType(type),
         roomId: roomRef.id
     });
+    // Match irothemfkingdogadmin.js: preserve each queued roll's exact dice count
+    // and colors, including 1-to-6 mode. Do not pad shorter rolls to six dice.
     return normalizeNextRolls(response.data?.rolls);
 }
 
@@ -1188,6 +1266,9 @@ function startRoomListener(roomRef, type) {
             roomType.textContent = type;
 
             const snapshotRoom = snapshot.data() || {};
+            const previousOneToSixMode = loadedOneToSixDiceMode;
+            loadedOneToSixDiceMode = snapshotRoom.oneToSixDiceMode === true;
+            const oneToSixModeChanged = previousOneToSixMode !== loadedOneToSixDiceMode;
             const currentMode = normalizeGameMode(snapshotRoom);
             const rollNumber = currentMode === "ballDrop"
                 ? Number(snapshotRoom.ballDropRound || 0)
@@ -1196,7 +1277,7 @@ function startRoomListener(roomRef, type) {
                 lastRollNumber = rollNumber;
                 return;
             }
-            if (rollNumber === lastRollNumber || isApplyingLocalChange) return;
+            if ((rollNumber === lastRollNumber && !oneToSixModeChanged) || isApplyingLocalChange) return;
             lastRollNumber = rollNumber;
 
             try {
